@@ -1,0 +1,491 @@
+﻿<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quản lí kho thời trang</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #fff7f9;
+            color: #3f2730;
+            font-family: "Segoe UI", Arial, sans-serif;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .topbar {
+            align-items: center;
+            background: #fff;
+            border-bottom: 1px solid #f5d9e2;
+            display: flex;
+            gap: 20px;
+            justify-content: space-between;
+            padding: 18px clamp(18px, 5vw, 56px);
+        }
+
+        .brand {
+            color: #b63f68;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: .2px;
+        }
+
+        .logout {
+            background: transparent;
+            border: 1px solid #e8b8c8;
+            border-radius: 999px;
+            color: #8b2f4d;
+            cursor: pointer;
+            font-weight: 700;
+            padding: 10px 16px;
+        }
+
+        .nav {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .nav a {
+            background: #fff;
+            border: 1px solid #e8b8c8;
+            border-radius: 999px;
+            color: #8b2f4d;
+            font-weight: 700;
+            padding: 10px 16px;
+        }
+
+        .nav a.active {
+            background: #be476f;
+            color: #fff;
+        }
+
+        .hero {
+            background:
+                linear-gradient(115deg, rgba(255, 255, 255, .92), rgba(255, 235, 242, .78)),
+                url("https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1600&q=80");
+            background-position: center;
+            background-size: cover;
+            border-bottom: 1px solid #f5d9e2;
+            min-height: 260px;
+            padding: 50px clamp(18px, 5vw, 56px);
+        }
+
+        .hero h1 {
+            color: #6f253f;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: clamp(34px, 5vw, 58px);
+            line-height: 1.04;
+            margin: 0 0 14px;
+            max-width: 760px;
+        }
+
+        .hero p {
+            color: #704252;
+            font-size: 17px;
+            line-height: 1.6;
+            margin: 0;
+            max-width: 680px;
+        }
+
+        .content {
+            padding: 28px clamp(18px, 5vw, 56px) 56px;
+        }
+
+        .toolbar {
+            align-items: end;
+            display: grid;
+            gap: 14px;
+            grid-template-columns: 1fr auto;
+            margin-bottom: 18px;
+        }
+
+        .search {
+            display: grid;
+            gap: 8px;
+            max-width: 520px;
+        }
+
+        label {
+            color: #7a344c;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        input,
+        select {
+            background: #fff;
+            border: 1px solid #ebc5d2;
+            border-radius: 8px;
+            color: #3f2730;
+            font-size: 15px;
+            min-height: 44px;
+            padding: 10px 13px;
+            width: 100%;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: #c9577d;
+            box-shadow: 0 0 0 3px rgba(201, 87, 125, .16);
+            outline: none;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .button {
+            align-items: center;
+            background: #be476f;
+            border: 0;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            display: inline-flex;
+            font-weight: 800;
+            gap: 8px;
+            min-height: 44px;
+            padding: 10px 16px;
+        }
+
+        .button.secondary {
+            background: #fff;
+            border: 1px solid #ebc5d2;
+            color: #8b2f4d;
+        }
+
+        .status {
+            background: #fff;
+            border: 1px solid #f0c7d3;
+            border-left: 5px solid #c9577d;
+            border-radius: 8px;
+            color: #693143;
+            margin-bottom: 18px;
+            padding: 12px 14px;
+        }
+
+        .table-shell {
+            background: #fff;
+            border: 1px solid #f0d3dc;
+            border-radius: 8px;
+            overflow-x: auto;
+            box-shadow: 0 18px 45px rgba(117, 44, 69, .08);
+        }
+
+        table {
+            border-collapse: collapse;
+            min-width: 980px;
+            width: 100%;
+        }
+
+        th,
+        td {
+            border-bottom: 1px solid #f7e3e9;
+            padding: 15px;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #fff0f4;
+            color: #81304c;
+            font-size: 13px;
+            letter-spacing: .02em;
+            text-transform: uppercase;
+        }
+
+        th a {
+            align-items: center;
+            display: inline-flex;
+            gap: 6px;
+        }
+
+        tbody tr:hover {
+            background: #fff9fb;
+        }
+
+        .thumb {
+            align-items: center;
+            background: #f9e5ec;
+            border: 1px solid #f1cbd7;
+            border-radius: 8px;
+            color: #a64465;
+            display: flex;
+            font-size: 12px;
+            font-weight: 800;
+            height: 70px;
+            justify-content: center;
+            overflow: hidden;
+            width: 70px;
+        }
+
+        .thumb img {
+            height: 100%;
+            object-fit: cover;
+            width: 100%;
+        }
+
+        .code {
+            color: #a13b60;
+            font-weight: 800;
+        }
+
+        .name {
+            color: #3f2730;
+            font-weight: 800;
+        }
+
+        .muted {
+            color: #8b6672;
+            font-size: 13px;
+        }
+
+        .row-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .link-action,
+        .danger {
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 800;
+            padding: 8px 10px;
+        }
+
+        .link-action {
+            background: #fff4f7;
+            border: 1px solid #f1cbd7;
+            color: #8b2f4d;
+        }
+
+        .danger {
+            background: #fff;
+            border: 1px solid #f0b7c1;
+            color: #b4233f;
+        }
+
+        .empty {
+            color: #8b6672;
+            padding: 36px;
+            text-align: center;
+        }
+
+        .pagination {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: space-between;
+            margin-top: 18px;
+        }
+
+        .pages {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .page-link,
+        .page-current {
+            border-radius: 8px;
+            display: inline-flex;
+            font-weight: 800;
+            min-width: 40px;
+            padding: 10px 12px;
+            place-content: center;
+        }
+
+        .page-link {
+            background: #fff;
+            border: 1px solid #f0d3dc;
+            color: #8b2f4d;
+        }
+
+        .page-current {
+            background: #be476f;
+            color: #fff;
+        }
+
+        @media (max-width: 760px) {
+            .topbar,
+            .toolbar {
+                align-items: stretch;
+                grid-template-columns: 1fr;
+            }
+
+            .topbar {
+                flex-direction: column;
+            }
+
+            .actions {
+                width: 100%;
+            }
+
+            .button,
+            .logout {
+                justify-content: center;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <a class="brand" href="{{ route('products.index') }}">Tiba Boutique</a>
+        <div class="nav">
+            <a class="active" href="{{ route('products.index') }}">Kho hàng</a>
+            <a href="{{ route('orders.index') }}">Đơn hàng</a>
+            <a href="{{ route('stock-import-histories.index') }}">Lịch sử nhập</a>
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button class="logout" type="submit">Đăng xuất</button>
+            </form>
+        </div>
+    </header>
+
+    <section class="hero">
+        <h1>Quản lí kho hàng thời trang</h1>
+        <p>Theo dõi mã sản phẩm, chất liệu vải, size, số lượng tồn và giá nhập trong một không gian mềm mại như một cửa hàng boutique.</p>
+    </section>
+
+    <main class="content">
+        @if (session('status'))
+            <div class="status">{{ session('status') }}</div>
+        @endif
+
+        <div class="toolbar">
+            <form class="search" method="GET" action="{{ route('products.index') }}">
+                <label for="q">Tìm kiếm theo mã hoặc tên sản phẩm</label>
+                <input id="q" name="q" type="search" value="{{ $query }}" placeholder="VD: VAY001, áo lụa...">
+                <input type="hidden" name="sort" value="{{ $sort }}">
+                <input type="hidden" name="direction" value="{{ $direction }}">
+            </form>
+
+            <div class="actions">
+                <a class="button secondary" href="{{ route('products.index') }}">Làm mới</a>
+                <a class="button" href="{{ route('products.create') }}">+ Thêm sản phẩm</a>
+            </div>
+        </div>
+
+        <div class="table-shell">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Hình ảnh</th>
+                        <th>
+                            <a href="{{ route('products.index', array_merge(request()->except('page'), ['sort' => 'code', 'direction' => $sort === 'code' && $direction === 'asc' ? 'desc' : 'asc'])) }}">
+                                Mã sản phẩm {{ $sort === 'code' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="{{ route('products.index', array_merge(request()->except('page'), ['sort' => 'name', 'direction' => $sort === 'name' && $direction === 'asc' ? 'desc' : 'asc'])) }}">
+                                Tên sản phẩm {{ $sort === 'name' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="{{ route('products.index', array_merge(request()->except('page'), ['sort' => 'quantity', 'direction' => $sort === 'quantity' && $direction === 'asc' ? 'desc' : 'asc'])) }}">
+                                Số lượng {{ $sort === 'quantity' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}
+                            </a>
+                        </th>
+                        <th>Vải</th>
+                        <th>Size</th>
+                        <th>Giá nhập</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($products as $product)
+                        <tr>
+                            <td>
+                                <div class="thumb">
+                                    @if ($product->image_path)
+                                        <img src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $product->name }}">
+                                    @else
+                                        CHƯA CÓ ẢNH
+                                    @endif
+                                </div>
+                            </td>
+                            <td class="code">
+                                <a href="{{ route('products.show', $product) }}">{{ $product->code }}</a>
+                            </td>
+                            <td>
+                                <div class="name">
+                                    <a href="{{ route('products.show', $product) }}">{{ $product->name }}</a>
+                                </div>
+                                <div class="muted">Cập nhật: {{ $product->updated_at?->format('d/m/Y') }}</div>
+                            </td>
+                            <td>{{ number_format($product->stock_quantity) }}</td>
+                            <td>{{ $product->fabric }}</td>
+                            <td>{{ $product->size }}</td>
+                            <td>{{ number_format((float) $product->import_price, 0, ',', '.') }} VND</td>
+                            <td>
+                                <div class="row-actions">
+                                    <a class="link-action" href="{{ route('products.edit', $product) }}">Sửa</a>
+                                    <form method="POST" action="{{ route('products.destroy', $product) }}" onsubmit="return confirm('Xóa sản phẩm này khỏi kho?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="danger" type="submit">Xóa</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td class="empty" colspan="8">Chưa có sản phẩm phù hợp.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        @if ($products->hasPages())
+            <nav class="pagination" aria-label="Phân trang">
+                <div class="muted">
+                    Hiển thị {{ $products->firstItem() }}-{{ $products->lastItem() }} trong {{ $products->total() }} sản phẩm
+                </div>
+                <div class="pages">
+                    @if ($products->onFirstPage())
+                        <span class="page-link">Trước</span>
+                    @else
+                        <a class="page-link" href="{{ $products->previousPageUrl() }}">Trước</a>
+                    @endif
+
+                    @for ($page = 1; $page <= $products->lastPage(); $page++)
+                        @if ($page === $products->currentPage())
+                            <span class="page-current">{{ $page }}</span>
+                        @else
+                            <a class="page-link" href="{{ $products->url($page) }}">{{ $page }}</a>
+                        @endif
+                    @endfor
+
+                    @if ($products->hasMorePages())
+                        <a class="page-link" href="{{ $products->nextPageUrl() }}">Sau</a>
+                    @else
+                        <span class="page-link">Sau</span>
+                    @endif
+                </div>
+            </nav>
+        @endif
+    </main>
+    @include('orders.reminders-popup')
+</body>
+</html>
+
+
+
