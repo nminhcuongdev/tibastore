@@ -335,11 +335,16 @@
                                 <div class="muted">Tạo: {{ $order->created_at?->format('d/m/Y') }}</div>
                             </td>
                             <td>
-                                <div class="code">{{ $order->product->code }}</div>
-                                <div class="muted">{{ $order->product->name }}</div>
-                                <div class="muted">Size: {{ $order->product->size }}</div>
+                                @forelse ($order->items as $item)
+                                    <div class="code">{{ $item->product->code }}</div>
+                                    <div class="muted">{{ $item->product->name }} | Size: {{ $item->product->size }} | SL: {{ number_format($item->quantity) }}</div>
+                                @empty
+                                    <div class="code">{{ $order->product->code }}</div>
+                                    <div class="muted">{{ $order->product->name }}</div>
+                                    <div class="muted">Size: {{ $order->product->size }}</div>
+                                @endforelse
                             </td>
-                            <td>{{ number_format($order->quantity) }}</td>
+                            <td>{{ number_format($order->items->sum('quantity') ?: $order->quantity) }}</td>
                             <td>
                                 <span class="status-badge status-{{ $order->status }}">
                                     {{ $order->statusLabel() }}

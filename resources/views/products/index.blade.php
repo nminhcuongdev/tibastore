@@ -244,6 +244,24 @@
             font-weight: 800;
         }
 
+        .code-line {
+            align-items: center;
+            display: flex;
+            gap: 8px;
+        }
+
+        .copy-code {
+            background: #fff;
+            border: 1px solid #f1cbd7;
+            border-radius: 8px;
+            color: #8b2f4d;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 800;
+            min-height: 28px;
+            padding: 4px 8px;
+        }
+
         .name {
             color: #3f2730;
             font-weight: 800;
@@ -404,8 +422,7 @@
                             </a>
                         </th>
                         <th>Vải</th>
-                        <th>Size</th>
-                        <th>Giá nhập</th>
+                        <th>Số size</th>
                         <th>Thao tác</th>
                     </tr>
                 </thead>
@@ -422,7 +439,10 @@
                                 </div>
                             </td>
                             <td class="code">
-                                <a href="{{ route('products.show', $product) }}">{{ $product->code }}</a>
+                                <div class="code-line">
+                                    <a href="{{ route('products.show', $product) }}">{{ $product->code }}</a>
+                                    <button class="copy-code" type="button" data-copy-code="{{ $product->code }}">copy</button>
+                                </div>
                             </td>
                             <td>
                                 <div class="name">
@@ -430,24 +450,25 @@
                                 </div>
                                 <div class="muted">Cập nhật: {{ $product->updated_at?->format('d/m/Y') }}</div>
                             </td>
-                            <td>{{ number_format($product->stock_quantity) }}</td>
+                            <td>{{ number_format($product->total_stock_quantity) }}</td>
                             <td>{{ $product->fabric }}</td>
-                            <td>{{ $product->size }}</td>
-                            <td>{{ number_format((float) $product->import_price, 0, ',', '.') }} VND</td>
+                            <td>{{ number_format($product->size_count) }}</td>
                             <td>
                                 <div class="row-actions">
-                                    <a class="link-action" href="{{ route('products.edit', $product) }}">Sửa</a>
-                                    <form method="POST" action="{{ route('products.destroy', $product) }}" onsubmit="return confirm('Xóa sản phẩm này khỏi kho?')">
+                                    <a class="link-action" href="{{ route('products.show', $product) }}">Chi tiết</a>
+                                    <a class="link-action" href="{{ route('products.create', ['copy_from' => $product->id]) }}">Thêm size</a>
+                                    <form method="POST" action="{{ route('products.destroy', $product) }}" onsubmit="return confirm('Xóa mã hàng này và toàn bộ size khỏi kho?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button class="danger" type="submit">Xóa</button>
+                                        <input type="hidden" name="delete_scope" value="code">
+                                        <button class="danger" type="submit">Xóa mã</button>
                                     </form>
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td class="empty" colspan="8">Chưa có sản phẩm phù hợp.</td>
+                            <td class="empty" colspan="7">Chưa có sản phẩm phù hợp.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -484,6 +505,31 @@
         @endif
     </main>
     @include('orders.reminders-popup')
+    <script>
+        document.querySelectorAll('[data-copy-code]').forEach(button => {
+            button.addEventListener('click', async event => {
+                event.preventDefault();
+                event.stopPropagation();
+
+                const code = button.dataset.copyCode;
+
+                try {
+                    await navigator.clipboard.writeText(code);
+                    button.textContent = 'đã copy';
+                    setTimeout(() => button.textContent = 'copy', 1200);
+                } catch (error) {
+                    const input = document.createElement('input');
+                    input.value = code;
+                    document.body.appendChild(input);
+                    input.select();
+                    document.execCommand('copy');
+                    input.remove();
+                    button.textContent = 'đã copy';
+                    setTimeout(() => button.textContent = 'copy', 1200);
+                }
+            });
+        });
+    </script>
 </body>
 </html>
 

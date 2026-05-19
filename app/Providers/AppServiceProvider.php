@@ -41,7 +41,7 @@ class AppServiceProvider extends ServiceProvider
             $today = now()->toDateString();
 
             $reminders = Order::query()
-                ->with('product')
+                ->with(['product', 'items.product'])
                 ->where(function ($query) use ($today) {
                     $query->where('status', 'len_don')
                         ->where('pickup_date', '<=', $today)

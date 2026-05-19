@@ -142,8 +142,12 @@
                         </div>
 
                         <div class="reminder-meta">
-                            <div>Mã hàng: <strong>{{ $order->product->code }}</strong> - {{ $order->product->name }} | Size: {{ $order->product->size }}</div>
-                            <div>Số lượng: <strong>{{ number_format($order->quantity) }}</strong> | Trạng thái hiện tại: {{ $order->statusLabel() }}</div>
+                            @forelse ($order->items as $item)
+                                <div>Mã hàng: <strong>{{ $item->product->code }}</strong> - {{ $item->product->name }} | Size: {{ $item->product->size }} | SL: {{ number_format($item->quantity) }}</div>
+                            @empty
+                                <div>Mã hàng: <strong>{{ $order->product->code }}</strong> - {{ $order->product->name }} | Size: {{ $order->product->size }}</div>
+                            @endforelse
+                            <div>Số lượng: <strong>{{ number_format($order->items->sum('quantity') ?: $order->quantity) }}</strong> | Trạng thái hiện tại: {{ $order->statusLabel() }}</div>
                             <div>{{ $reminder['message'] }}</div>
                         </div>
 

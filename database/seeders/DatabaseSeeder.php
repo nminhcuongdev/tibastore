@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -51,20 +50,29 @@ class DatabaseSeeder extends Seeder
         }
 
         $orders = [
-            ['order_name' => 'Đơn chụp lookbook nắng tháng 5', 'closer_name' => 'Linh', 'product_code' => 'VAY001', 'quantity' => 2, 'pickup_date' => '2026-05-18', 'event_date' => '2026-05-19', 'return_date' => '2026-05-20'],
-            ['order_name' => 'Đơn đi tiệc pastel', 'closer_name' => 'Mai', 'product_code' => 'DAM004', 'quantity' => 1, 'pickup_date' => '2026-05-19', 'event_date' => '2026-05-20', 'return_date' => '2026-05-21'],
-            ['order_name' => 'Đơn studio set blazer', 'closer_name' => 'Trang', 'product_code' => 'SET005', 'quantity' => 1, 'pickup_date' => '2026-05-21', 'event_date' => '2026-05-22', 'return_date' => '2026-05-23'],
-            ['order_name' => 'Đơn quay video áo cổ nơ', 'closer_name' => 'Linh', 'product_code' => 'AO002', 'quantity' => 3, 'pickup_date' => '2026-05-22', 'event_date' => '2026-05-23', 'return_date' => '2026-05-24'],
-            ['order_name' => 'Đơn maxi ngoại cảnh', 'closer_name' => 'Ha', 'product_code' => 'VAY008', 'quantity' => 1, 'pickup_date' => '2026-05-24', 'event_date' => '2026-05-25', 'return_date' => '2026-05-26'],
-            ['order_name' => 'Đơn ảnh sản phẩm cardigan', 'closer_name' => 'Nhi', 'product_code' => 'AO007', 'quantity' => 2, 'pickup_date' => '2026-05-25', 'event_date' => '2026-05-26', 'return_date' => '2026-05-27'],
-            ['order_name' => 'Đơn chân váy xếp ly', 'closer_name' => 'Mai', 'product_code' => 'CHAN003', 'quantity' => 2, 'pickup_date' => '2026-05-27', 'event_date' => '2026-05-28', 'return_date' => '2026-05-29'],
-            ['order_name' => 'Đơn fitting linen kem', 'closer_name' => 'An', 'product_code' => 'QUAN006', 'quantity' => 1, 'pickup_date' => '2026-05-28', 'event_date' => '2026-05-29', 'return_date' => '2026-05-30'],
-            ['order_name' => 'Đơn chụp hoa nhí', 'closer_name' => 'Trang', 'product_code' => 'DAM009', 'quantity' => 2, 'pickup_date' => '2026-06-01', 'event_date' => '2026-06-02', 'return_date' => '2026-06-03'],
-            ['order_name' => 'Đơn croptop ren studio', 'closer_name' => 'Ha', 'product_code' => 'AO010', 'quantity' => 4, 'pickup_date' => '2026-06-03', 'event_date' => '2026-06-04', 'return_date' => '2026-06-05'],
+            ['order_name' => 'Đơn chụp lookbook nắng tháng 5', 'closer_name' => 'Linh', 'product_code' => 'VAY001', 'product_size' => 'S-M', 'quantity' => 2, 'pickup_date' => '2026-05-18', 'event_date' => '2026-05-19', 'return_date' => '2026-05-20'],
+            ['order_name' => 'Đơn đi tiệc pastel', 'closer_name' => 'Mai', 'product_code' => 'DAM004', 'product_size' => 'L', 'quantity' => 1, 'pickup_date' => '2026-05-19', 'event_date' => '2026-05-20', 'return_date' => '2026-05-21'],
+            ['order_name' => 'Đơn studio set blazer', 'closer_name' => 'Trang', 'product_code' => 'SET005', 'product_size' => 'Free size', 'quantity' => 1, 'pickup_date' => '2026-05-21', 'event_date' => '2026-05-22', 'return_date' => '2026-05-23'],
+            ['order_name' => 'Đơn quay video áo cổ nơ', 'closer_name' => 'Linh', 'product_code' => 'AO002', 'product_size' => 'M', 'quantity' => 3, 'pickup_date' => '2026-05-22', 'event_date' => '2026-05-23', 'return_date' => '2026-05-24'],
+            ['order_name' => 'Đơn maxi ngoại cảnh', 'closer_name' => 'Hà', 'product_code' => 'VAY008', 'product_size' => 'M', 'quantity' => 1, 'pickup_date' => '2026-05-24', 'event_date' => '2026-05-25', 'return_date' => '2026-05-26'],
+            ['order_name' => 'Đơn ảnh sản phẩm cardigan', 'closer_name' => 'Nhi', 'product_code' => 'AO007', 'product_size' => 'Free size', 'quantity' => 2, 'pickup_date' => '2026-05-25', 'event_date' => '2026-05-26', 'return_date' => '2026-05-27'],
+            ['order_name' => 'Đơn chân váy xếp ly', 'closer_name' => 'Mai', 'product_code' => 'CHAN003', 'product_size' => 'M-L', 'quantity' => 2, 'pickup_date' => '2026-05-27', 'event_date' => '2026-05-28', 'return_date' => '2026-05-29'],
+            ['order_name' => 'Đơn fitting linen kem', 'closer_name' => 'An', 'product_code' => 'QUAN006', 'product_size' => 'S', 'quantity' => 1, 'pickup_date' => '2026-05-28', 'event_date' => '2026-05-29', 'return_date' => '2026-05-30'],
+            ['order_name' => 'Đơn chụp hoa nhí', 'closer_name' => 'Trang', 'product_code' => 'DAM009', 'product_size' => 'S', 'quantity' => 2, 'pickup_date' => '2026-06-01', 'event_date' => '2026-06-02', 'return_date' => '2026-06-03'],
+            ['order_name' => 'Đơn croptop ren studio', 'closer_name' => 'Hà', 'product_code' => 'AO010', 'product_size' => 'M', 'quantity' => 4, 'pickup_date' => '2026-06-03', 'event_date' => '2026-06-04', 'return_date' => '2026-06-05'],
         ];
 
+        $sampleProductIds = Product::whereIn('code', array_column($orders, 'product_code'))
+            ->pluck('id');
+
+        Order::whereIn('product_id', $sampleProductIds)
+            ->whereBetween('pickup_date', ['2026-05-18', '2026-06-03'])
+            ->delete();
+
         foreach ($orders as $order) {
-            $product = Product::where('code', $order['product_code'])->first();
+            $product = Product::where('code', $order['product_code'])
+                ->where('size', $order['product_size'])
+                ->first();
 
             if (! $product) {
                 continue;
@@ -72,25 +80,24 @@ class DatabaseSeeder extends Seeder
 
             Order::updateOrCreate(
                 [
-                    'order_name' => $order['order_name'],
                     'product_id' => $product->id,
+                    'closer_name' => $order['closer_name'],
+                    'pickup_date' => $order['pickup_date'],
+                    'event_date' => $order['event_date'],
+                    'return_date' => $order['return_date'],
                 ],
                 [
+                    'order_name' => $order['order_name'],
                     'closer_name' => $order['closer_name'],
                     'pickup_date' => $order['pickup_date'],
                     'event_date' => $order['event_date'],
                     'return_date' => $order['return_date'],
                     'quantity' => $order['quantity'],
                     'status' => 'len_don',
+                    'pickup_reminder_dismissed' => false,
+                    'return_reminder_dismissed' => false,
                 ]
             );
         }
-
-        // \App\Models\User::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
     }
 }
-
-

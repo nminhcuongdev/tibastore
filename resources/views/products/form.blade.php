@@ -87,6 +87,21 @@
             grid-column: 1 / -1;
         }
 
+        .size-rows {
+            display: grid;
+            gap: 12px;
+        }
+
+        .size-row {
+            background: #fffafb;
+            border: 1px solid #f2d3dc;
+            border-radius: 8px;
+            display: grid;
+            gap: 12px;
+            grid-template-columns: minmax(0, 1fr) 150px auto;
+            padding: 14px;
+        }
+
         label {
             color: #7a344c;
             font-size: 13px;
@@ -163,9 +178,16 @@
             color: #8b2f4d;
         }
 
+        .button.danger {
+            background: #fff;
+            border: 1px solid #f0b7c1;
+            color: #b4233f;
+        }
+
         @media (max-width: 760px) {
             .form-shell,
-            .fields {
+            .fields,
+            .size-row {
                 grid-template-columns: 1fr;
             }
 
@@ -197,6 +219,9 @@
             @if ($mode === 'edit')
                 @method('PUT')
             @endif
+            @if ($mode === 'create' && ! empty($sourceProductId))
+                <input type="hidden" name="source_product_id" value="{{ $sourceProductId }}">
+            @endif
 
             <div class="fields">
                 <div class="field">
@@ -212,21 +237,9 @@
                 </div>
 
                 <div class="field">
-                    <label for="stock_quantity">Số lượng tồn</label>
-                    <input id="stock_quantity" name="stock_quantity" type="number" min="0" step="1" value="{{ old('stock_quantity', $product->stock_quantity ?? 0) }}" required>
-                    @error('stock_quantity') <div class="error">{{ $message }}</div> @enderror
-                </div>
-
-                <div class="field">
                     <label for="fabric">Vải</label>
                     <input id="fabric" name="fabric" type="text" value="{{ old('fabric', $product->fabric) }}" placeholder="Lụa, cotton, tweed..." required>
                     @error('fabric') <div class="error">{{ $message }}</div> @enderror
-                </div>
-
-                <div class="field">
-                    <label for="size">Size</label>
-                    <input id="size" name="size" type="text" value="{{ old('size', $product->size) }}" placeholder="S, M, L, XL, Free size..." required>
-                    @error('size') <div class="error">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="field">
@@ -234,6 +247,50 @@
                     <input id="import_price" name="import_price" type="number" min="0" step="1000" value="{{ old('import_price', $product->import_price ?? 0) }}" required>
                     @error('import_price') <div class="error">{{ $message }}</div> @enderror
                 </div>
+
+                @if ($mode === 'create')
+                    @php
+                        $variantRows = old('variants', [['size' => '', 'stock_quantity' => 0]]);
+                    @endphp
+
+                    <div class="field full">
+                        <label>Size và số lượng</label>
+                        <div id="size_rows" class="size-rows">
+                            @foreach ($variantRows as $index => $variant)
+                                <div class="size-row">
+                                    <div class="field">
+                                        <label for="variants_{{ $index }}_size">Size</label>
+                                        <input id="variants_{{ $index }}_size" data-size name="variants[{{ $index }}][size]" type="text" value="{{ $variant['size'] ?? '' }}" placeholder="S, M, L, XL, Free size..." required>
+                                    </div>
+                                    <div class="field">
+                                        <label for="variants_{{ $index }}_stock_quantity">Số lượng</label>
+                                        <input id="variants_{{ $index }}_stock_quantity" data-stock name="variants[{{ $index }}][stock_quantity]" type="number" min="0" step="1" value="{{ $variant['stock_quantity'] ?? 0 }}" placeholder="0">
+                                    </div>
+                                    <div class="field">
+                                        <label>&nbsp;</label>
+                                        <button class="button danger" data-remove-size type="button">Xóa</button>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                        <button id="add_size_button" class="button secondary" type="button">Thêm size</button>
+                        @error('variants') <div class="error">{{ $message }}</div> @enderror
+                        @error('variants.*.size') <div class="error">{{ $message }}</div> @enderror
+                        @error('variants.*.stock_quantity') <div class="error">{{ $message }}</div> @enderror
+                    </div>
+                @else
+                    <div class="field">
+                        <label for="stock_quantity">Số lượng tồn</label>
+                        <input id="stock_quantity" name="stock_quantity" type="number" min="0" step="1" value="{{ old('stock_quantity', $product->stock_quantity ?? 0) }}" placeholder="0">
+                        @error('stock_quantity') <div class="error">{{ $message }}</div> @enderror
+                    </div>
+
+                    <div class="field">
+                        <label for="size">Size</label>
+                        <input id="size" name="size" type="text" value="{{ old('size', $product->size) }}" placeholder="S, M, L, XL, Free size..." required>
+                        @error('size') <div class="error">{{ $message }}</div> @enderror
+                    </div>
+                @endif
 
                 <div class="field">
                     <label for="image">Hình ảnh</label>
@@ -256,6 +313,62 @@
             </div>
         </form>
     </main>
+    @if ($mode === 'create')
+        <script>
+            const sizeRows = document.getElementById('size_rows');
+            const addSizeButton = document.getElementById('add_size_button');
+
+            function renumberSizeRows() {
+                sizeRows.querySelectorAll('.size-row').forEach((row, index) => {
+                    const sizeInput = row.querySelector('[data-size]');
+                    const stockInput = row.querySelector('[data-stock]');
+
+                    sizeInput.name = `variants[${index}][size]`;
+                    sizeInput.id = `variants_${index}_size`;
+                    stockInput.name = `variants[${index}][stock_quantity]`;
+                    stockInput.id = `variants_${index}_stock_quantity`;
+                });
+            }
+
+            function bindRemoveSizeButton(row) {
+                row.querySelector('[data-remove-size]').addEventListener('click', () => {
+                    if (sizeRows.querySelectorAll('.size-row').length === 1) {
+                        return;
+                    }
+
+                    row.remove();
+                    renumberSizeRows();
+                });
+            }
+
+            sizeRows.querySelectorAll('.size-row').forEach(bindRemoveSizeButton);
+
+            addSizeButton.addEventListener('click', () => {
+                const index = sizeRows.querySelectorAll('.size-row').length;
+                const row = document.createElement('div');
+
+                row.className = 'size-row';
+                row.innerHTML = `
+                    <div class="field">
+                        <label for="variants_${index}_size">Size</label>
+                        <input id="variants_${index}_size" data-size name="variants[${index}][size]" type="text" placeholder="S, M, L, XL, Free size..." required>
+                    </div>
+                    <div class="field">
+                        <label for="variants_${index}_stock_quantity">Số lượng</label>
+                        <input id="variants_${index}_stock_quantity" data-stock name="variants[${index}][stock_quantity]" type="number" min="0" step="1" placeholder="0">
+                    </div>
+                    <div class="field">
+                        <label>&nbsp;</label>
+                        <button class="button danger" data-remove-size type="button">Xóa</button>
+                    </div>
+                `;
+
+                bindRemoveSizeButton(row);
+                sizeRows.appendChild(row);
+                row.querySelector('[data-size]').focus();
+            });
+        </script>
+    @endif
 </body>
 </html>
 

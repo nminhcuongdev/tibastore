@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Chi tiết sản phẩm</title>
+    <title>Chi tiết mã hàng {{ $product->code }}</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -51,7 +51,7 @@
         }
         .hero {
             background:
-                linear-gradient(115deg, rgba(255, 255, 255, .94), rgba(255, 235, 242, .78)),
+                linear-gradient(115deg, rgba(255, 255, 255, .92), rgba(255, 235, 242, .78)),
                 url("https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1600&q=80");
             background-position: center;
             background-size: cover;
@@ -76,19 +76,17 @@
         .summary {
             display: grid;
             gap: 14px;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             margin-bottom: 20px;
         }
         .metric,
-        .panel {
+        .table-shell {
             background: #fff;
             border: 1px solid #f0d3dc;
             border-radius: 8px;
             box-shadow: 0 18px 45px rgba(117, 44, 69, .08);
         }
-        .metric {
-            padding: 18px;
-        }
+        .metric { padding: 18px; }
         .metric-label {
             color: #8b6672;
             font-size: 13px;
@@ -101,112 +99,14 @@
             font-size: 24px;
             font-weight: 900;
         }
-        .panel {
-            margin-bottom: 22px;
-            overflow: hidden;
-        }
-        .panel-head {
-            align-items: center;
-            background: #fff0f4;
-            border-bottom: 1px solid #f7d7e1;
-            display: flex;
-            justify-content: space-between;
-            gap: 16px;
-            padding: 16px 18px;
-        }
-        .panel-head h2 {
-            color: #6f253f;
-            font-family: Georgia, "Times New Roman", serif;
-            font-size: 24px;
-            margin: 0;
-        }
-        .panel-head p {
-            color: #8b6672;
-            line-height: 1.5;
-            margin: 4px 0 0;
-        }
-        .chart-wrap {
-            overflow-x: auto;
-            padding: 18px;
-        }
-        .chart {
-            min-width: 860px;
-        }
-        .axis-label {
-            fill: #8b6672;
-            font-size: 12px;
-        }
-        .axis-value {
-            fill: #542033;
-            font-size: 13px;
-            font-weight: 800;
-        }
-        .grid-line {
-            stroke: #f7d7e1;
-            stroke-width: 1;
-        }
-        .line {
-            fill: none;
-            stroke: #be476f;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            stroke-width: 4;
-        }
-        .area {
-            fill: rgba(190, 71, 111, .1);
-        }
-        .dot {
-            fill: #be476f;
-            stroke: #fff;
-            stroke-width: 3;
-        }
-        .point-label-bg {
-            fill: #fff;
-            stroke: #f0c7d3;
-            stroke-width: 1;
-        }
-        .point-label {
-            fill: #6f253f;
-            font-size: 13px;
-            font-weight: 900;
-            text-anchor: middle;
-        }
-        .zero-line {
-            stroke: #f0d3dc;
-            stroke-dasharray: 5 5;
-            stroke-width: 2;
-        }
-        .timeline {
-            display: grid;
-            gap: 10px;
-            padding: 0 18px 18px;
-        }
-        .event {
-            align-items: center;
-            border: 1px solid #f5d9e2;
-            border-radius: 8px;
-            display: grid;
-            gap: 10px;
-            grid-template-columns: 110px 1fr 110px 120px;
-            padding: 12px 14px;
-        }
-        .event-change {
-            font-weight: 900;
-            text-align: right;
-        }
-        .event-change.positive { color: #247857; }
-        .event-change.negative { color: #b4233f; }
-        .event-stock {
-            color: #542033;
-            font-weight: 900;
-            text-align: right;
-        }
+        .table-shell { overflow-x: auto; }
         table {
             border-collapse: collapse;
-            min-width: 1040px;
+            min-width: 980px;
             width: 100%;
         }
-        th, td {
+        th,
+        td {
             border-bottom: 1px solid #f7e3e9;
             padding: 15px;
             text-align: left;
@@ -219,7 +119,32 @@
             letter-spacing: .02em;
             text-transform: uppercase;
         }
-        .table-shell { overflow-x: auto; }
+        th a {
+            align-items: center;
+            display: inline-flex;
+            gap: 6px;
+        }
+        tbody tr.clickable { cursor: pointer; }
+        tbody tr.clickable:hover { background: #fff9fb; }
+        .thumb {
+            align-items: center;
+            background: #f9e5ec;
+            border: 1px solid #f1cbd7;
+            border-radius: 8px;
+            color: #a64465;
+            display: flex;
+            font-size: 12px;
+            font-weight: 800;
+            height: 70px;
+            justify-content: center;
+            overflow: hidden;
+            width: 70px;
+        }
+        .thumb img {
+            height: 100%;
+            object-fit: cover;
+            width: 100%;
+        }
         .code {
             color: #a13b60;
             font-weight: 900;
@@ -232,19 +157,38 @@
             color: #8b6672;
             font-size: 13px;
         }
-        .status-badge {
-            border-radius: 999px;
-            display: inline-flex;
-            font-size: 13px;
-            font-weight: 900;
-            padding: 7px 11px;
+        .row-actions {
+            display: flex;
+            gap: 8px;
         }
-        .status-len_don { background: #fff4f7; color: #9d345a; }
-        .status-da_gui { background: #fff7d6; color: #8a5a00; }
-        .status-thanh_cong { background: #e8f7ef; color: #247857; }
+        .page-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+            margin: 0 0 18px;
+        }
+        .link-action,
+        .danger {
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 800;
+            padding: 8px 10px;
+        }
+        .link-action {
+            background: #fff4f7;
+            border: 1px solid #f1cbd7;
+            color: #8b2f4d;
+        }
+        .danger {
+            background: #fff;
+            border: 1px solid #f0b7c1;
+            color: #b4233f;
+        }
         .empty {
             color: #8b6672;
-            padding: 34px;
+            padding: 36px;
             text-align: center;
         }
         .pagination {
@@ -253,7 +197,7 @@
             flex-wrap: wrap;
             gap: 8px;
             justify-content: space-between;
-            padding: 16px 18px;
+            margin-top: 18px;
         }
         .pages {
             display: flex;
@@ -278,12 +222,13 @@
             background: #be476f;
             color: #fff;
         }
-        @media (max-width: 900px) {
-            .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-            .topbar { align-items: stretch; flex-direction: column; }
+        @media (max-width: 760px) {
+            .topbar {
+                align-items: stretch;
+                flex-direction: column;
+            }
+            .summary { grid-template-columns: 1fr; }
             .nav a, .logout { justify-content: center; width: 100%; }
-            .event { grid-template-columns: 1fr; }
-            .event-change, .event-stock { text-align: left; }
         }
     </style>
 </head>
@@ -303,186 +248,143 @@
 
     <section class="hero">
         <h1>{{ $product->code }} - {{ $product->name }}</h1>
-        <p>Xem các đơn hàng liên quan và biến động tồn kho dự kiến theo thời gian cho từng lần lên đơn, gửi hàng và hoàn tất.</p>
+        <p>Danh sách các size của cùng mã hàng. Bấm vào từng dòng để xem theo dõi tồn kho và đơn hàng của size đó.</p>
     </section>
 
     <main class="content">
         <div class="summary">
             <div class="metric">
-                <div class="metric-label">Tồn hiện tại</div>
-                <div class="metric-value">{{ number_format($product->stock_quantity) }}</div>
+                <div class="metric-label">Tổng tồn</div>
+                <div class="metric-value">{{ number_format($totalQuantity) }}</div>
             </div>
             <div class="metric">
-                <div class="metric-label">Size</div>
-                <div class="metric-value">{{ $product->size }}</div>
+                <div class="metric-label">Số size</div>
+                <div class="metric-value">{{ number_format($variants->total()) }}</div>
             </div>
             <div class="metric">
-                <div class="metric-label">Vải</div>
-                <div class="metric-value">{{ $product->fabric }}</div>
-            </div>
-            <div class="metric">
-                <div class="metric-label">Tổng đơn</div>
-                <div class="metric-value">{{ number_format($product->orders()->count()) }}</div>
+                <div class="metric-label">Mã hàng</div>
+                <div class="metric-value">{{ $product->code }}</div>
             </div>
         </div>
 
-        <section class="panel">
-            <div class="panel-head">
-                <div>
-                    <h2>Biểu đồ biến động dự kiến</h2>
-                    <p>Mốc “Lên đơn” dùng ngày tạo đơn, “Đã gửi” dùng ngày lấy để trừ kho, “Thành công” dùng ngày trả để hoàn kho.</p>
-                </div>
-            </div>
+        <div class="page-actions">
+            <a class="link-action" href="{{ route('products.create', ['copy_from' => $product->id]) }}">Thêm size</a>
+            <form method="POST" action="{{ route('products.destroy', $product) }}" onsubmit="return confirm('Xóa mã hàng này và toàn bộ size khỏi kho?')">
+                @csrf
+                @method('DELETE')
+                <input type="hidden" name="delete_scope" value="code">
+                <button class="danger" type="submit">Xóa mã hàng</button>
+            </form>
+        </div>
 
-            @if (count($timeline) > 0)
-                @php
-                    $width = 860;
-                    $height = 260;
-                    $left = 54;
-                    $right = 28;
-                    $top = 28;
-                    $bottom = 64;
-                    $plotWidth = $width - $left - $right;
-                    $plotHeight = $height - $top - $bottom;
-                    $values = collect($timeline)->pluck('estimated_quantity');
-                    $minValue = min(0, $values->min());
-                    $maxValue = max($product->stock_quantity, $values->max(), 1);
-                    $range = max(1, $maxValue - $minValue);
-                    $count = max(1, count($timeline) - 1);
-                    $polyline = collect($timeline)->map(function ($point, $index) use ($left, $top, $plotWidth, $plotHeight, $minValue, $range, $count) {
-                        $x = $left + ($plotWidth * $index / $count);
-                        $y = $top + ($plotHeight - (($point['estimated_quantity'] - $minValue) / $range * $plotHeight));
-                        return round($x, 2) . ',' . round($y, 2);
-                    })->implode(' ');
-                    $areaPoints = $left . ',' . ($height - $bottom) . ' ' . $polyline . ' ' . ($width - $right) . ',' . ($height - $bottom);
-                    $zeroY = $top + ($plotHeight - ((0 - $minValue) / $range * $plotHeight));
-                    $middleValue = (int) round(($minValue + $maxValue) / 2);
-                    $middleY = $top + ($plotHeight - (($middleValue - $minValue) / $range * $plotHeight));
-                @endphp
-
-                <div class="chart-wrap">
-                    <svg class="chart" width="{{ $width }}" height="{{ $height }}" viewBox="0 0 {{ $width }} {{ $height }}" role="img" aria-label="Biểu đồ biến động tồn kho dự kiến">
-                        <line class="grid-line" x1="{{ $left }}" y1="{{ $top }}" x2="{{ $width - $right }}" y2="{{ $top }}"></line>
-                        <line class="grid-line" x1="{{ $left }}" y1="{{ $middleY }}" x2="{{ $width - $right }}" y2="{{ $middleY }}"></line>
-                        <line class="grid-line" x1="{{ $left }}" y1="{{ $height - $bottom }}" x2="{{ $width - $right }}" y2="{{ $height - $bottom }}"></line>
-                        <line class="zero-line" x1="{{ $left }}" y1="{{ $zeroY }}" x2="{{ $width - $right }}" y2="{{ $zeroY }}"></line>
-                        <text class="axis-value" x="8" y="{{ $top + 4 }}">{{ $maxValue }}</text>
-                        <text class="axis-value" x="8" y="{{ $middleY + 4 }}">{{ $middleValue }}</text>
-                        <text class="axis-value" x="8" y="{{ $height - $bottom + 4 }}">{{ $minValue }}</text>
-                        <polygon class="area" points="{{ $areaPoints }}"></polygon>
-                        <polyline class="line" points="{{ $polyline }}"></polyline>
-
-                        @foreach ($timeline as $index => $point)
-                            @php
-                                $x = $left + ($plotWidth * $index / $count);
-                                $y = $top + ($plotHeight - (($point['estimated_quantity'] - $minValue) / $range * $plotHeight));
-                                $labelY = max(18, $y - 16);
-                            @endphp
-                            <circle class="dot" cx="{{ $x }}" cy="{{ $y }}" r="6">
-                                <title>{{ $point['display_date'] }} - {{ $point['label'] }}: tồn ước tính {{ $point['estimated_quantity'] }}</title>
-                            </circle>
-                            <rect class="point-label-bg" x="{{ $x - 19 }}" y="{{ $labelY - 16 }}" width="38" height="22" rx="8"></rect>
-                            <text class="point-label" x="{{ $x }}" y="{{ $labelY }}">{{ $point['estimated_quantity'] }}</text>
-                            <text class="axis-label" x="{{ $x - 34 }}" y="{{ $height - 34 }}">{{ $point['display_date'] }}</text>
-                            <text class="axis-label" x="{{ $x - 26 }}" y="{{ $height - 16 }}">{{ $point['label'] }}</text>
-                        @endforeach
-                    </svg>
-                </div>
-
-                <div class="timeline">
-                    @foreach ($timeline as $point)
-                        <div class="event">
-                            <div class="code">{{ $point['display_date'] }}</div>
-                            <div>
-                                <div class="name">{{ $point['label'] }} - {{ $point['order_name'] }}</div>
-                                <div class="muted">Trạng thái hiện tại: {{ $point['status'] }}</div>
-                            </div>
-                            <div class="event-change {{ $point['quantity_change'] >= 0 ? 'positive' : 'negative' }}">
-                                {{ $point['quantity_change'] > 0 ? '+' : '' }}{{ number_format($point['quantity_change']) }}
-                            </div>
-                            <div class="event-stock">Ước tính: {{ number_format($point['estimated_quantity']) }}</div>
-                        </div>
-                    @endforeach
-                </div>
-            @else
-                <div class="empty">Sản phẩm này chưa có đơn hàng để lập biểu đồ.</div>
-            @endif
-        </section>
-
-        <section class="panel">
-            <div class="panel-head">
-                <div>
-                    <h2>Đơn hàng liên quan</h2>
-                    <p>Một sản phẩm có thể xuất hiện trong nhiều đơn hàng khác nhau.</p>
-                </div>
-            </div>
-            <div class="table-shell">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Người chốt</th>
-                            <th>Ngày lấy</th>
-                            <th>Ngày diễn</th>
-                            <th>Ngày trả</th>
-                            <th>Tên đơn</th>
-                            <th>Số lượng</th>
-                            <th>Trạng thái</th>
-                            <th>Thao tác</th>
+        <div class="table-shell">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Hình ảnh</th>
+                        <th>Mã sản phẩm</th>
+                        <th>Tên sản phẩm</th>
+                        <th>
+                            <a href="{{ route('products.show', array_merge(['product' => $product], request()->except('page'), ['sort' => 'quantity', 'direction' => $sort === 'quantity' && $direction === 'asc' ? 'desc' : 'asc'])) }}">
+                                Số lượng {{ $sort === 'quantity' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}
+                            </a>
+                        </th>
+                        <th>Vải</th>
+                        <th>
+                            <a href="{{ route('products.show', array_merge(['product' => $product], request()->except('page'), ['sort' => 'size', 'direction' => $sort === 'size' && $direction === 'asc' ? 'desc' : 'asc'])) }}">
+                                Size {{ $sort === 'size' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="{{ route('products.show', array_merge(['product' => $product], request()->except('page'), ['sort' => 'price', 'direction' => $sort === 'price' && $direction === 'asc' ? 'desc' : 'asc'])) }}">
+                                Giá nhập {{ $sort === 'price' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}
+                            </a>
+                        </th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($variants as $variant)
+                        <tr class="clickable" data-href="{{ route('products.track', $variant) }}">
+                            <td>
+                                <div class="thumb">
+                                    @if ($variant->image_path)
+                                        <img src="{{ asset('storage/' . $variant->image_path) }}" alt="{{ $variant->name }}">
+                                    @else
+                                        CHƯA CÓ ẢNH
+                                    @endif
+                                </div>
+                            </td>
+                            <td class="code">{{ $variant->code }}</td>
+                            <td>
+                                <div class="name">{{ $variant->name }}</div>
+                                <div class="muted">Cập nhật: {{ $variant->updated_at?->format('d/m/Y') }}</div>
+                            </td>
+                            <td>{{ number_format($variant->stock_quantity) }}</td>
+                            <td>{{ $variant->fabric }}</td>
+                            <td>{{ $variant->size }}</td>
+                            <td>{{ number_format((float) $variant->import_price, 0, ',', '.') }} VND</td>
+                            <td>
+                                <div class="row-actions">
+                                    <a class="link-action" href="{{ route('products.track', $variant) }}">Theo dõi</a>
+                                    <a class="link-action" href="{{ route('products.edit', $variant) }}">Sửa</a>
+                                    <form method="POST" action="{{ route('products.destroy', $variant) }}" onsubmit="return confirm('Xóa sản phẩm này khỏi kho?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="danger" type="submit">Xóa</button>
+                                    </form>
+                                </div>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($orders as $order)
-                            <tr>
-                                <td class="name">{{ $order->closer_name }}</td>
-                                <td>{{ $order->pickup_date?->format('d/m/Y') }}</td>
-                                <td>{{ $order->event_date?->format('d/m/Y') }}</td>
-                                <td>{{ $order->return_date?->format('d/m/Y') }}</td>
-                                <td>{{ $order->order_name }}</td>
-                                <td>{{ number_format($order->quantity) }}</td>
-                                <td>
-                                    <span class="status-badge status-{{ $order->status }}">{{ $order->statusLabel() }}</span>
-                                </td>
-                                <td><a class="page-link" href="{{ route('orders.edit', $order) }}">Sửa</a></td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td class="empty" colspan="8">Chưa có đơn hàng liên quan.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+                    @empty
+                        <tr>
+                            <td class="empty" colspan="8">Chưa có sản phẩm phù hợp.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
 
-            @if ($orders->hasPages())
-                <nav class="pagination" aria-label="Phân trang">
-                    <div class="muted">
-                        Hiển thị {{ $orders->firstItem() }}-{{ $orders->lastItem() }} trong {{ $orders->total() }} đơn hàng
-                    </div>
-                    <div class="pages">
-                        @if ($orders->onFirstPage())
-                            <span class="page-link">Trước</span>
+        @if ($variants->hasPages())
+            <nav class="pagination" aria-label="Phân trang">
+                <div class="muted">
+                    Hiển thị {{ $variants->firstItem() }}-{{ $variants->lastItem() }} trong {{ $variants->total() }} sản phẩm
+                </div>
+                <div class="pages">
+                    @if ($variants->onFirstPage())
+                        <span class="page-link">Trước</span>
+                    @else
+                        <a class="page-link" href="{{ $variants->previousPageUrl() }}">Trước</a>
+                    @endif
+
+                    @for ($page = 1; $page <= $variants->lastPage(); $page++)
+                        @if ($page === $variants->currentPage())
+                            <span class="page-current">{{ $page }}</span>
                         @else
-                            <a class="page-link" href="{{ $orders->previousPageUrl() }}">Trước</a>
+                            <a class="page-link" href="{{ $variants->url($page) }}">{{ $page }}</a>
                         @endif
+                    @endfor
 
-                        @for ($page = 1; $page <= $orders->lastPage(); $page++)
-                            @if ($page === $orders->currentPage())
-                                <span class="page-current">{{ $page }}</span>
-                            @else
-                                <a class="page-link" href="{{ $orders->url($page) }}">{{ $page }}</a>
-                            @endif
-                        @endfor
-
-                        @if ($orders->hasMorePages())
-                            <a class="page-link" href="{{ $orders->nextPageUrl() }}">Sau</a>
-                        @else
-                            <span class="page-link">Sau</span>
-                        @endif
-                    </div>
-                </nav>
-            @endif
-        </section>
+                    @if ($variants->hasMorePages())
+                        <a class="page-link" href="{{ $variants->nextPageUrl() }}">Sau</a>
+                    @else
+                        <span class="page-link">Sau</span>
+                    @endif
+                </div>
+            </nav>
+        @endif
     </main>
     @include('orders.reminders-popup')
+    <script>
+        document.querySelectorAll('tr[data-href]').forEach(row => {
+            row.addEventListener('click', event => {
+                if (event.target.closest('a, button, form')) {
+                    return;
+                }
+
+                window.location.href = row.dataset.href;
+            });
+        });
+    </script>
 </body>
 </html>

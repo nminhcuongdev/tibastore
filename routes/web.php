@@ -32,6 +32,7 @@ Route::middleware('auth')->group(function () {
         return redirect()->route('products.index');
     })->name('dashboard');
 
+    Route::get('/products/{product}/track', [ProductController::class, 'track'])->name('products.track');
     Route::resource('products', ProductController::class);
     Route::resource('orders', OrderController::class)->except(['show']);
     Route::post('/order-reminders/{order}/confirm', [OrderReminderController::class, 'confirm'])
