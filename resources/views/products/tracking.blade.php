@@ -427,7 +427,7 @@
             </div>
             <div class="metric">
                 <div class="metric-label">Tổng đơn</div>
-                <div class="metric-value">{{ number_format($product->orders()->count()) }}</div>
+                <div class="metric-value">{{ number_format($product->orderItems()->count()) }}</div>
             </div>
         </div>
 
@@ -621,7 +621,7 @@
                                 <td>{{ $order->event_date?->format('d/m/Y') }}</td>
                                 <td>{{ $order->return_date?->format('d/m/Y') }}</td>
                                 <td>{{ $order->order_name }}</td>
-                                <td>{{ number_format($order->quantity) }}</td>
+                                <td>{{ number_format($order->tracked_quantity ?? $order->quantity) }}</td>
                                 <td>
                                     <span class="status-badge status-{{ $order->status }}">{{ $order->statusLabel() }}</span>
                                 </td>

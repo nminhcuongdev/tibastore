@@ -3,19 +3,24 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
-use App\Models\OrderItem;
 use App\Models\Product;
+use App\Services\OrderInventoryService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class OrderController extends Controller
 {
+    public function __construct(private OrderInventoryService $inventory)
+    {
+    }
+
     public function index(Request $request): View
     {
+        $this->inventory->syncDueOrders();
+
         $sortMap = [
             'closer' => 'orders.closer_name',
             'pickup_date' => 'orders.pickup_date',
@@ -68,8 +73,55 @@ class OrderController extends Controller
         ]);
     }
 
+    public function availability(Request $request): JsonResponse
+    {
+        $this->inventory->syncDueOrders();
+
+        $data = $request->validate([
+            'pickup_date' => ['nullable', 'date'],
+            'event_date' => ['nullable', 'date'],
+            'return_date' => ['nullable', 'date'],
+            'product_ids' => ['nullable', 'array'],
+            'product_ids.*' => ['integer', 'exists:products,id'],
+            'exclude_order_id' => ['nullable', 'integer', 'exists:orders,id'],
+        ]);
+
+        $productIds = collect($data['product_ids'] ?? [])
+            ->map(fn ($productId) => (int) $productId)
+            ->unique()
+            ->values();
+
+        if ($productIds->isEmpty()) {
+            $productIds = Product::query()
+                ->pluck('id')
+                ->map(fn ($productId) => (int) $productId)
+                ->values();
+        }
+
+        if (empty($data['pickup_date']) || empty($data['return_date'])) {
+            $availability = Product::query()
+                ->whereIn('id', $productIds->all())
+                ->pluck('stock_quantity', 'id')
+                ->map(fn ($quantity) => (int) $quantity)
+                ->all();
+
+            return response()->json(['availability' => $availability]);
+        }
+
+        $availability = $this->inventory->projectedAvailableQuantities(
+            $productIds->all(),
+            $data['pickup_date'],
+            $data['return_date'],
+            isset($data['exclude_order_id']) ? (int) $data['exclude_order_id'] : null
+        );
+
+        return response()->json(['availability' => $availability]);
+    }
+
     public function create(): View
     {
+        $this->inventory->syncDueOrders();
+
         $products = Product::orderBy('code')->orderBy('size')->get();
 
         return view('orders.form', [
@@ -84,17 +136,18 @@ class OrderController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $this->inventory->syncDueOrders();
+
         $data = $this->validatedData($request);
         $items = $data['items'];
         $orderData = $this->orderData($data, $items);
 
-        $order = DB::transaction(function () use ($data, $items, $orderData) {
-            if ($data['status'] === 'da_gui') {
-                $this->decreaseStocks($items);
-            }
-
+        $order = DB::transaction(function () use ($items, $orderData) {
             $order = Order::create($orderData);
             $order->items()->createMany($items);
+            $order->load('items');
+
+            $this->inventory->applyDueAdjustment($order);
 
             return $order;
         });
@@ -106,7 +159,9 @@ class OrderController extends Controller
 
     public function show(Order $order): View
     {
-        $order->load(['product', 'items.product']);
+        $this->inventory->syncDueOrders();
+
+        $order->refresh()->load(['product', 'items.product']);
 
         return view('orders.show', [
             'order' => $order,
@@ -115,8 +170,10 @@ class OrderController extends Controller
 
     public function edit(Order $order): View
     {
+        $this->inventory->syncDueOrders();
+
         $products = Product::orderBy('code')->orderBy('size')->get();
-        $order->load('items.product');
+        $order->refresh()->load('items.product');
 
         return view('orders.form', [
             'order' => $order,
@@ -130,31 +187,26 @@ class OrderController extends Controller
 
     public function update(Request $request, Order $order): RedirectResponse
     {
-        $data = $this->validatedData($request);
+        $this->inventory->syncDueOrders();
+
+        $data = $this->validatedData($request, $order);
         $items = $data['items'];
         $orderData = $this->orderData($data, $items);
 
-        DB::transaction(function () use ($data, $items, $orderData, $order) {
-            $lockedOrder = Order::whereKey($order->id)->with('items')->lockForUpdate()->firstOrFail();
-            $oldStatus = $lockedOrder->status;
-            $newStatus = $data['status'];
-            $oldItems = $this->itemsForStock($lockedOrder);
+        DB::transaction(function () use ($items, $orderData, $order) {
+            $lockedOrder = Order::whereKey($order->id)
+                ->with('items')
+                ->lockForUpdate()
+                ->firstOrFail();
 
-            if ($oldStatus !== 'da_gui' && $newStatus === 'da_gui') {
-                $this->decreaseStocks($items);
-            }
-
-            if ($oldStatus === 'da_gui' && $newStatus === 'da_gui') {
-                $this->syncSentOrderStocks($oldItems, $items);
-            }
-
-            if ($oldStatus === 'da_gui' && $newStatus !== 'da_gui') {
-                $this->increaseStocks($oldItems);
-            }
+            $this->inventory->resetAdjustment($lockedOrder);
 
             $lockedOrder->update($orderData);
             $lockedOrder->items()->delete();
             $lockedOrder->items()->createMany($items);
+            $lockedOrder->load('items');
+
+            $this->inventory->applyDueAdjustment($lockedOrder);
         });
 
         return redirect()
@@ -164,13 +216,15 @@ class OrderController extends Controller
 
     public function destroy(Order $order): RedirectResponse
     {
+        $this->inventory->syncDueOrders();
+
         DB::transaction(function () use ($order) {
-            $lockedOrder = Order::whereKey($order->id)->with('items')->lockForUpdate()->firstOrFail();
+            $lockedOrder = Order::whereKey($order->id)
+                ->with('items')
+                ->lockForUpdate()
+                ->firstOrFail();
 
-            if ($lockedOrder->status === 'da_gui') {
-                $this->increaseStocks($this->itemsForStock($lockedOrder));
-            }
-
+            $this->inventory->resetAdjustment($lockedOrder);
             $lockedOrder->delete();
         });
 
@@ -179,9 +233,9 @@ class OrderController extends Controller
             ->with('status', 'Đã xóa đơn hàng.');
     }
 
-    private function validatedData(Request $request): array
+    private function validatedData(Request $request, ?Order $order = null): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'closer_name' => ['required', 'string', 'max:255'],
             'pickup_date' => ['required', 'date'],
             'event_date' => ['required', 'date', 'after_or_equal:pickup_date'],
@@ -190,7 +244,6 @@ class OrderController extends Controller
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'distinct', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
-            'status' => ['required', Rule::in(array_keys(Order::statuses()))],
         ], [
             'closer_name.required' => 'Vui lòng nhập người chốt.',
             'pickup_date.required' => 'Vui lòng nhập ngày lấy.',
@@ -207,9 +260,16 @@ class OrderController extends Controller
             'items.*.quantity.required' => 'Vui lòng nhập số lượng.',
             'items.*.quantity.integer' => 'Số lượng phải là số nguyên.',
             'items.*.quantity.min' => 'Số lượng phải lớn hơn 0.',
-            'status.required' => 'Vui lòng chọn trạng thái.',
-            'status.in' => 'Trạng thái không hợp lệ.',
         ]);
+
+        $this->inventory->assertItemsAvailable(
+            $data['items'],
+            $data['pickup_date'],
+            $data['return_date'],
+            $order?->id
+        );
+
+        return $data;
     }
 
     private function orderData(array $data, array $items): array
@@ -224,88 +284,7 @@ class OrderController extends Controller
             'order_name' => $data['order_name'],
             'product_id' => $firstItem['product_id'],
             'quantity' => $firstItem['quantity'],
-            'status' => $data['status'],
         ];
-    }
-
-    private function decreaseStock(int $productId, int $quantity): void
-    {
-        $product = Product::whereKey($productId)->lockForUpdate()->firstOrFail();
-
-        if ($product->stock_quantity < $quantity) {
-            throw ValidationException::withMessages([
-                'items' => 'Số lượng đơn hàng vượt quá tồn kho hiện tại.',
-            ]);
-        }
-
-        $product->decrement('stock_quantity', $quantity);
-    }
-
-    private function increaseStock(int $productId, int $quantity): void
-    {
-        Product::whereKey($productId)->lockForUpdate()->firstOrFail()
-            ->increment('stock_quantity', $quantity);
-    }
-
-    private function decreaseStocks(array $items): void
-    {
-        foreach ($this->stockTotals($items) as $productId => $quantity) {
-            $this->decreaseStock((int) $productId, (int) $quantity);
-        }
-    }
-
-    private function increaseStocks(array $items): void
-    {
-        foreach ($this->stockTotals($items) as $productId => $quantity) {
-            $this->increaseStock((int) $productId, (int) $quantity);
-        }
-    }
-
-    private function syncSentOrderStocks(array $oldItems, array $newItems): void
-    {
-        $oldTotals = $this->stockTotals($oldItems);
-        $newTotals = $this->stockTotals($newItems);
-        $productIds = collect(array_keys($oldTotals))
-            ->merge(array_keys($newTotals))
-            ->unique();
-
-        foreach ($productIds as $productId) {
-            $difference = (int) ($newTotals[$productId] ?? 0) - (int) ($oldTotals[$productId] ?? 0);
-
-            if ($difference > 0) {
-                $this->decreaseStock((int) $productId, $difference);
-            }
-
-            if ($difference < 0) {
-                $this->increaseStock((int) $productId, abs($difference));
-            }
-        }
-    }
-
-    private function stockTotals(array $items): array
-    {
-        return collect($items)
-            ->groupBy('product_id')
-            ->map(fn ($productItems) => $productItems->sum('quantity'))
-            ->all();
-    }
-
-    private function itemsForStock(Order $order): array
-    {
-        if ($order->items->isNotEmpty()) {
-            return $order->items
-                ->map(fn (OrderItem $item) => [
-                    'product_id' => $item->product_id,
-                    'quantity' => $item->quantity,
-                ])
-                ->values()
-                ->all();
-        }
-
-        return [[
-            'product_id' => $order->product_id,
-            'quantity' => $order->quantity,
-        ]];
     }
 
     private function productOptions($products): array

@@ -22,6 +22,8 @@ class Order extends Model
         'status',
         'pickup_reminder_dismissed',
         'return_reminder_dismissed',
+        'stock_decreased_at',
+        'stock_returned_at',
     ];
 
     protected $casts = [
@@ -31,6 +33,8 @@ class Order extends Model
         'quantity' => 'integer',
         'pickup_reminder_dismissed' => 'boolean',
         'return_reminder_dismissed' => 'boolean',
+        'stock_decreased_at' => 'datetime',
+        'stock_returned_at' => 'datetime',
     ];
 
     public function product(): BelongsTo

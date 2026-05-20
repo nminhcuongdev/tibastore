@@ -34,6 +34,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/products/{product}/track', [ProductController::class, 'track'])->name('products.track');
     Route::resource('products', ProductController::class);
+    Route::post('/orders/availability', [OrderController::class, 'availability'])->name('orders.availability');
     Route::resource('orders', OrderController::class);
     Route::post('/order-reminders/{order}/confirm', [OrderReminderController::class, 'confirm'])
         ->name('order-reminders.confirm');

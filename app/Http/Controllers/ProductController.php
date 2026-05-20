@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\StockImportHistory;
+use App\Services\OrderInventoryService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,8 +18,14 @@ use Illuminate\View\View;
 
 class ProductController extends Controller
 {
+    public function __construct(private OrderInventoryService $inventory)
+    {
+    }
+
     public function index(Request $request): View
     {
+        $this->inventory->syncDueOrders();
+
         $sortMap = [
             'code' => 'products.code',
             'name' => 'name',
@@ -93,6 +101,9 @@ class ProductController extends Controller
 
     public function show(Request $request, Product $product): View
     {
+        $this->inventory->syncDueOrders();
+        $product->refresh();
+
         $sortMap = [
             'size' => 'size',
             'quantity' => 'stock_quantity',
@@ -130,8 +141,15 @@ class ProductController extends Controller
 
     public function track(Request $request, Product $product): View
     {
-        $orders = $product->orders()
-            ->latest('pickup_date')
+        $this->inventory->syncDueOrders();
+        $product->refresh();
+
+        $orders = Order::query()
+            ->select('orders.*')
+            ->selectRaw('order_items.quantity as tracked_quantity')
+            ->join('order_items', 'order_items.order_id', '=', 'orders.id')
+            ->where('order_items.product_id', $product->id)
+            ->latest('orders.pickup_date')
             ->paginate(10)
             ->withQueryString();
 
@@ -409,10 +427,19 @@ class ProductController extends Controller
     {
         $events = [];
 
-        $product->orders()
-            ->orderBy('created_at')
+        $product->orderItems()
+            ->with('order')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->select('order_items.*')
+            ->orderBy('orders.created_at')
             ->get()
-            ->each(function ($order) use (&$events) {
+            ->each(function ($item) use (&$events) {
+                $order = $item->order;
+
+                if (! $order) {
+                    return;
+                }
+
                 $createdDate = $order->created_at
                     ? Carbon::parse($order->created_at)->toDateString()
                     : now()->toDateString();
@@ -424,7 +451,7 @@ class ProductController extends Controller
                     'label' => 'Lên đơn',
                     'order_name' => $order->order_name,
                     'quantity_change' => 0,
-                    'quantity' => $order->quantity,
+                    'quantity' => $item->quantity,
                     'status' => $order->statusLabel(),
                 ];
 
@@ -432,8 +459,8 @@ class ProductController extends Controller
                     'date' => $pickupDate,
                     'label' => 'Đã gửi',
                     'order_name' => $order->order_name,
-                    'quantity_change' => -1 * $order->quantity,
-                    'quantity' => $order->quantity,
+                    'quantity_change' => -1 * $item->quantity,
+                    'quantity' => $item->quantity,
                     'status' => $order->statusLabel(),
                 ];
 
@@ -441,8 +468,8 @@ class ProductController extends Controller
                     'date' => $returnDate,
                     'label' => 'Thành công',
                     'order_name' => $order->order_name,
-                    'quantity_change' => $order->quantity,
-                    'quantity' => $order->quantity,
+                    'quantity_change' => $item->quantity,
+                    'quantity' => $item->quantity,
                     'status' => $order->statusLabel(),
                 ];
             });
@@ -531,10 +558,19 @@ class ProductController extends Controller
     {
         $events = [];
 
-        $product->orders()
-            ->orderBy('created_at')
+        $product->orderItems()
+            ->with('order')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->select('order_items.*')
+            ->orderBy('orders.created_at')
             ->get()
-            ->each(function ($order) use (&$events) {
+            ->each(function ($item) use (&$events) {
+                $order = $item->order;
+
+                if (! $order) {
+                    return;
+                }
+
                 $createdDate = $order->created_at
                     ? Carbon::parse($order->created_at)->toDateString()
                     : now()->toDateString();
@@ -546,7 +582,7 @@ class ProductController extends Controller
                     'label' => 'Lên đơn',
                     'order_name' => $order->order_name,
                     'quantity_change' => 0,
-                    'quantity' => $order->quantity,
+                    'quantity' => $item->quantity,
                     'status' => $order->statusLabel(),
                 ];
 
@@ -554,8 +590,8 @@ class ProductController extends Controller
                     'date' => $pickupDate,
                     'label' => 'Đã gửi',
                     'order_name' => $order->order_name,
-                    'quantity_change' => -1 * $order->quantity,
-                    'quantity' => $order->quantity,
+                    'quantity_change' => -1 * $item->quantity,
+                    'quantity' => $item->quantity,
                     'status' => $order->statusLabel(),
                 ];
 
@@ -563,8 +599,8 @@ class ProductController extends Controller
                     'date' => $returnDate,
                     'label' => 'Thành công',
                     'order_name' => $order->order_name,
-                    'quantity_change' => $order->quantity,
-                    'quantity' => $order->quantity,
+                    'quantity_change' => $item->quantity,
+                    'quantity' => $item->quantity,
                     'status' => $order->statusLabel(),
                 ];
             });

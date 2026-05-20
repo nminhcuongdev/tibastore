@@ -139,6 +139,17 @@
             padding: 10px 13px;
             width: 100%;
         }
+        .readonly-value {
+            align-items: center;
+            background: #fff4f7;
+            border: 1px solid #f2d3dc;
+            border-radius: 8px;
+            color: #7a344c;
+            display: flex;
+            font-weight: 900;
+            min-height: 44px;
+            padding: 10px 13px;
+        }
         input:focus,
         select:focus {
             border-color: #c9577d;
@@ -149,6 +160,10 @@
             color: #b4233f;
             font-size: 13px;
             font-weight: 700;
+        }
+        .row-error {
+            display: none;
+            grid-column: 1 / -1;
         }
         .actions,
         .items-actions {
@@ -184,6 +199,16 @@
             border: 1px solid #f0b7c1;
             color: #b4233f;
             min-height: 44px;
+        }
+        .button:disabled {
+            cursor: not-allowed;
+            opacity: .55;
+        }
+        .item-buttons {
+            align-items: stretch;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
         @media (max-width: 860px) {
             .topbar,
@@ -265,15 +290,8 @@
             </div>
 
             <div class="field">
-                <label for="status">Trạng thái</label>
-                <select id="status" name="status" required>
-                    @foreach ($statuses as $value => $label)
-                        <option value="{{ $value }}" @selected(old('status', $order->status ?? 'len_don') === $value)>
-                            {{ $label }}
-                        </option>
-                    @endforeach
-                </select>
-                @error('status') <div class="error">{{ $message }}</div> @enderror
+                <label>Trạng thái</label>
+                <div class="readonly-value">{{ $order->statusLabel() }}</div>
             </div>
 
             <div class="field full">
@@ -297,9 +315,17 @@
     <script>
         const productOptions = @json($productOptions, JSON_UNESCAPED_UNICODE);
         const initialItems = @json($initialItems->values(), JSON_UNESCAPED_UNICODE);
+        const availabilityUrl = @json(route('orders.availability'));
+        const currentOrderId = @json($mode === 'edit' ? $order->id : null);
         const itemsContainer = document.getElementById('order_items');
         const addItemButton = document.getElementById('add_item_button');
         const orderForm = document.getElementById('order_form');
+        const pickupDateInput = document.getElementById('pickup_date');
+        const eventDateInput = document.getElementById('event_date');
+        const returnDateInput = document.getElementById('return_date');
+        const csrfToken = orderForm.querySelector('input[name="_token"]').value;
+        const productAvailability = new Map();
+        let availabilityRequestId = 0;
         let itemIndex = 0;
 
         function findProductById(id) {
@@ -314,6 +340,193 @@
             return null;
         }
 
+        function stockLimit(product) {
+            return Number(productAvailability.get(Number(product.id)) ?? product.stock_quantity ?? 0);
+        }
+
+        function allProductIds() {
+            return productOptions.flatMap(group => group.items.map(product => product.id));
+        }
+
+        function resetAvailabilityToCurrentStock() {
+            productAvailability.clear();
+
+            productOptions.forEach(group => {
+                group.items.forEach(product => {
+                    productAvailability.set(Number(product.id), Number(product.stock_quantity || 0));
+                });
+            });
+        }
+
+        function datesReadyForAvailability() {
+            const pickupDate = pickupDateInput.value;
+            const eventDate = eventDateInput.value;
+            const returnDate = returnDateInput.value;
+
+            if (! pickupDate || ! returnDate) {
+                return false;
+            }
+
+            if (eventDate && eventDate < pickupDate) {
+                return false;
+            }
+
+            if (eventDate && returnDate < eventDate) {
+                return false;
+            }
+
+            if (! eventDate && returnDate < pickupDate) {
+                return false;
+            }
+
+            return true;
+        }
+
+        async function refreshAvailability() {
+            const requestId = ++availabilityRequestId;
+
+            if (! datesReadyForAvailability()) {
+                resetAvailabilityToCurrentStock();
+                refreshProductChoices();
+                return;
+            }
+
+            try {
+                const response = await fetch(availabilityUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                    },
+                    body: JSON.stringify({
+                        pickup_date: pickupDateInput.value,
+                        event_date: eventDateInput.value,
+                        return_date: returnDateInput.value,
+                        product_ids: allProductIds(),
+                        exclude_order_id: currentOrderId,
+                    }),
+                });
+
+                if (! response.ok) {
+                    throw new Error('availability request failed');
+                }
+
+                const data = await response.json();
+
+                if (requestId !== availabilityRequestId) {
+                    return;
+                }
+
+                productAvailability.clear();
+                Object.entries(data.availability || {}).forEach(([productId, quantity]) => {
+                    productAvailability.set(Number(productId), Number(quantity || 0));
+                });
+                refreshProductChoices();
+                itemsContainer.querySelectorAll('.order-item').forEach(validateRow);
+            } catch (error) {
+                if (requestId !== availabilityRequestId) {
+                    return;
+                }
+
+                resetAvailabilityToCurrentStock();
+                refreshProductChoices();
+            }
+        }
+
+        function selectedProductIds(exceptRow = null) {
+            return new Set(Array.from(itemsContainer.querySelectorAll('.order-item'))
+                .filter(row => row !== exceptRow)
+                .map(row => row.querySelector('[data-product-id]').value)
+                .filter(Boolean)
+                .map(String));
+        }
+
+        function availableProductsForRow(group, row, selectedProductId = null) {
+            const selectedIds = selectedProductIds(row);
+
+            return group.items.filter(product => {
+                const isCurrentSelection = selectedProductId && Number(product.id) === Number(selectedProductId);
+
+                return isCurrentSelection || (! selectedIds.has(String(product.id)) && stockLimit(product) > 0);
+            });
+        }
+
+        function availableProductsForNewSize(code) {
+            const group = productOptions.find(item => item.code === code);
+
+            if (! group) {
+                return [];
+            }
+
+            const selectedIds = selectedProductIds();
+
+            return group.items.filter(product => ! selectedIds.has(String(product.id)) && stockLimit(product) > 0);
+        }
+
+        function updateAddSizeButton(row) {
+            const addSizeButton = row.querySelector('[data-add-size]');
+
+            if (! addSizeButton) {
+                return;
+            }
+
+            addSizeButton.disabled = ! row.dataset.productCode
+                || ! row.querySelector('[data-product-id]').value
+                || availableProductsForNewSize(row.dataset.productCode).length === 0;
+        }
+
+        function updateAllAddSizeButtons() {
+            itemsContainer.querySelectorAll('.order-item').forEach(updateAddSizeButton);
+        }
+
+        function updateQuantityLimit(row) {
+            const quantityInput = row.querySelector('[data-quantity]');
+            const productId = row.querySelector('[data-product-id]').value;
+            const selected = findProductById(productId);
+
+            quantityInput.setCustomValidity('');
+            quantityInput.removeAttribute('max');
+
+            if (! selected) {
+                return true;
+            }
+
+            const limit = stockLimit(selected.item);
+            quantityInput.max = limit;
+
+            if (limit > 0 && Number(quantityInput.value || 0) > limit) {
+                quantityInput.value = limit;
+            }
+
+            if (Number(quantityInput.value || 0) < 1 || Number(quantityInput.value || 0) > limit) {
+                quantityInput.setCustomValidity(`Số lượng không được vượt quá tồn dự kiến (${limit}).`);
+                return false;
+            }
+
+            return true;
+        }
+
+        function validateRow(row) {
+            const rowError = row.querySelector('[data-row-error]');
+            const productId = row.querySelector('[data-product-id]').value;
+            rowError.style.display = 'none';
+            rowError.textContent = '';
+
+            if (! productId) {
+                return false;
+            }
+
+            if (! updateQuantityLimit(row)) {
+                const max = row.querySelector('[data-quantity]').max;
+                rowError.style.display = 'block';
+                rowError.textContent = `Số lượng không được vượt quá tồn dự kiến (${max}).`;
+                return false;
+            }
+
+            return true;
+        }
+
         function renumberRows() {
             itemsContainer.querySelectorAll('.order-item').forEach((row, index) => {
                 row.querySelector('[data-product-id]').name = `items[${index}][product_id]`;
@@ -325,8 +538,10 @@
             const suggestions = row.querySelector('[data-suggestions]');
             const normalizedKeyword = keyword.trim().toLowerCase();
             const matches = productOptions.filter(group => {
-                return group.code.toLowerCase().includes(normalizedKeyword)
+                const hasKeyword = group.code.toLowerCase().includes(normalizedKeyword)
                     || group.name.toLowerCase().includes(normalizedKeyword);
+
+                return hasKeyword && availableProductsForRow(group, row).length > 0;
             }).slice(0, 20);
 
             suggestions.innerHTML = '';
@@ -349,7 +564,7 @@
                 name.className = 'product-name';
                 name.textContent = group.name;
                 meta.className = 'product-meta';
-                meta.textContent = `${group.items.length} size đang có`;
+                meta.textContent = `${availableProductsForRow(group, row).length}/${group.items.length} size có thể chọn`;
                 button.append(code, name, meta);
                 button.addEventListener('click', () => selectProductCode(row, group.code));
                 suggestions.appendChild(button);
@@ -367,6 +582,7 @@
             const selectedInfo = row.querySelector('[data-selected-info]');
 
             searchInput.value = group ? `${group.code} - ${group.name}` : code;
+            row.dataset.productCode = group ? group.code : '';
             suggestions.style.display = 'none';
             productIdInput.value = '';
             sizeSelect.innerHTML = '<option value="">Chọn size</option>';
@@ -375,21 +591,34 @@
             selectedInfo.textContent = '';
 
             if (!group) {
+                updateAddSizeButton(row);
                 return;
             }
 
-            group.items.forEach(product => {
+            const availableProducts = availableProductsForRow(group, row, selectedProductId);
+
+            availableProducts.forEach(product => {
                 const option = document.createElement('option');
                 option.value = product.id;
-                option.textContent = `${product.size} | Tồn: ${product.stock_quantity} | Vải: ${product.fabric}`;
+                option.textContent = `${product.size} | Tồn dự kiến: ${stockLimit(product)} | Vải: ${product.fabric}`;
                 option.selected = Number(product.id) === Number(selectedProductId);
                 sizeSelect.appendChild(option);
             });
 
-            if (selectedProductId) {
+            if (availableProducts.length === 0) {
+                const option = document.createElement('option');
+                option.textContent = 'Mã hàng này không còn size có thể chọn';
+                option.disabled = true;
+                sizeSelect.appendChild(option);
+            }
+
+            if (selectedProductId && availableProducts.some(product => Number(product.id) === Number(selectedProductId))) {
                 productIdInput.value = selectedProductId;
                 renderSelectedInfo(row);
+                updateQuantityLimit(row);
             }
+
+            updateAddSizeButton(row);
         }
 
         function renderSelectedInfo(row) {
@@ -399,12 +628,45 @@
 
             if (!selected) {
                 selectedInfo.style.display = 'none';
+                updateAddSizeButton(row);
                 selectedInfo.textContent = '';
                 return;
             }
 
             selectedInfo.style.display = 'block';
-            selectedInfo.textContent = `${selected.group.code} - ${selected.item.name} | Size: ${selected.item.size} | Tồn: ${selected.item.stock_quantity} | Vải: ${selected.item.fabric}`;
+            selectedInfo.textContent = `${selected.group.code} - ${selected.item.name} | Size: ${selected.item.size} | Tồn dự kiến: ${stockLimit(selected.item)} | Vải: ${selected.item.fabric}`;
+        }
+
+        function refreshProductChoices() {
+            itemsContainer.querySelectorAll('.order-item').forEach(row => {
+                if (! row.dataset.productCode) {
+                    return;
+                }
+
+                selectProductCode(row, row.dataset.productCode, row.querySelector('[data-product-id]').value);
+            });
+            updateAllAddSizeButtons();
+        }
+
+        function addSizeForRow(row) {
+            const code = row.dataset.productCode;
+            const selectedInfo = row.querySelector('[data-selected-info]');
+
+            if (! code) {
+                selectedInfo.style.display = 'block';
+                selectedInfo.textContent = 'Vui lòng chọn mã hàng trước khi thêm size.';
+                return;
+            }
+
+            if (availableProductsForNewSize(code).length === 0) {
+                selectedInfo.style.display = 'block';
+                selectedInfo.textContent = 'Mã hàng này không còn size khác có thể chọn.';
+                updateAddSizeButton(row);
+                return;
+            }
+
+            const newRow = addItemRow({ product_code: code });
+            newRow.querySelector('[data-size]').focus();
         }
 
         function addItemRow(item = {}) {
@@ -428,32 +690,55 @@
                     <label for="quantity_${itemIndex}">Số lượng</label>
                     <input id="quantity_${itemIndex}" data-quantity type="number" min="1" step="1" value="${item.quantity || 1}" required>
                 </div>
-                <div class="field">
+                <div class="field item-buttons">
                     <label>&nbsp;</label>
+                    <button class="button secondary" data-add-size type="button" disabled>Thêm size</button>
                     <button class="button danger" data-remove type="button">Xóa</button>
                 </div>
                 <div data-selected-info class="selected-product-info"></div>
+                <div data-row-error class="error row-error"></div>
             `;
 
             const searchInput = row.querySelector('[data-search]');
             const sizeSelect = row.querySelector('[data-size]');
             const productIdInput = row.querySelector('[data-product-id]');
             const selectedInfo = row.querySelector('[data-selected-info]');
+            const quantityInput = row.querySelector('[data-quantity]');
+            const addSizeButton = row.querySelector('[data-add-size]');
 
             searchInput.addEventListener('input', () => {
                 productIdInput.value = '';
+                row.dataset.productCode = '';
                 sizeSelect.innerHTML = '<option value="">Chọn size</option>';
                 sizeSelect.disabled = true;
                 selectedInfo.style.display = 'none';
+                updateAddSizeButton(row);
                 renderSuggestions(row, searchInput.value);
             });
 
             searchInput.addEventListener('focus', () => renderSuggestions(row, searchInput.value));
 
             sizeSelect.addEventListener('change', () => {
+                if (sizeSelect.value && selectedProductIds(row).has(String(sizeSelect.value))) {
+                    productIdInput.value = '';
+                    sizeSelect.value = '';
+                    row.querySelector('[data-row-error]').style.display = 'block';
+                    row.querySelector('[data-row-error]').textContent = 'Mã hàng và size này đã được chọn trong đơn.';
+                    refreshProductChoices();
+                    return;
+                }
+
                 productIdInput.value = sizeSelect.value;
                 renderSelectedInfo(row);
+                updateQuantityLimit(row);
+                refreshProductChoices();
             });
+
+            quantityInput.addEventListener('input', () => {
+                updateQuantityLimit(row);
+            });
+
+            addSizeButton.addEventListener('click', () => addSizeForRow(row));
 
             row.querySelector('[data-remove]').addEventListener('click', () => {
                 if (itemsContainer.querySelectorAll('.order-item').length === 1) {
@@ -464,6 +749,7 @@
 
                 row.remove();
                 renumberRows();
+                refreshProductChoices();
             });
 
             itemsContainer.appendChild(row);
@@ -475,9 +761,14 @@
                 if (selected) {
                     selectProductCode(row, selected.group.code, item.product_id);
                 }
+            } else if (item.product_code) {
+                selectProductCode(row, item.product_code);
             }
 
             renumberRows();
+            updateAllAddSizeButtons();
+
+            return row;
         }
 
         document.addEventListener('click', event => {
@@ -492,11 +783,44 @@
 
         addItemButton.addEventListener('click', () => addItemRow());
 
+        [pickupDateInput, eventDateInput, returnDateInput].forEach(input => {
+            input.addEventListener('change', refreshAvailability);
+        });
+
         orderForm.addEventListener('submit', event => {
             const rows = Array.from(itemsContainer.querySelectorAll('.order-item'));
             const invalidRow = rows.find(row => !row.querySelector('[data-product-id]').value);
+            const seenProductIds = new Set();
+            const duplicateRow = rows.find(row => {
+                const productId = row.querySelector('[data-product-id]').value;
+
+                if (! productId) {
+                    return false;
+                }
+
+                if (seenProductIds.has(productId)) {
+                    return true;
+                }
+
+                seenProductIds.add(productId);
+                return false;
+            });
+            const invalidQuantityRow = rows.find(row => row.querySelector('[data-product-id]').value && ! validateRow(row));
 
             if (!invalidRow) {
+                if (duplicateRow) {
+                    event.preventDefault();
+                    duplicateRow.querySelector('[data-row-error]').style.display = 'block';
+                    duplicateRow.querySelector('[data-row-error]').textContent = 'Mã hàng và size này đã được chọn trong đơn.';
+                    duplicateRow.querySelector('[data-size]').focus();
+                    return;
+                }
+
+                if (invalidQuantityRow) {
+                    event.preventDefault();
+                    invalidQuantityRow.querySelector('[data-quantity]').focus();
+                }
+
                 return;
             }
 
@@ -513,6 +837,9 @@
         } else {
             addItemRow();
         }
+
+        resetAvailabilityToCurrentStock();
+        refreshAvailability();
     </script>
 </body>
 </html>
