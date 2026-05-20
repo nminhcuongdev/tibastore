@@ -352,6 +352,7 @@
                             </td>
                             <td>
                                 <div class="row-actions">
+                                    <a class="link-action" href="{{ route('orders.show', $order) }}">Xem</a>
                                     <a class="link-action" href="{{ route('orders.edit', $order) }}">Sửa</a>
                                     <form method="POST" action="{{ route('orders.destroy', $order) }}" onsubmit="return confirm('Xóa đơn hàng này?')">
                                         @csrf

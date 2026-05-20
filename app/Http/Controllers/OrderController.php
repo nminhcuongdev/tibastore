@@ -88,18 +88,29 @@ class OrderController extends Controller
         $items = $data['items'];
         $orderData = $this->orderData($data, $items);
 
-        DB::transaction(function () use ($data, $items, $orderData) {
+        $order = DB::transaction(function () use ($data, $items, $orderData) {
             if ($data['status'] === 'da_gui') {
                 $this->decreaseStocks($items);
             }
 
             $order = Order::create($orderData);
             $order->items()->createMany($items);
+
+            return $order;
         });
 
         return redirect()
-            ->route('orders.index')
+            ->route('orders.show', $order)
             ->with('status', 'Đã tạo đơn hàng.');
+    }
+
+    public function show(Order $order): View
+    {
+        $order->load(['product', 'items.product']);
+
+        return view('orders.show', [
+            'order' => $order,
+        ]);
     }
 
     public function edit(Order $order): View

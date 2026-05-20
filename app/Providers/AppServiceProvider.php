@@ -31,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
             'products.show',
             'orders.index',
             'orders.form',
+            'orders.show',
             'stock_import_histories.index',
         ], function ($view) {
             if (! Auth::check()) {

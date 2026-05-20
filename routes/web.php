@@ -34,7 +34,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/products/{product}/track', [ProductController::class, 'track'])->name('products.track');
     Route::resource('products', ProductController::class);
-    Route::resource('orders', OrderController::class)->except(['show']);
+    Route::resource('orders', OrderController::class);
     Route::post('/order-reminders/{order}/confirm', [OrderReminderController::class, 'confirm'])
         ->name('order-reminders.confirm');
     Route::post('/order-reminders/{order}/dismiss', [OrderReminderController::class, 'dismiss'])
