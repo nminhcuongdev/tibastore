@@ -30,14 +30,15 @@ class OrderController extends Controller
             'product_code' => 'products.code',
             'quantity' => 'orders.quantity',
             'status' => 'orders.status',
+            'updated' => 'orders.updated_at',
         ];
 
-        $sort = $request->query('sort', 'pickup_date');
+        $sort = $request->query('sort', 'updated');
         $direction = $request->query('direction', 'desc');
         $query = trim((string) $request->query('q', ''));
 
         if (! array_key_exists($sort, $sortMap)) {
-            $sort = 'pickup_date';
+            $sort = 'updated';
         }
 
         if (! in_array($direction, ['asc', 'desc'], true)) {
@@ -62,6 +63,7 @@ class OrderController extends Controller
                 });
             })
             ->orderBy($sortMap[$sort], $direction)
+            ->orderBy('orders.id', 'desc')
             ->paginate(8)
             ->withQueryString();
 

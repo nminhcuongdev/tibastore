@@ -30,18 +30,19 @@ class ProductController extends Controller
             'code' => 'products.code',
             'name' => 'name',
             'quantity' => 'total_stock_quantity',
+            'updated' => 'updated_at',
         ];
 
-        $sort = $request->query('sort', 'code');
-        $direction = $request->query('direction', 'asc');
+        $sort = $request->query('sort', 'updated');
+        $direction = $request->query('direction', 'desc');
         $query = trim((string) $request->query('q', ''));
 
         if (! array_key_exists($sort, $sortMap)) {
-            $sort = 'code';
+            $sort = 'updated';
         }
 
         if (! in_array($direction, ['asc', 'desc'], true)) {
-            $direction = 'asc';
+            $direction = 'desc';
         }
 
         $products = Product::query()
@@ -61,6 +62,7 @@ class ProductController extends Controller
             })
             ->groupBy('code')
             ->orderBy($sortMap[$sort], $direction)
+            ->orderBy('id', 'desc')
             ->paginate(8)
             ->withQueryString();
 
