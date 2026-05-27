@@ -224,19 +224,69 @@
             border: 1px solid #f1cbd7;
             border-radius: 8px;
             color: #a64465;
+            cursor: default;
             display: flex;
+            font-family: inherit;
             font-size: 12px;
             font-weight: 800;
             height: 70px;
             justify-content: center;
             overflow: hidden;
+            padding: 0;
+            position: relative;
             width: 70px;
+        }
+
+        .thumb.has-image {
+            cursor: zoom-in;
         }
 
         .thumb img {
             height: 100%;
             object-fit: cover;
+            transition: transform .18s ease;
             width: 100%;
+        }
+
+        .thumb.has-image:hover,
+        .thumb.has-image:focus {
+            border-color: #c9577d;
+            box-shadow: 0 10px 24px rgba(117, 44, 69, .18);
+            outline: none;
+            overflow: visible;
+            z-index: 20;
+        }
+
+        .thumb.has-image:hover img,
+        .thumb.has-image:focus img {
+            border-radius: 8px;
+            transform: scale(2.4);
+        }
+
+        .image-lightbox {
+            align-items: center;
+            background: rgba(63, 39, 48, .72);
+            cursor: zoom-out;
+            display: none;
+            inset: 0;
+            justify-content: center;
+            padding: 24px;
+            position: fixed;
+            z-index: 1000;
+        }
+
+        .image-lightbox.is-open {
+            display: flex;
+        }
+
+        .image-lightbox img {
+            background: #fff;
+            border: 8px solid #fff;
+            border-radius: 8px;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
+            max-height: min(82vh, 760px);
+            max-width: min(88vw, 760px);
+            object-fit: contain;
         }
 
         .code {
@@ -430,13 +480,15 @@
                     @forelse ($products as $product)
                         <tr>
                             <td>
-                                <div class="thumb">
-                                    @if ($product->image_path)
+                                @if ($product->image_path)
+                                    <button class="thumb has-image" type="button" data-full-image="{{ asset('storage/' . $product->image_path) }}" aria-label="Phóng to ảnh {{ $product->name }}">
                                         <img src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $product->name }}">
-                                    @else
+                                    </button>
+                                @else
+                                    <div class="thumb">
                                         CHƯA CÓ ẢNH
-                                    @endif
-                                </div>
+                                    </div>
+                                @endif
                             </td>
                             <td class="code">
                                 <div class="code-line">
@@ -504,8 +556,37 @@
             </nav>
         @endif
     </main>
+    <div class="image-lightbox" data-image-lightbox aria-hidden="true">
+        <img data-lightbox-image src="" alt="">
+    </div>
     @include('orders.reminders-popup')
     <script>
+        const lightbox = document.querySelector('[data-image-lightbox]');
+        const lightboxImage = document.querySelector('[data-lightbox-image]');
+
+        document.querySelectorAll('[data-full-image]').forEach(button => {
+            button.addEventListener('click', () => {
+                lightboxImage.src = button.dataset.fullImage;
+                lightboxImage.alt = button.querySelector('img')?.alt || 'Ảnh sản phẩm';
+                lightbox.classList.add('is-open');
+                lightbox.setAttribute('aria-hidden', 'false');
+            });
+        });
+
+        function closeLightbox() {
+            lightbox.classList.remove('is-open');
+            lightbox.setAttribute('aria-hidden', 'true');
+            lightboxImage.src = '';
+        }
+
+        lightbox.addEventListener('click', closeLightbox);
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && lightbox.classList.contains('is-open')) {
+                closeLightbox();
+            }
+        });
+
         document.querySelectorAll('[data-copy-code]').forEach(button => {
             button.addEventListener('click', async event => {
                 event.preventDefault();
