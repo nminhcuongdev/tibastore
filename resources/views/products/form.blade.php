@@ -102,6 +102,39 @@
             padding: 14px;
         }
 
+        .expected-receipts {
+            background: #fff;
+            border: 1px solid #f2d3dc;
+            border-radius: 8px;
+            display: grid;
+            gap: 10px;
+            grid-column: 1 / -1;
+            padding: 12px;
+        }
+
+        .expected-receipts-head {
+            align-items: center;
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+        }
+
+        .expected-receipt-rows {
+            display: grid;
+            gap: 8px;
+        }
+
+        .expected-receipt-row {
+            display: grid;
+            gap: 8px;
+            grid-template-columns: minmax(0, 1fr) 150px auto;
+        }
+
+        .button.icon {
+            min-height: 44px;
+            padding: 10px 14px;
+        }
+
         label {
             color: #7a344c;
             font-size: 13px;
@@ -187,7 +220,8 @@
         @media (max-width: 760px) {
             .form-shell,
             .fields,
-            .size-row {
+            .size-row,
+            .expected-receipt-row {
                 grid-template-columns: 1fr;
             }
 
@@ -250,7 +284,24 @@
 
                 @if ($mode === 'create')
                     @php
-                        $variantRows = old('variants', [['size' => '', 'stock_quantity' => 0]]);
+                        $sourceReceiptRows = ($sourceExpectedReceipts ?? collect())
+                            ->map(fn ($receipt) => [
+                                'expected_receive_date' => $receipt->expected_receive_date?->format('Y-m-d'),
+                                'expected_receive_quantity' => $receipt->expected_receive_quantity,
+                            ])
+                            ->values()
+                            ->all();
+                        $defaultExpectedReceipts = $sourceReceiptRows !== []
+                            ? $sourceReceiptRows
+                            : [[
+                                'expected_receive_date' => '',
+                                'expected_receive_quantity' => 0,
+                            ]];
+                        $variantRows = old('variants', [[
+                            'size' => '',
+                            'stock_quantity' => 0,
+                            'expected_receipts' => $defaultExpectedReceipts,
+                        ]]);
                     @endphp
 
                     <div class="field full">
@@ -270,6 +321,21 @@
                                         <label>&nbsp;</label>
                                         <button class="button danger" data-remove-size type="button">Xóa</button>
                                     </div>
+                                    <div class="expected-receipts" data-expected-receipts>
+                                        <div class="expected-receipts-head">
+                                            <label>Dự kiến nhận hàng</label>
+                                            <button class="button secondary icon" data-add-expected-receipt type="button">+</button>
+                                        </div>
+                                        <div class="expected-receipt-rows" data-expected-receipt-rows>
+                                            @foreach (($variant['expected_receipts'] ?? $defaultExpectedReceipts) as $receiptIndex => $receipt)
+                                                <div class="expected-receipt-row" data-expected-receipt-row>
+                                                    <input data-expected-date name="variants[{{ $index }}][expected_receipts][{{ $receiptIndex }}][expected_receive_date]" type="date" value="{{ $receipt['expected_receive_date'] ?? '' }}">
+                                                    <input data-expected-quantity name="variants[{{ $index }}][expected_receipts][{{ $receiptIndex }}][expected_receive_quantity]" type="number" min="0" step="1" value="{{ $receipt['expected_receive_quantity'] ?? 0 }}" placeholder="SL dự kiến">
+                                                    <button class="button danger icon" data-remove-expected-receipt type="button">-</button>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
                                 </div>
                             @endforeach
                         </div>
@@ -277,8 +343,31 @@
                         @error('variants') <div class="error">{{ $message }}</div> @enderror
                         @error('variants.*.size') <div class="error">{{ $message }}</div> @enderror
                         @error('variants.*.stock_quantity') <div class="error">{{ $message }}</div> @enderror
+                        @error('variants.*.expected_receipts.*.expected_receive_date') <div class="error">{{ $message }}</div> @enderror
+                        @error('variants.*.expected_receipts.*.expected_receive_quantity') <div class="error">{{ $message }}</div> @enderror
                     </div>
                 @else
+                    @php
+                        $expectedReceiptRows = old(
+                            'expected_receipts',
+                            $product->expectedReceipts
+                                ->whereNull('received_at')
+                                ->map(fn ($receipt) => [
+                                    'expected_receive_date' => $receipt->expected_receive_date?->format('Y-m-d'),
+                                    'expected_receive_quantity' => $receipt->expected_receive_quantity,
+                                ])
+                                ->values()
+                                ->all()
+                        );
+
+                        if ($expectedReceiptRows === []) {
+                            $expectedReceiptRows = [[
+                                'expected_receive_date' => '',
+                                'expected_receive_quantity' => 0,
+                            ]];
+                        }
+                    @endphp
+
                     <div class="field">
                         <label for="stock_quantity">Số lượng tồn</label>
                         <input id="stock_quantity" name="stock_quantity" type="number" min="0" step="1" value="{{ old('stock_quantity', $product->stock_quantity ?? 0) }}" placeholder="0">
@@ -289,6 +378,26 @@
                         <label for="size">Size</label>
                         <input id="size" name="size" type="text" value="{{ old('size', $product->size) }}" placeholder="S, M, L, XL, Free size..." required>
                         @error('size') <div class="error">{{ $message }}</div> @enderror
+                    </div>
+
+                    <div class="field full">
+                        <div class="expected-receipts" data-expected-receipts>
+                            <div class="expected-receipts-head">
+                                <label>Dự kiến nhận hàng</label>
+                                <button class="button secondary icon" data-add-expected-receipt type="button">+</button>
+                            </div>
+                            <div class="expected-receipt-rows" data-expected-receipt-rows>
+                                @foreach ($expectedReceiptRows as $receiptIndex => $receipt)
+                                    <div class="expected-receipt-row" data-expected-receipt-row>
+                                        <input data-expected-date name="expected_receipts[{{ $receiptIndex }}][expected_receive_date]" type="date" value="{{ $receipt['expected_receive_date'] ?? '' }}">
+                                        <input data-expected-quantity name="expected_receipts[{{ $receiptIndex }}][expected_receive_quantity]" type="number" min="0" step="1" value="{{ $receipt['expected_receive_quantity'] ?? 0 }}" placeholder="SL dự kiến">
+                                        <button class="button danger icon" data-remove-expected-receipt type="button">-</button>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @error('expected_receipts.*.expected_receive_date') <div class="error">{{ $message }}</div> @enderror
+                        @error('expected_receipts.*.expected_receive_quantity') <div class="error">{{ $message }}</div> @enderror
                     </div>
                 @endif
 
@@ -313,11 +422,73 @@
             </div>
         </form>
     </main>
-    @if ($mode === 'create')
-        <script>
-            const sizeRows = document.getElementById('size_rows');
-            const addSizeButton = document.getElementById('add_size_button');
+    <script>
+        const mode = @json($mode);
+        const sizeRows = document.getElementById('size_rows');
+        const addSizeButton = document.getElementById('add_size_button');
 
+        function addExpectedReceiptRow(container, variantIndex = null) {
+            const rows = container.querySelector('[data-expected-receipt-rows]');
+            const row = document.createElement('div');
+
+            row.className = 'expected-receipt-row';
+            row.dataset.expectedReceiptRow = '';
+            row.innerHTML = `
+                <input data-expected-date type="date">
+                <input data-expected-quantity type="number" min="0" step="1" placeholder="SL dự kiến">
+                <button class="button danger icon" data-remove-expected-receipt type="button">-</button>
+            `;
+
+            rows.appendChild(row);
+            bindExpectedReceiptRow(row);
+            renumberExpectedReceipts(container, variantIndex);
+            row.querySelector('[data-expected-date]').focus();
+        }
+
+        function bindExpectedReceiptRow(row) {
+            row.querySelector('[data-remove-expected-receipt]').addEventListener('click', () => {
+                const container = row.closest('[data-expected-receipts]');
+                const rows = container.querySelectorAll('[data-expected-receipt-row]');
+
+                if (rows.length === 1) {
+                    row.querySelector('[data-expected-date]').value = '';
+                    row.querySelector('[data-expected-quantity]').value = '';
+                    return;
+                }
+
+                row.remove();
+                renumberExpectedReceipts(container);
+            });
+        }
+
+        function renumberExpectedReceipts(container, variantIndex = null) {
+            const sizeRow = container.closest('.size-row');
+            const resolvedVariantIndex = variantIndex ?? (sizeRow ? Array.from(sizeRows.querySelectorAll('.size-row')).indexOf(sizeRow) : null);
+
+            container.querySelectorAll('[data-expected-receipt-row]').forEach((row, index) => {
+                const dateInput = row.querySelector('[data-expected-date]');
+                const quantityInput = row.querySelector('[data-expected-quantity]');
+
+                if (mode === 'create') {
+                    dateInput.name = `variants[${resolvedVariantIndex}][expected_receipts][${index}][expected_receive_date]`;
+                    quantityInput.name = `variants[${resolvedVariantIndex}][expected_receipts][${index}][expected_receive_quantity]`;
+                    return;
+                }
+
+                dateInput.name = `expected_receipts[${index}][expected_receive_date]`;
+                quantityInput.name = `expected_receipts[${index}][expected_receive_quantity]`;
+            });
+        }
+
+        function bindExpectedReceipts(container) {
+            container.querySelector('[data-add-expected-receipt]').addEventListener('click', () => addExpectedReceiptRow(container));
+            container.querySelectorAll('[data-expected-receipt-row]').forEach(bindExpectedReceiptRow);
+            renumberExpectedReceipts(container);
+        }
+
+        document.querySelectorAll('[data-expected-receipts]').forEach(bindExpectedReceipts);
+
+        if (mode === 'create') {
             function renumberSizeRows() {
                 sizeRows.querySelectorAll('.size-row').forEach((row, index) => {
                     const sizeInput = row.querySelector('[data-size]');
@@ -327,6 +498,7 @@
                     sizeInput.id = `variants_${index}_size`;
                     stockInput.name = `variants[${index}][stock_quantity]`;
                     stockInput.id = `variants_${index}_stock_quantity`;
+                    renumberExpectedReceipts(row.querySelector('[data-expected-receipts]'), index);
                 });
             }
 
@@ -361,14 +533,29 @@
                         <label>&nbsp;</label>
                         <button class="button danger" data-remove-size type="button">Xóa</button>
                     </div>
+                    <div class="expected-receipts" data-expected-receipts>
+                        <div class="expected-receipts-head">
+                            <label>Dự kiến nhận hàng</label>
+                            <button class="button secondary icon" data-add-expected-receipt type="button">+</button>
+                        </div>
+                        <div class="expected-receipt-rows" data-expected-receipt-rows>
+                            <div class="expected-receipt-row" data-expected-receipt-row>
+                                <input data-expected-date type="date">
+                                <input data-expected-quantity type="number" min="0" step="1" placeholder="SL dự kiến">
+                                <button class="button danger icon" data-remove-expected-receipt type="button">-</button>
+                            </div>
+                        </div>
+                    </div>
                 `;
 
                 bindRemoveSizeButton(row);
+                bindExpectedReceipts(row.querySelector('[data-expected-receipts]'));
                 sizeRows.appendChild(row);
+                renumberSizeRows();
                 row.querySelector('[data-size]').focus();
             });
-        </script>
-    @endif
+        }
+    </script>
 </body>
 </html>
 

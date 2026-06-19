@@ -15,6 +15,9 @@ class Product extends Model
         'name',
         'image_path',
         'stock_quantity',
+        'expected_receive_date',
+        'expected_receive_quantity',
+        'expected_received_at',
         'fabric',
         'size',
         'import_price',
@@ -22,6 +25,9 @@ class Product extends Model
 
     protected $casts = [
         'stock_quantity' => 'integer',
+        'expected_receive_date' => 'date',
+        'expected_receive_quantity' => 'integer',
+        'expected_received_at' => 'datetime',
         'import_price' => 'decimal:2',
     ];
 
@@ -38,5 +44,10 @@ class Product extends Model
     public function stockImportHistories(): HasMany
     {
         return $this->hasMany(StockImportHistory::class);
+    }
+
+    public function expectedReceipts(): HasMany
+    {
+        return $this->hasMany(ProductExpectedReceipt::class);
     }
 }

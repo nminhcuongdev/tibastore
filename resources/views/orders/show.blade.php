@@ -169,6 +169,70 @@
             font-size: 13px;
             line-height: 1.5;
         }
+        .size-qty-list {
+            color: #3f2730;
+            font-weight: 800;
+            line-height: 1.55;
+            max-width: 320px;
+        }
+        .product-thumb {
+            align-items: center;
+            background: #fff4f7;
+            border: 1px solid #f1cbd7;
+            border-radius: 8px;
+            color: #9d345a;
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 800;
+            height: 110px;
+            justify-content: center;
+            overflow: hidden;
+            padding: 0;
+            position: relative;
+            width: 110px;
+        }
+        .product-thumb.has-image {
+            cursor: zoom-in;
+        }
+        .product-thumb img {
+            height: 100%;
+            object-fit: cover;
+            transition: transform .18s ease;
+            width: 100%;
+        }
+        .product-thumb.has-image:hover,
+        .product-thumb.has-image:focus {
+            border-color: #c9577d;
+            box-shadow: 0 10px 24px rgba(117, 44, 69, .18);
+            outline: none;
+        }
+        .product-thumb.has-image:hover img,
+        .product-thumb.has-image:focus img {
+            transform: scale(1.12);
+        }
+        .image-lightbox {
+            align-items: center;
+            background: rgba(63, 39, 48, .72);
+            cursor: zoom-out;
+            display: none;
+            inset: 0;
+            justify-content: center;
+            padding: 24px;
+            position: fixed;
+            z-index: 1000;
+        }
+        .image-lightbox.is-open {
+            display: flex;
+        }
+        .image-lightbox img {
+            background: #fff;
+            border: 8px solid #fff;
+            border-radius: 8px;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
+            max-height: min(82vh, 760px);
+            max-width: min(88vw, 760px);
+            object-fit: contain;
+        }
         .summary {
             display: flex;
             justify-content: flex-end;
@@ -199,7 +263,7 @@
             }
             .order-id { text-align: left; }
             .section { padding: 18px; }
-            table { min-width: 720px; }
+            table { min-width: 860px; }
             .table-shell { overflow-x: auto; }
         }
         @media print {
@@ -207,6 +271,7 @@
             .topbar,
             .status,
             .no-print,
+            .image-lightbox,
             .order-reminder-overlay {
                 display: none !important;
             }
@@ -242,6 +307,7 @@
                     'quantity' => $order->quantity,
                 ]]);
             $totalQuantity = $displayItems->sum('quantity');
+            $groupedDisplayItems = $displayItems->groupBy(fn ($item) => $item->product?->code ?? 'N/A');
         @endphp
 
         <article class="receipt">
@@ -292,24 +358,45 @@
                     <table>
                         <thead>
                             <tr>
+                                <th>Hình ảnh</th>
                                 <th>Mã hàng</th>
                                 <th>Tên hàng</th>
-                                <th>Size</th>
                                 <th>Vải</th>
-                                <th>Số lượng</th>
+                                <th>Size - Số lượng</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($displayItems as $item)
+                            @foreach ($groupedDisplayItems as $code => $items)
+                                @php
+                                    $firstItem = $items->first();
+                                    $product = $firstItem->product;
+                                    $sizeQuantities = $items->groupBy(fn ($item) => $item->product?->size ?? 'N/A');
+                                @endphp
                                 <tr>
-                                    <td class="code">{{ $item->product?->code ?? 'N/A' }}</td>
                                     <td>
-                                        <div class="value">{{ $item->product?->name ?? 'Sản phẩm không còn tồn tại' }}</div>
-                                        <div class="muted">Tồn hiện tại: {{ number_format($item->product?->stock_quantity ?? 0) }}</div>
+                                        @if ($product?->image_path)
+                                            <button class="product-thumb has-image" type="button" data-full-image="{{ asset('storage/' . $product->image_path) }}" aria-label="Phóng to ảnh {{ $product?->name }}">
+                                                <img src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $product?->name }}">
+                                            </button>
+                                        @else
+                                            <div class="product-thumb">
+                                                CHƯA CÓ ẢNH
+                                            </div>
+                                        @endif
                                     </td>
-                                    <td>{{ $item->product?->size ?? 'N/A' }}</td>
-                                    <td>{{ $item->product?->fabric ?? 'N/A' }}</td>
-                                    <td>{{ number_format($item->quantity) }}</td>
+                                    <td class="code">{{ $code }}</td>
+                                    <td>
+                                        <div class="value">{{ $product?->name ?? 'Sản phẩm không còn tồn tại' }}</div>
+                                        <div class="muted">Tồn hiện tại: {{ number_format($items->sum(fn ($item) => $item->product?->stock_quantity ?? 0)) }}</div>
+                                    </td>
+                                    <td>{{ $product?->fabric ?? 'N/A' }}</td>
+                                    <td>
+                                        <div class="size-qty-list">
+                                            @foreach ($sizeQuantities as $size => $sizeItems)
+                                                Size {{ $size }}: {{ number_format($sizeItems->sum('quantity')) }}@if (! $loop->last), @endif
+                                            @endforeach
+                                        </div>
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -325,6 +412,36 @@
         </article>
     </main>
 
+    <div class="image-lightbox" data-image-lightbox aria-hidden="true">
+        <img data-lightbox-image src="" alt="">
+    </div>
     @include('orders.reminders-popup')
+    <script>
+        const lightbox = document.querySelector('[data-image-lightbox]');
+        const lightboxImage = document.querySelector('[data-lightbox-image]');
+
+        document.querySelectorAll('[data-full-image]').forEach(button => {
+            button.addEventListener('click', () => {
+                lightboxImage.src = button.dataset.fullImage;
+                lightboxImage.alt = button.querySelector('img')?.alt || 'Ảnh sản phẩm';
+                lightbox.classList.add('is-open');
+                lightbox.setAttribute('aria-hidden', 'false');
+            });
+        });
+
+        function closeLightbox() {
+            lightbox.classList.remove('is-open');
+            lightbox.setAttribute('aria-hidden', 'true');
+            lightboxImage.src = '';
+        }
+
+        lightbox.addEventListener('click', closeLightbox);
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && lightbox.classList.contains('is-open')) {
+                closeLightbox();
+            }
+        });
+    </script>
 </body>
 </html>

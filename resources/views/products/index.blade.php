@@ -188,7 +188,7 @@
 
         table {
             border-collapse: collapse;
-            min-width: 980px;
+            min-width: 1180px;
             width: 100%;
         }
 
@@ -472,6 +472,8 @@
                             </a>
                         </th>
                         <th>Vải</th>
+                        <th>Ngày dự kiến nhận</th>
+                        <th>SL nhận dự kiến</th>
                         <th>Số size</th>
                         <th>Thao tác</th>
                     </tr>
@@ -504,6 +506,8 @@
                             </td>
                             <td>{{ number_format($product->total_stock_quantity) }}</td>
                             <td>{{ $product->fabric }}</td>
+                            <td>{{ $product->expected_receive_date ? \Illuminate\Support\Carbon::parse($product->expected_receive_date)->format('d/m/Y') : 'N/A' }}</td>
+                            <td>{{ number_format($product->total_expected_receive_quantity ?? 0) }}</td>
                             <td>{{ number_format($product->size_count) }}</td>
                             <td>
                                 <div class="row-actions">
@@ -520,7 +524,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td class="empty" colspan="7">Chưa có sản phẩm phù hợp.</td>
+                            <td class="empty" colspan="9">Chưa có sản phẩm phù hợp.</td>
                         </tr>
                     @endforelse
                 </tbody>

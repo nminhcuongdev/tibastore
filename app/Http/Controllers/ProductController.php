@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\ProductExpectedReceipt;
 use App\Models\StockImportHistory;
 use App\Services\OrderInventoryService;
 use Illuminate\Database\QueryException;
@@ -66,6 +67,21 @@ class ProductController extends Controller
             ->paginate(8)
             ->withQueryString();
 
+        $products->getCollection()->each(function ($product) {
+            $expectedReceipts = ProductExpectedReceipt::query()
+                ->join('products', 'products.id', '=', 'product_expected_receipts.product_id')
+                ->where('products.code', $product->code)
+                ->whereNull('product_expected_receipts.received_at')
+                ->where('product_expected_receipts.expected_receive_quantity', '>', 0)
+                ->get([
+                    'product_expected_receipts.expected_receive_date',
+                    'product_expected_receipts.expected_receive_quantity',
+                ]);
+
+            $product->expected_receive_date = $expectedReceipts->min('expected_receive_date');
+            $product->total_expected_receive_quantity = $expectedReceipts->sum('expected_receive_quantity');
+        });
+
         return view('products.index', [
             'products' => $products,
             'query' => $query,
@@ -80,7 +96,7 @@ class ProductController extends Controller
         $sourceProductId = null;
 
         if ($request->filled('copy_from')) {
-            $source = Product::find($request->query('copy_from'));
+            $source = Product::with('expectedReceipts')->find($request->query('copy_from'));
 
             if ($source) {
                 $product->fill([
@@ -97,6 +113,9 @@ class ProductController extends Controller
         return view('products.form', [
             'product' => $product,
             'sourceProductId' => $sourceProductId,
+            'sourceExpectedReceipts' => isset($source)
+                ? $source->expectedReceipts->whereNull('received_at')->values()
+                : collect(),
             'mode' => 'create',
         ]);
     }
@@ -125,6 +144,7 @@ class ProductController extends Controller
         }
 
         $variants = Product::query()
+            ->with('expectedReceipts')
             ->where('code', $product->code)
             ->orderBy($sortMap[$sort], $direction)
             ->paginate(8)
@@ -197,6 +217,8 @@ class ProductController extends Controller
                     'import_price' => $data['import_price'],
                 ]);
 
+                $this->replacePendingExpectedReceipts($product, $variant['expected_receipts']);
+
                 if ($product->stock_quantity > 0) {
                     $this->recordStockImport($product, $product->stock_quantity, 0, $product->stock_quantity);
                 }
@@ -210,8 +232,11 @@ class ProductController extends Controller
 
     public function edit(Product $product): View
     {
+        $product->load('expectedReceipts');
+
         return view('products.form', [
             'product' => $product,
+            'sourceExpectedReceipts' => collect(),
             'mode' => 'edit',
         ]);
     }
@@ -219,6 +244,8 @@ class ProductController extends Controller
     public function update(Request $request, Product $product): RedirectResponse
     {
         $data = $this->validatedData($request, $product);
+        $expectedReceipts = $data['expected_receipts'];
+        unset($data['expected_receipts']);
         unset($data['image']);
 
         if ($request->hasFile('image')) {
@@ -229,11 +256,13 @@ class ProductController extends Controller
             $data['image_path'] = $request->file('image')->store('products', 'public');
         }
 
-        DB::transaction(function () use ($data, $product) {
+        DB::transaction(function () use ($data, $expectedReceipts, $product) {
             $lockedProduct = Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
             $previousQuantity = $lockedProduct->stock_quantity;
 
             $lockedProduct->update($data);
+            $this->replacePendingExpectedReceipts($lockedProduct, $expectedReceipts);
+
             $newQuantity = (int) $lockedProduct->stock_quantity;
 
             if ($newQuantity > $previousQuantity) {
@@ -315,6 +344,9 @@ class ProductController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'image' => ['nullable', 'image', 'max:2048'],
             'stock_quantity' => ['nullable', 'integer', 'min:0'],
+            'expected_receipts' => ['nullable', 'array'],
+            'expected_receipts.*.expected_receive_date' => ['nullable', 'date'],
+            'expected_receipts.*.expected_receive_quantity' => ['nullable', 'integer', 'min:0'],
             'fabric' => ['required', 'string', 'max:255'],
             'size' => ['required', 'string', 'max:50'],
             'import_price' => ['required', 'numeric', 'min:0'],
@@ -327,6 +359,9 @@ class ProductController extends Controller
             'stock_quantity.required' => 'Vui lòng nhập số lượng tồn.',
             'stock_quantity.integer' => 'Số lượng tồn phải là số nguyên.',
             'stock_quantity.min' => 'Số lượng tồn không được âm.',
+            'expected_receipts.*.expected_receive_date.date' => 'Ngày dự kiến nhận hàng không hợp lệ.',
+            'expected_receipts.*.expected_receive_quantity.integer' => 'Số lượng nhận dự kiến phải là số nguyên.',
+            'expected_receipts.*.expected_receive_quantity.min' => 'Số lượng nhận dự kiến không được âm.',
             'fabric.required' => 'Vui lòng nhập chất liệu vải.',
             'size.required' => 'Vui lòng nhập size.',
             'import_price.required' => 'Vui lòng nhập giá nhập.',
@@ -335,8 +370,53 @@ class ProductController extends Controller
         ]);
 
         $data['stock_quantity'] = (int) ($data['stock_quantity'] ?? 0);
+        $data['expected_receipts'] = $this->normalizeExpectedReceipts($data['expected_receipts'] ?? [], 'expected_receipts');
 
         return $data;
+    }
+
+    private function normalizeExpectedReceipts(array $receipts, string $fieldPrefix): array
+    {
+        return collect($receipts)
+            ->map(function ($receipt, $index) use ($fieldPrefix) {
+                $quantity = (int) ($receipt['expected_receive_quantity'] ?? 0);
+                $date = $receipt['expected_receive_date'] ?? null;
+
+                if ($quantity <= 0 && empty($date)) {
+                    return null;
+                }
+
+                if ($quantity <= 0) {
+                    return null;
+                }
+
+                if (empty($date)) {
+                    throw ValidationException::withMessages([
+                        "{$fieldPrefix}.{$index}.expected_receive_date" => 'Vui lòng nhập ngày dự kiến nhận hàng.',
+                    ]);
+                }
+
+                return [
+                    'expected_receive_date' => $date,
+                    'expected_receive_quantity' => $quantity,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function replacePendingExpectedReceipts(Product $product, array $receipts): void
+    {
+        $product->expectedReceipts()
+            ->whereNull('received_at')
+            ->delete();
+
+        if ($receipts === []) {
+            return;
+        }
+
+        $product->expectedReceipts()->createMany($receipts);
     }
 
     private function validatedStoreData(Request $request): array
@@ -350,6 +430,9 @@ class ProductController extends Controller
             'variants' => ['required', 'array', 'min:1'],
             'variants.*.size' => ['required', 'string', 'max:50'],
             'variants.*.stock_quantity' => ['nullable', 'integer', 'min:0'],
+            'variants.*.expected_receipts' => ['nullable', 'array'],
+            'variants.*.expected_receipts.*.expected_receive_date' => ['nullable', 'date'],
+            'variants.*.expected_receipts.*.expected_receive_quantity' => ['nullable', 'integer', 'min:0'],
         ], [
             'code.required' => 'Vui lòng nhập mã sản phẩm.',
             'name.required' => 'Vui lòng nhập tên sản phẩm.',
@@ -365,6 +448,9 @@ class ProductController extends Controller
             'variants.*.stock_quantity.required' => 'Vui lòng nhập số lượng tồn.',
             'variants.*.stock_quantity.integer' => 'Số lượng tồn phải là số nguyên.',
             'variants.*.stock_quantity.min' => 'Số lượng tồn không được âm.',
+            'variants.*.expected_receipts.*.expected_receive_date.date' => 'Ngày dự kiến nhận hàng không hợp lệ.',
+            'variants.*.expected_receipts.*.expected_receive_quantity.integer' => 'Số lượng nhận dự kiến phải là số nguyên.',
+            'variants.*.expected_receipts.*.expected_receive_quantity.min' => 'Số lượng nhận dự kiến không được âm.',
         ]);
 
         $sizes = collect($data['variants'])
@@ -389,10 +475,16 @@ class ProductController extends Controller
         }
 
         $data['variants'] = collect($data['variants'])
-            ->map(fn ($variant) => [
-                'size' => trim((string) $variant['size']),
-                'stock_quantity' => (int) ($variant['stock_quantity'] ?? 0),
-            ])
+            ->map(function ($variant, $index) {
+                return [
+                    'size' => trim((string) $variant['size']),
+                    'stock_quantity' => (int) ($variant['stock_quantity'] ?? 0),
+                    'expected_receipts' => $this->normalizeExpectedReceipts(
+                        $variant['expected_receipts'] ?? [],
+                        "variants.{$index}.expected_receipts"
+                    ),
+                ];
+            })
             ->values()
             ->all();
 

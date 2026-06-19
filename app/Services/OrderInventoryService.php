@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\ProductExpectedReceipt;
+use App\Models\StockImportHistory;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +18,7 @@ class OrderInventoryService
     {
         $today = $this->date($today ?? now());
 
+        $this->syncDueExpectedReceipts($today);
         $this->reconcileUndueAdjustments($today);
         $this->syncDueReturns($today);
         $this->syncDuePickups($today);
@@ -140,6 +143,7 @@ class OrderInventoryService
         $products = Product::whereIn('id', $productIds->all())
             ->get(['id', 'stock_quantity'])
             ->keyBy('id');
+        $expectedReceiptQuantities = $this->expectedReceiptQuantitiesForDate($productIds->all(), $start);
         $openQuantities = $this->openStockQuantities($productIds->all());
         $reservedQuantities = $this->maxReservedQuantities(
             $productIds->all(),
@@ -152,13 +156,75 @@ class OrderInventoryService
         foreach ($productIds as $productId) {
             $product = $products->get($productId);
             $totalPhysicalQuantity = (int) ($product?->stock_quantity ?? 0)
-                + (int) ($openQuantities[$productId] ?? 0);
+                + (int) ($openQuantities[$productId] ?? 0)
+                + (int) ($expectedReceiptQuantities[$productId] ?? 0);
             $reservedQuantity = (int) ($reservedQuantities[$productId] ?? 0);
 
             $availability[$productId] = max(0, $totalPhysicalQuantity - $reservedQuantity);
         }
 
         return $availability;
+    }
+
+    private function syncDueExpectedReceipts(Carbon $today): void
+    {
+        ProductExpectedReceipt::query()
+            ->whereDate('expected_receive_date', '<=', $today)
+            ->where('expected_receive_quantity', '>', 0)
+            ->whereNull('received_at')
+            ->chunkById(50, function ($receipts) use ($today) {
+                foreach ($receipts as $receipt) {
+                    DB::transaction(function () use ($receipt, $today) {
+                        $lockedReceipt = ProductExpectedReceipt::whereKey($receipt->id)
+                            ->lockForUpdate()
+                            ->firstOrFail();
+
+                        if (
+                            $lockedReceipt->received_at !== null
+                            || $lockedReceipt->expected_receive_quantity <= 0
+                            || $this->date($lockedReceipt->expected_receive_date)->gt($today)
+                        ) {
+                            return;
+                        }
+
+                        $lockedProduct = Product::whereKey($lockedReceipt->product_id)
+                            ->lockForUpdate()
+                            ->firstOrFail();
+
+                        $previousQuantity = (int) $lockedProduct->stock_quantity;
+                        $receivedQuantity = (int) $lockedReceipt->expected_receive_quantity;
+                        $newQuantity = $previousQuantity + $receivedQuantity;
+
+                        $lockedProduct->forceFill([
+                            'stock_quantity' => $newQuantity,
+                        ])->save();
+
+                        $lockedReceipt->forceFill(['received_at' => now()])->save();
+
+                        StockImportHistory::create([
+                            'product_id' => $lockedProduct->id,
+                            'user_id' => null,
+                            'quantity' => $receivedQuantity,
+                            'previous_quantity' => $previousQuantity,
+                            'new_quantity' => $newQuantity,
+                        ]);
+                    });
+                }
+            });
+    }
+
+    private function expectedReceiptQuantitiesForDate(array $productIds, Carbon $date): array
+    {
+        return ProductExpectedReceipt::query()
+            ->whereIn('product_id', $productIds)
+            ->whereDate('expected_receive_date', '<=', $date)
+            ->where('expected_receive_quantity', '>', 0)
+            ->whereNull('received_at')
+            ->selectRaw('product_id, SUM(expected_receive_quantity) as expected_quantity')
+            ->groupBy('product_id')
+            ->pluck('expected_quantity', 'product_id')
+            ->map(fn ($quantity) => (int) $quantity)
+            ->all();
     }
 
     private function syncDueReturns(Carbon $today): void

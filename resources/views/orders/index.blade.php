@@ -173,6 +173,18 @@
             color: #a13b60;
             font-weight: 800;
         }
+        .product-codes {
+            display: grid;
+            gap: 6px;
+        }
+        .product-code-line {
+            line-height: 1.45;
+        }
+        .size-qty {
+            color: #8b6672;
+            font-size: 13px;
+            font-weight: 600;
+        }
         .name {
             color: #3f2730;
             font-weight: 800;
@@ -335,14 +347,24 @@
                                 <div class="muted">Tạo: {{ $order->created_at?->format('d/m/Y') }}</div>
                             </td>
                             <td>
-                                @forelse ($order->items as $item)
-                                    <div class="code">{{ $item->product->code }}</div>
-                                    <div class="muted">{{ $item->product->name }} | Size: {{ $item->product->size }} | SL: {{ number_format($item->quantity) }}</div>
-                                @empty
-                                    <div class="code">{{ $order->product->code }}</div>
-                                    <div class="muted">{{ $order->product->name }}</div>
-                                    <div class="muted">Size: {{ $order->product->size }}</div>
-                                @endforelse
+                                <div class="product-codes">
+                                    @forelse ($order->items->groupBy(fn ($item) => $item->product->code) as $code => $items)
+                                        <div class="product-code-line">
+                                            <span class="code">{{ $code }}</span>
+                                            <span class="size-qty">
+                                                -
+                                                @foreach ($items->groupBy(fn ($item) => $item->product->size) as $size => $sizeItems)
+                                                    Size {{ $size }}: {{ number_format($sizeItems->sum('quantity')) }}@if (! $loop->last), @endif
+                                                @endforeach
+                                            </span>
+                                        </div>
+                                    @empty
+                                        <div class="product-code-line">
+                                            <span class="code">{{ $order->product->code }}</span>
+                                            <span class="size-qty">- Size {{ $order->product->size }}: {{ number_format($order->quantity) }}</span>
+                                        </div>
+                                    @endforelse
+                                </div>
                             </td>
                             <td>{{ number_format($order->items->sum('quantity') ?: $order->quantity) }}</td>
                             <td>

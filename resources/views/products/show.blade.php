@@ -102,7 +102,7 @@
         .table-shell { overflow-x: auto; }
         table {
             border-collapse: collapse;
-            min-width: 980px;
+            min-width: 1180px;
             width: 100%;
         }
         th,
@@ -290,6 +290,8 @@
                             </a>
                         </th>
                         <th>Vải</th>
+                        <th>Ngày dự kiến nhận</th>
+                        <th>SL nhận dự kiến</th>
                         <th>
                             <a href="{{ route('products.show', array_merge(['product' => $product], request()->except('page'), ['sort' => 'size', 'direction' => $sort === 'size' && $direction === 'asc' ? 'desc' : 'asc'])) }}">
                                 Size {{ $sort === 'size' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}
@@ -322,6 +324,20 @@
                             </td>
                             <td>{{ number_format($variant->stock_quantity) }}</td>
                             <td>{{ $variant->fabric }}</td>
+                            <td>
+                                @forelse ($variant->expectedReceipts->whereNull('received_at') as $receipt)
+                                    <div>{{ $receipt->expected_receive_date?->format('d/m/Y') }}</div>
+                                @empty
+                                    N/A
+                                @endforelse
+                            </td>
+                            <td>
+                                @forelse ($variant->expectedReceipts->whereNull('received_at') as $receipt)
+                                    <div>{{ number_format($receipt->expected_receive_quantity) }}</div>
+                                @empty
+                                    0
+                                @endforelse
+                            </td>
                             <td>{{ $variant->size }}</td>
                             <td>{{ number_format((float) $variant->import_price, 0, ',', '.') }} VND</td>
                             <td>
@@ -338,7 +354,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td class="empty" colspan="8">Chưa có sản phẩm phù hợp.</td>
+                            <td class="empty" colspan="10">Chưa có sản phẩm phù hợp.</td>
                         </tr>
                     @endforelse
                 </tbody>

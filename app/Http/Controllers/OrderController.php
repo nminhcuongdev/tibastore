@@ -124,7 +124,7 @@ class OrderController extends Controller
     {
         $this->inventory->syncDueOrders();
 
-        $products = Product::orderBy('code')->orderBy('size')->get();
+        $products = Product::with('expectedReceipts')->orderBy('code')->orderBy('size')->get();
 
         return view('orders.form', [
             'order' => new Order(['status' => 'len_don']),
@@ -174,7 +174,7 @@ class OrderController extends Controller
     {
         $this->inventory->syncDueOrders();
 
-        $products = Product::orderBy('code')->orderBy('size')->get();
+        $products = Product::with('expectedReceipts')->orderBy('code')->orderBy('size')->get();
         $order->refresh()->load('items.product');
 
         return view('orders.form', [
@@ -300,11 +300,19 @@ class OrderController extends Controller
                     'code' => $first->code,
                     'name' => $first->name,
                     'items' => $items->map(fn (Product $product) => [
-                        'id' => $product->id,
-                        'size' => $product->size,
-                        'name' => $product->name,
+                    'id' => $product->id,
+                    'size' => $product->size,
+                    'name' => $product->name,
                         'fabric' => $product->fabric,
                         'stock_quantity' => $product->stock_quantity,
+                        'expected_receipts' => $product->expectedReceipts
+                            ->whereNull('received_at')
+                            ->map(fn ($receipt) => [
+                                'expected_receive_date' => $receipt->expected_receive_date?->format('Y-m-d'),
+                                'expected_receive_quantity' => $receipt->expected_receive_quantity,
+                            ])
+                            ->values()
+                            ->all(),
                     ])->values()->all(),
                 ];
             })
