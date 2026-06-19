@@ -304,6 +304,7 @@ class OrderController extends Controller
                     'size' => $product->size,
                     'name' => $product->name,
                         'fabric' => $product->fabric,
+                        'image_url' => $product->image_path ? asset('storage/' . $product->image_path) : null,
                         'stock_quantity' => $product->stock_quantity,
                         'expected_receipts' => $product->expectedReceipts
                             ->whereNull('received_at')

@@ -164,6 +164,78 @@
             font-weight: 700;
         }
 
+        .hint {
+            color: #8b6672;
+            font-size: 12px;
+        }
+
+        .hint.warn {
+            color: #b4233f;
+            font-weight: 700;
+        }
+
+        .code-suggest-wrap {
+            position: relative;
+        }
+
+        .code-suggestions {
+            background: #fff;
+            border: 1px solid #f0d3dc;
+            border-radius: 8px;
+            box-shadow: 0 14px 36px rgba(117, 44, 69, .08);
+            display: none;
+            left: 0;
+            margin-top: 6px;
+            max-height: 240px;
+            overflow-y: auto;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            z-index: 5;
+        }
+
+        .code-suggestion {
+            background: transparent;
+            border: 0;
+            border-bottom: 1px solid #f7e3e9;
+            cursor: pointer;
+            display: block;
+            padding: 9px 12px;
+            text-align: left;
+            width: 100%;
+        }
+
+        .code-suggestion:hover {
+            background: #fff4f7;
+        }
+
+        .code-suggestion-main {
+            color: #3f2730;
+            font-weight: 800;
+        }
+
+        .code-suggestion-next {
+            color: #a13b60;
+        }
+
+        .code-suggestion-meta {
+            color: #8b6672;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        .code-suggest-actions {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .button.small {
+            min-height: 38px;
+            padding: 8px 12px;
+        }
+
         .preview {
             align-content: center;
             background: #fff4f7;
@@ -260,7 +332,20 @@
             <div class="fields">
                 <div class="field">
                     <label for="code">Mã sản phẩm</label>
-                    <input id="code" name="code" type="text" value="{{ old('code', $product->code) }}" maxlength="50" required>
+                    @if ($mode === 'create')
+                        <div class="code-suggest-wrap">
+                            <input id="code" name="code" type="text" value="{{ old('code', $product->code) }}" maxlength="50" autocomplete="off" required>
+                            <div id="code_suggestions" class="code-suggestions"></div>
+                        </div>
+                        <div class="code-suggest-actions">
+                            <button id="suggest_next_code" class="button secondary small" type="button">Gợi ý mã tiếp theo</button>
+                            <span id="code_dup_hint" class="hint"></span>
+                        </div>
+                        <div class="hint">Gõ vài ký tự để xem mã đã có và chọn mã mới chỉ khác ở đuôi.</div>
+                    @else
+                        <input id="code" name="code" type="text" value="{{ old('code', $product->code) }}" maxlength="50" required>
+                        <div class="hint">Đổi mã sẽ áp dụng cho tất cả size thuộc mã hàng này.</div>
+                    @endif
                     @error('code') <div class="error">{{ $message }}</div> @enderror
                 </div>
 
@@ -424,6 +509,7 @@
     </main>
     <script>
         const mode = @json($mode);
+        const existingCodes = @json($existingCodes ?? [], JSON_UNESCAPED_UNICODE);
         const sizeRows = document.getElementById('size_rows');
         const addSizeButton = document.getElementById('add_size_button');
 
@@ -554,6 +640,156 @@
                 renumberSizeRows();
                 row.querySelector('[data-size]').focus();
             });
+        }
+
+        if (mode === 'create') {
+            const codeInput = document.getElementById('code');
+            const codeSuggestions = document.getElementById('code_suggestions');
+            const suggestNextButton = document.getElementById('suggest_next_code');
+            const codeDupHint = document.getElementById('code_dup_hint');
+            const codeMap = new Map(existingCodes.map(item => [item.code.toLowerCase(), item]));
+
+            function codeExists(code) {
+                return codeMap.has(String(code).trim().toLowerCase());
+            }
+
+            // Tạo mã kế tiếp bằng cách tăng phần số ở đuôi, giữ nguyên độ rộng (số 0 đệm),
+            // và bỏ qua những mã đã tồn tại để tránh trùng.
+            function nextCodeFrom(base) {
+                const trimmed = String(base || '').trim();
+                const match = trimmed.match(/^(.*?)(\d+)(\D*)$/);
+                let candidate;
+
+                if (match) {
+                    const prefix = match[1];
+                    const width = match[2].length;
+                    const suffix = match[3];
+                    let number = parseInt(match[2], 10);
+
+                    do {
+                        number += 1;
+                        candidate = `${prefix}${String(number).padStart(width, '0')}${suffix}`;
+                    } while (codeExists(candidate) && number < 1000000);
+
+                    return candidate;
+                }
+
+                let number = 0;
+
+                do {
+                    number += 1;
+                    candidate = `${trimmed}${String(number).padStart(2, '0')}`;
+                } while (codeExists(candidate) && number < 1000);
+
+                return candidate;
+            }
+
+            function enteredSizes() {
+                return Array.from(document.querySelectorAll('#size_rows [data-size]'))
+                    .map(input => input.value.trim())
+                    .filter(Boolean);
+            }
+
+            function updateCodeDupHint() {
+                const found = codeMap.get(codeInput.value.trim().toLowerCase());
+
+                if (! found) {
+                    codeDupHint.textContent = '';
+                    codeDupHint.classList.remove('warn');
+                    return;
+                }
+
+                const takenSizes = found.sizes.map(size => size.toLowerCase());
+                const clashing = enteredSizes().filter(size => takenSizes.includes(size.toLowerCase()));
+
+                if (clashing.length > 0) {
+                    codeDupHint.textContent = `Mã ${found.code} đã có size: ${clashing.join(', ')}. Hãy đổi đuôi mã hoặc dùng size khác.`;
+                    codeDupHint.classList.add('warn');
+                } else {
+                    codeDupHint.textContent = `Mã ${found.code} đã tồn tại (size: ${found.sizes.join(', ')}).`;
+                    codeDupHint.classList.remove('warn');
+                }
+            }
+
+            function renderCodeSuggestions() {
+                const keyword = codeInput.value.trim().toLowerCase();
+                const matches = existingCodes
+                    .filter(item => keyword === '' || item.code.toLowerCase().includes(keyword))
+                    .slice(0, 20);
+
+                codeSuggestions.innerHTML = '';
+
+                if (matches.length === 0) {
+                    codeSuggestions.style.display = 'none';
+                    return;
+                }
+
+                matches.forEach(item => {
+                    const next = nextCodeFrom(item.code);
+                    const button = document.createElement('button');
+                    const main = document.createElement('div');
+                    const nextSpan = document.createElement('span');
+                    const meta = document.createElement('div');
+
+                    button.type = 'button';
+                    button.className = 'code-suggestion';
+                    main.className = 'code-suggestion-main';
+                    main.textContent = `${item.code} → `;
+                    nextSpan.className = 'code-suggestion-next';
+                    nextSpan.textContent = next;
+                    main.appendChild(nextSpan);
+                    meta.className = 'code-suggestion-meta';
+                    meta.textContent = item.sizes.length
+                        ? `Đã có ${item.sizes.length} size: ${item.sizes.join(', ')}`
+                        : 'Chưa có size';
+                    button.append(main, meta);
+                    button.addEventListener('click', () => {
+                        codeInput.value = next;
+                        codeSuggestions.style.display = 'none';
+                        updateCodeDupHint();
+                        codeInput.focus();
+                    });
+                    codeSuggestions.appendChild(button);
+                });
+
+                codeSuggestions.style.display = 'block';
+            }
+
+            codeInput.addEventListener('input', () => {
+                renderCodeSuggestions();
+                updateCodeDupHint();
+            });
+
+            codeInput.addEventListener('focus', renderCodeSuggestions);
+
+            suggestNextButton.addEventListener('click', () => {
+                const base = codeInput.value.trim()
+                    || (existingCodes.length ? existingCodes[existingCodes.length - 1].code : '');
+
+                if (! base) {
+                    codeInput.focus();
+                    return;
+                }
+
+                codeInput.value = nextCodeFrom(base);
+                codeSuggestions.style.display = 'none';
+                updateCodeDupHint();
+                codeInput.focus();
+            });
+
+            document.addEventListener('click', event => {
+                if (! codeInput.closest('.code-suggest-wrap').contains(event.target)) {
+                    codeSuggestions.style.display = 'none';
+                }
+            });
+
+            sizeRows.addEventListener('input', event => {
+                if (event.target.matches('[data-size]')) {
+                    updateCodeDupHint();
+                }
+            });
+
+            updateCodeDupHint();
         }
     </script>
 </body>

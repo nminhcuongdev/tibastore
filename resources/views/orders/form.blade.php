@@ -68,9 +68,82 @@
             border-radius: 8px;
             display: grid;
             gap: 12px;
-            grid-template-columns: minmax(0, 1fr) 220px 120px auto;
             padding: 14px;
             position: relative;
+        }
+        .size-rows {
+            display: grid;
+            gap: 10px;
+        }
+        .size-row {
+            align-items: end;
+            display: grid;
+            gap: 12px;
+            grid-template-columns: 70px 220px 120px auto;
+        }
+        .size-row .button.danger {
+            align-self: end;
+        }
+        .size-thumb {
+            align-items: center;
+            background: #f9e5ec;
+            border: 1px solid #f1cbd7;
+            border-radius: 8px;
+            color: #a64465;
+            cursor: default;
+            display: flex;
+            font-family: inherit;
+            font-size: 10px;
+            font-weight: 800;
+            height: 60px;
+            justify-content: center;
+            line-height: 1.2;
+            overflow: hidden;
+            padding: 4px;
+            position: relative;
+            text-align: center;
+            width: 60px;
+        }
+        .size-thumb.has-image {
+            cursor: zoom-in;
+            padding: 0;
+        }
+        .size-thumb img {
+            height: 100%;
+            object-fit: cover;
+            width: 100%;
+        }
+        .size-thumb.has-image:hover,
+        .size-thumb.has-image:focus {
+            border-color: #c9577d;
+            box-shadow: 0 10px 24px rgba(117, 44, 69, .18);
+            outline: none;
+        }
+        .image-lightbox {
+            align-items: center;
+            background: rgba(63, 39, 48, .72);
+            cursor: zoom-out;
+            display: none;
+            inset: 0;
+            justify-content: center;
+            padding: 24px;
+            position: fixed;
+            z-index: 1000;
+        }
+        .image-lightbox.is-open { display: flex; }
+        .image-lightbox img {
+            background: #fff;
+            border: 8px solid #fff;
+            border-radius: 8px;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
+            max-height: 90vh;
+            max-width: 90vw;
+            object-fit: contain;
+        }
+        .product-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         .product-picker-cell {
             min-width: 0;
@@ -204,16 +277,10 @@
             cursor: not-allowed;
             opacity: .55;
         }
-        .item-buttons {
-            align-items: stretch;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
         @media (max-width: 860px) {
             .topbar,
             .form-shell,
-            .order-item {
+            .size-row {
                 align-items: stretch;
                 grid-template-columns: 1fr;
             }
@@ -311,6 +378,9 @@
             </div>
         </form>
     </main>
+    <div class="image-lightbox" data-image-lightbox aria-hidden="true">
+        <img data-lightbox-image src="" alt="">
+    </div>
     @include('orders.reminders-popup')
     <script>
         const productOptions = @json($productOptions, JSON_UNESCAPED_UNICODE);
@@ -423,7 +493,7 @@
                     productAvailability.set(Number(productId), Number(quantity || 0));
                 });
                 refreshProductChoices();
-                itemsContainer.querySelectorAll('.order-item').forEach(validateRow);
+                itemsContainer.querySelectorAll('.size-row').forEach(validateSizeRow);
             } catch (error) {
                 if (requestId !== availabilityRequestId) {
                     return;
@@ -434,16 +504,16 @@
             }
         }
 
-        function selectedProductIds(exceptRow = null) {
-            return new Set(Array.from(itemsContainer.querySelectorAll('.order-item'))
-                .filter(row => row !== exceptRow)
-                .map(row => row.querySelector('[data-product-id]').value)
+        function selectedProductIds(exceptSizeRow = null) {
+            return new Set(Array.from(itemsContainer.querySelectorAll('.size-row'))
+                .filter(sizeRow => sizeRow !== exceptSizeRow)
+                .map(sizeRow => sizeRow.querySelector('[data-product-id]').value)
                 .filter(Boolean)
                 .map(String));
         }
 
-        function availableProductsForRow(group, row, selectedProductId = null) {
-            const selectedIds = selectedProductIds(row);
+        function availableProductsForSizeRow(group, sizeRow, selectedProductId = null) {
+            const selectedIds = selectedProductIds(sizeRow);
 
             return group.items.filter(product => {
                 const isCurrentSelection = selectedProductId && Number(product.id) === Number(selectedProductId);
@@ -464,25 +534,42 @@
             return group.items.filter(product => ! selectedIds.has(String(product.id)) && stockLimit(product) > 0);
         }
 
-        function updateAddSizeButton(row) {
-            const addSizeButton = row.querySelector('[data-add-size]');
+        function updateAddSizeButton(block) {
+            const addSizeButton = block.querySelector('[data-add-size]');
 
             if (! addSizeButton) {
                 return;
             }
 
-            addSizeButton.disabled = ! row.dataset.productCode
-                || ! row.querySelector('[data-product-id]').value
-                || availableProductsForNewSize(row.dataset.productCode).length === 0;
+            addSizeButton.disabled = ! block.dataset.productCode
+                || availableProductsForNewSize(block.dataset.productCode).length === 0;
         }
 
         function updateAllAddSizeButtons() {
             itemsContainer.querySelectorAll('.order-item').forEach(updateAddSizeButton);
         }
 
-        function updateQuantityLimit(row) {
-            const quantityInput = row.querySelector('[data-quantity]');
-            const productId = row.querySelector('[data-product-id]').value;
+        function showRowError(block, message) {
+            const rowError = block.querySelector('[data-row-error]');
+            rowError.style.display = 'block';
+            rowError.textContent = message;
+        }
+
+        function clearRowError(block) {
+            const rowError = block.querySelector('[data-row-error]');
+            rowError.style.display = 'none';
+            rowError.textContent = '';
+        }
+
+        function showBlockInfo(block, message) {
+            const selectedInfo = block.querySelector('[data-selected-info]');
+            selectedInfo.style.display = 'block';
+            selectedInfo.textContent = message;
+        }
+
+        function updateQuantityLimit(sizeRow) {
+            const quantityInput = sizeRow.querySelector('[data-quantity]');
+            const productId = sizeRow.querySelector('[data-product-id]').value;
             const selected = findProductById(productId);
 
             quantityInput.setCustomValidity('');
@@ -507,41 +594,34 @@
             return true;
         }
 
-        function validateRow(row) {
-            const rowError = row.querySelector('[data-row-error]');
-            const productId = row.querySelector('[data-product-id]').value;
-            rowError.style.display = 'none';
-            rowError.textContent = '';
+        function validateSizeRow(sizeRow) {
+            const productId = sizeRow.querySelector('[data-product-id]').value;
 
             if (! productId) {
                 return false;
             }
 
-            if (! updateQuantityLimit(row)) {
-                const max = row.querySelector('[data-quantity]').max;
-                rowError.style.display = 'block';
-                rowError.textContent = `Số lượng không được vượt quá tồn dự kiến (${max}).`;
-                return false;
-            }
-
-            return true;
+            return updateQuantityLimit(sizeRow);
         }
 
         function renumberRows() {
-            itemsContainer.querySelectorAll('.order-item').forEach((row, index) => {
-                row.querySelector('[data-product-id]').name = `items[${index}][product_id]`;
-                row.querySelector('[data-quantity]').name = `items[${index}][quantity]`;
+            let index = 0;
+
+            itemsContainer.querySelectorAll('.size-row').forEach(sizeRow => {
+                sizeRow.querySelector('[data-product-id]').name = `items[${index}][product_id]`;
+                sizeRow.querySelector('[data-quantity]').name = `items[${index}][quantity]`;
+                index += 1;
             });
         }
 
-        function renderSuggestions(row, keyword = '') {
-            const suggestions = row.querySelector('[data-suggestions]');
+        function renderSuggestions(block, keyword = '') {
+            const suggestions = block.querySelector('[data-suggestions]');
             const normalizedKeyword = keyword.trim().toLowerCase();
             const matches = productOptions.filter(group => {
                 const hasKeyword = group.code.toLowerCase().includes(normalizedKeyword)
                     || group.name.toLowerCase().includes(normalizedKeyword);
 
-                return hasKeyword && availableProductsForRow(group, row).length > 0;
+                return hasKeyword && availableProductsForNewSize(group.code).length > 0;
             }).slice(0, 20);
 
             suggestions.innerHTML = '';
@@ -564,44 +644,41 @@
                 name.className = 'product-name';
                 name.textContent = group.name;
                 meta.className = 'product-meta';
-                meta.textContent = `${availableProductsForRow(group, row).length}/${group.items.length} size có thể chọn`;
+                meta.textContent = `${availableProductsForNewSize(group.code).length}/${group.items.length} size có thể chọn`;
                 button.append(code, name, meta);
-                button.addEventListener('click', () => selectProductCode(row, group.code));
+                button.addEventListener('click', () => selectProductCode(block, group.code));
                 suggestions.appendChild(button);
             });
 
             suggestions.style.display = 'block';
         }
 
-        function selectProductCode(row, code, selectedProductId = null) {
-            const group = productOptions.find(item => item.code === code);
-            const searchInput = row.querySelector('[data-search]');
-            const sizeSelect = row.querySelector('[data-size]');
-            const productIdInput = row.querySelector('[data-product-id]');
-            const suggestions = row.querySelector('[data-suggestions]');
-            const selectedInfo = row.querySelector('[data-selected-info]');
+        function clearSizeRows(block) {
+            block.querySelector('[data-size-rows]').innerHTML = '';
+        }
 
-            searchInput.value = group ? `${group.code} - ${group.name}` : code;
-            row.dataset.productCode = group ? group.code : '';
-            suggestions.style.display = 'none';
-            productIdInput.value = '';
+        function populateSizeSelect(sizeRow, selectedProductId = null) {
+            const block = sizeRow.closest('.order-item');
+            const group = productOptions.find(item => item.code === block.dataset.productCode);
+            const sizeSelect = sizeRow.querySelector('[data-size]');
+            const productIdInput = sizeRow.querySelector('[data-product-id]');
+            const currentSelection = selectedProductId ?? productIdInput.value;
+
             sizeSelect.innerHTML = '<option value="">Chọn size</option>';
-            sizeSelect.disabled = !group;
-            selectedInfo.style.display = 'none';
-            selectedInfo.textContent = '';
+            sizeSelect.disabled = ! group;
 
-            if (!group) {
-                updateAddSizeButton(row);
+            if (! group) {
+                productIdInput.value = '';
                 return;
             }
 
-            const availableProducts = availableProductsForRow(group, row, selectedProductId);
+            const availableProducts = availableProductsForSizeRow(group, sizeRow, currentSelection);
 
             availableProducts.forEach(product => {
                 const option = document.createElement('option');
                 option.value = product.id;
                 option.textContent = `${product.size} | Tồn dự kiến: ${stockLimit(product)} | Vải: ${product.fabric}`;
-                option.selected = Number(product.id) === Number(selectedProductId);
+                option.selected = Number(product.id) === Number(currentSelection);
                 sizeSelect.appendChild(option);
             });
 
@@ -612,191 +689,321 @@
                 sizeSelect.appendChild(option);
             }
 
-            if (selectedProductId && availableProducts.some(product => Number(product.id) === Number(selectedProductId))) {
-                productIdInput.value = selectedProductId;
-                renderSelectedInfo(row);
-                updateQuantityLimit(row);
+            if (currentSelection && availableProducts.some(product => Number(product.id) === Number(currentSelection))) {
+                productIdInput.value = currentSelection;
+            } else {
+                productIdInput.value = '';
             }
 
-            updateAddSizeButton(row);
+            updateSizeImage(sizeRow);
         }
 
-        function renderSelectedInfo(row) {
-            const productIdInput = row.querySelector('[data-product-id]');
-            const selectedInfo = row.querySelector('[data-selected-info]');
-            const selected = findProductById(productIdInput.value);
+        function updateSizeImage(sizeRow) {
+            const thumb = sizeRow.querySelector('[data-size-thumb]');
+            const img = sizeRow.querySelector('[data-size-thumb-img]');
+            const empty = sizeRow.querySelector('[data-size-thumb-empty]');
+            const selected = findProductById(sizeRow.querySelector('[data-product-id]').value);
+            const imageUrl = selected && selected.item.image_url ? selected.item.image_url : null;
 
-            if (!selected) {
+            if (imageUrl) {
+                img.src = imageUrl;
+                img.style.display = '';
+                empty.style.display = 'none';
+                thumb.classList.add('has-image');
+                thumb.dataset.fullImage = imageUrl;
+                thumb.disabled = false;
+            } else {
+                img.removeAttribute('src');
+                img.style.display = 'none';
+                empty.style.display = '';
+                thumb.classList.remove('has-image');
+                delete thumb.dataset.fullImage;
+                thumb.disabled = true;
+            }
+        }
+
+        function selectProductCode(block, code) {
+            const group = productOptions.find(item => item.code === code);
+            const searchInput = block.querySelector('[data-search]');
+            const suggestions = block.querySelector('[data-suggestions]');
+            const selectedInfo = block.querySelector('[data-selected-info]');
+
+            searchInput.value = group ? `${group.code} - ${group.name}` : code;
+            block.dataset.productCode = group ? group.code : '';
+            suggestions.style.display = 'none';
+            selectedInfo.style.display = 'none';
+            selectedInfo.textContent = '';
+            clearRowError(block);
+
+            clearSizeRows(block);
+            addSizeRow(block);
+
+            updateAddSizeButton(block);
+        }
+
+        function renderSelectedInfo(block) {
+            const selectedInfo = block.querySelector('[data-selected-info]');
+            const lines = Array.from(block.querySelectorAll('.size-row'))
+                .map(sizeRow => findProductById(sizeRow.querySelector('[data-product-id]').value))
+                .filter(Boolean)
+                .map(selected => `${selected.group.code} - ${selected.item.name} | Size: ${selected.item.size} | Tồn dự kiến: ${stockLimit(selected.item)} | Vải: ${selected.item.fabric}`);
+
+            selectedInfo.textContent = '';
+
+            if (lines.length === 0) {
                 selectedInfo.style.display = 'none';
-                updateAddSizeButton(row);
-                selectedInfo.textContent = '';
                 return;
             }
 
+            lines.forEach((line, index) => {
+                if (index > 0) {
+                    selectedInfo.appendChild(document.createElement('br'));
+                }
+
+                selectedInfo.appendChild(document.createTextNode(line));
+            });
+
             selectedInfo.style.display = 'block';
-            selectedInfo.textContent = `${selected.group.code} - ${selected.item.name} | Size: ${selected.item.size} | Tồn dự kiến: ${stockLimit(selected.item)} | Vải: ${selected.item.fabric}`;
         }
 
         function refreshProductChoices() {
-            itemsContainer.querySelectorAll('.order-item').forEach(row => {
-                if (! row.dataset.productCode) {
+            itemsContainer.querySelectorAll('.order-item').forEach(block => {
+                if (! block.dataset.productCode) {
                     return;
                 }
 
-                selectProductCode(row, row.dataset.productCode, row.querySelector('[data-product-id]').value);
+                block.querySelectorAll('.size-row').forEach(sizeRow => {
+                    populateSizeSelect(sizeRow, sizeRow.querySelector('[data-product-id]').value);
+                    updateQuantityLimit(sizeRow);
+                });
+
+                renderSelectedInfo(block);
             });
             updateAllAddSizeButtons();
         }
 
-        function addSizeForRow(row) {
-            const code = row.dataset.productCode;
-            const selectedInfo = row.querySelector('[data-selected-info]');
+        function addSizeForBlock(block) {
+            const code = block.dataset.productCode;
 
             if (! code) {
-                selectedInfo.style.display = 'block';
-                selectedInfo.textContent = 'Vui lòng chọn mã hàng trước khi thêm size.';
+                showBlockInfo(block, 'Vui lòng chọn mã hàng trước khi thêm size.');
                 return;
             }
 
             if (availableProductsForNewSize(code).length === 0) {
-                selectedInfo.style.display = 'block';
-                selectedInfo.textContent = 'Mã hàng này không còn size khác có thể chọn.';
-                updateAddSizeButton(row);
+                showBlockInfo(block, 'Mã hàng này không còn size khác có thể chọn.');
+                updateAddSizeButton(block);
                 return;
             }
 
-            const newRow = addItemRow({ product_code: code });
-            newRow.querySelector('[data-size]').focus();
+            const sizeRow = addSizeRow(block);
+            sizeRow.querySelector('[data-size]').focus();
+            updateAddSizeButton(block);
         }
 
-        function addItemRow(item = {}) {
-            const row = document.createElement('div');
-            row.className = 'order-item';
-            row.dataset.index = itemIndex;
-            row.innerHTML = `
-                <div class="field product-picker-cell">
-                    <label for="product_search_${itemIndex}">Mã hàng</label>
-                    <input id="product_search_${itemIndex}" data-search type="search" autocomplete="off" placeholder="Nhập mã hàng hoặc tên hàng..." required>
-                    <div data-suggestions class="product-suggestions"></div>
+        function addSizeRow(block, size = {}) {
+            const sizeRowsContainer = block.querySelector('[data-size-rows]');
+            const sizeRow = document.createElement('div');
+            sizeRow.className = 'size-row';
+            sizeRow.innerHTML = `
+                <div class="field">
+                    <label>Ảnh</label>
+                    <button class="size-thumb" data-size-thumb type="button" disabled aria-label="Phóng to ảnh sản phẩm">
+                        <img data-size-thumb-img alt="" style="display:none">
+                        <span data-size-thumb-empty>CHƯA CÓ ẢNH</span>
+                    </button>
                 </div>
                 <div class="field">
-                    <label for="product_size_${itemIndex}">Size</label>
-                    <select id="product_size_${itemIndex}" data-size required disabled>
+                    <label>Size</label>
+                    <select data-size required disabled>
                         <option value="">Chọn size</option>
                     </select>
-                    <input data-product-id type="hidden" value="${item.product_id || ''}" required>
+                    <input data-product-id type="hidden" value="${size.product_id || ''}" required>
                 </div>
                 <div class="field">
-                    <label for="quantity_${itemIndex}">Số lượng</label>
-                    <input id="quantity_${itemIndex}" data-quantity type="number" min="1" step="1" value="${item.quantity || 1}" required>
+                    <label>Số lượng</label>
+                    <input data-quantity type="number" min="1" step="1" value="${size.quantity || 1}" required>
                 </div>
-                <div class="field item-buttons">
-                    <label>&nbsp;</label>
-                    <button class="button secondary" data-add-size type="button" disabled>Thêm size</button>
-                    <button class="button danger" data-remove type="button">Xóa</button>
-                </div>
-                <div data-selected-info class="selected-product-info"></div>
-                <div data-row-error class="error row-error"></div>
+                <button class="button danger" data-remove-size type="button">Xóa size</button>
             `;
 
-            const searchInput = row.querySelector('[data-search]');
-            const sizeSelect = row.querySelector('[data-size]');
-            const productIdInput = row.querySelector('[data-product-id]');
-            const selectedInfo = row.querySelector('[data-selected-info]');
-            const quantityInput = row.querySelector('[data-quantity]');
-            const addSizeButton = row.querySelector('[data-add-size]');
-
-            searchInput.addEventListener('input', () => {
-                productIdInput.value = '';
-                row.dataset.productCode = '';
-                sizeSelect.innerHTML = '<option value="">Chọn size</option>';
-                sizeSelect.disabled = true;
-                selectedInfo.style.display = 'none';
-                updateAddSizeButton(row);
-                renderSuggestions(row, searchInput.value);
-            });
-
-            searchInput.addEventListener('focus', () => renderSuggestions(row, searchInput.value));
+            const sizeSelect = sizeRow.querySelector('[data-size]');
+            const productIdInput = sizeRow.querySelector('[data-product-id]');
+            const quantityInput = sizeRow.querySelector('[data-quantity]');
 
             sizeSelect.addEventListener('change', () => {
-                if (sizeSelect.value && selectedProductIds(row).has(String(sizeSelect.value))) {
+                if (sizeSelect.value && selectedProductIds(sizeRow).has(String(sizeSelect.value))) {
                     productIdInput.value = '';
                     sizeSelect.value = '';
-                    row.querySelector('[data-row-error]').style.display = 'block';
-                    row.querySelector('[data-row-error]').textContent = 'Mã hàng và size này đã được chọn trong đơn.';
+                    showRowError(block, 'Mã hàng và size này đã được chọn trong đơn.');
                     refreshProductChoices();
                     return;
                 }
 
+                clearRowError(block);
                 productIdInput.value = sizeSelect.value;
-                renderSelectedInfo(row);
-                updateQuantityLimit(row);
+                renderSelectedInfo(block);
+                updateQuantityLimit(sizeRow);
                 refreshProductChoices();
             });
 
             quantityInput.addEventListener('input', () => {
-                updateQuantityLimit(row);
+                updateQuantityLimit(sizeRow);
             });
 
-            addSizeButton.addEventListener('click', () => addSizeForRow(row));
-
-            row.querySelector('[data-remove]').addEventListener('click', () => {
-                if (itemsContainer.querySelectorAll('.order-item').length === 1) {
-                    selectedInfo.style.display = 'block';
-                    selectedInfo.textContent = 'Đơn hàng cần ít nhất một sản phẩm.';
+            sizeRow.querySelector('[data-remove-size]').addEventListener('click', () => {
+                if (sizeRowsContainer.querySelectorAll('.size-row').length === 1) {
+                    showRowError(block, 'Mỗi mã hàng cần ít nhất một size. Dùng "Xóa mã hàng" để bỏ sản phẩm.');
                     return;
                 }
 
-                row.remove();
+                sizeRow.remove();
                 renumberRows();
                 refreshProductChoices();
             });
 
-            itemsContainer.appendChild(row);
+            sizeRowsContainer.appendChild(sizeRow);
+            populateSizeSelect(sizeRow, size.product_id || null);
+            updateQuantityLimit(sizeRow);
+            renumberRows();
+
+            return sizeRow;
+        }
+
+        function addItemBlock(blockData = {}) {
+            const block = document.createElement('div');
+            block.className = 'order-item';
+            block.dataset.index = itemIndex;
+            const searchId = `product_search_${itemIndex}`;
+            block.innerHTML = `
+                <div class="field product-picker-cell">
+                    <label for="${searchId}">Mã hàng</label>
+                    <input id="${searchId}" data-search type="search" autocomplete="off" placeholder="Nhập mã hàng hoặc tên hàng..." required>
+                    <div data-suggestions class="product-suggestions"></div>
+                </div>
+                <div data-size-rows class="size-rows"></div>
+                <div class="product-actions">
+                    <button class="button secondary" data-add-size type="button" disabled>+ Thêm size</button>
+                    <button class="button danger" data-remove-block type="button">Xóa mã hàng</button>
+                </div>
+                <div data-selected-info class="selected-product-info"></div>
+                <div data-row-error class="error row-error"></div>
+            `;
             itemIndex += 1;
 
-            if (item.product_id) {
-                const selected = findProductById(item.product_id);
+            const searchInput = block.querySelector('[data-search]');
+            const selectedInfo = block.querySelector('[data-selected-info]');
 
-                if (selected) {
-                    selectProductCode(row, selected.group.code, item.product_id);
+            searchInput.addEventListener('input', () => {
+                if (block.dataset.productCode) {
+                    block.dataset.productCode = '';
+                    clearSizeRows(block);
+                    addSizeRow(block);
                 }
-            } else if (item.product_code) {
-                selectProductCode(row, item.product_code);
+
+                selectedInfo.style.display = 'none';
+                clearRowError(block);
+                updateAddSizeButton(block);
+                renderSuggestions(block, searchInput.value);
+            });
+
+            searchInput.addEventListener('focus', () => renderSuggestions(block, searchInput.value));
+
+            block.querySelector('[data-add-size]').addEventListener('click', () => addSizeForBlock(block));
+
+            block.querySelector('[data-remove-block]').addEventListener('click', () => {
+                if (itemsContainer.querySelectorAll('.order-item').length === 1) {
+                    showBlockInfo(block, 'Đơn hàng cần ít nhất một sản phẩm.');
+                    return;
+                }
+
+                block.remove();
+                renumberRows();
+                refreshProductChoices();
+            });
+
+            itemsContainer.appendChild(block);
+
+            if (blockData.code) {
+                const group = productOptions.find(item => item.code === blockData.code);
+                searchInput.value = group ? `${group.code} - ${group.name}` : blockData.code;
+                block.dataset.productCode = group ? group.code : '';
             }
 
-            renumberRows();
-            updateAllAddSizeButtons();
+            const sizes = (blockData.sizes && blockData.sizes.length) ? blockData.sizes : [{}];
+            sizes.forEach(size => addSizeRow(block, size));
 
-            return row;
+            renderSelectedInfo(block);
+            updateAddSizeButton(block);
+            renumberRows();
+
+            return block;
         }
 
         document.addEventListener('click', event => {
             itemsContainer.querySelectorAll('[data-suggestions]').forEach(suggestions => {
-                const row = suggestions.closest('.order-item');
+                const block = suggestions.closest('.order-item');
 
-                if (!row.contains(event.target)) {
+                if (!block.contains(event.target)) {
                     suggestions.style.display = 'none';
                 }
             });
         });
 
-        addItemButton.addEventListener('click', () => addItemRow());
+        const lightbox = document.querySelector('[data-image-lightbox]');
+        const lightboxImage = document.querySelector('[data-lightbox-image]');
+
+        function closeLightbox() {
+            lightbox.classList.remove('is-open');
+            lightbox.setAttribute('aria-hidden', 'true');
+            lightboxImage.src = '';
+        }
+
+        itemsContainer.addEventListener('click', event => {
+            const thumb = event.target.closest('[data-size-thumb]');
+
+            if (! thumb || ! thumb.dataset.fullImage) {
+                return;
+            }
+
+            lightboxImage.src = thumb.dataset.fullImage;
+            lightboxImage.alt = 'Ảnh sản phẩm';
+            lightbox.classList.add('is-open');
+            lightbox.setAttribute('aria-hidden', 'false');
+        });
+
+        lightbox.addEventListener('click', closeLightbox);
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && lightbox.classList.contains('is-open')) {
+                closeLightbox();
+            }
+        });
+
+        addItemButton.addEventListener('click', () => addItemBlock());
 
         [pickupDateInput, eventDateInput, returnDateInput].forEach(input => {
             input.addEventListener('change', refreshAvailability);
         });
 
         orderForm.addEventListener('submit', event => {
-            const rows = Array.from(itemsContainer.querySelectorAll('.order-item'));
-            const invalidRow = rows.find(row => !row.querySelector('[data-product-id]').value);
-            const seenProductIds = new Set();
-            const duplicateRow = rows.find(row => {
-                const productId = row.querySelector('[data-product-id]').value;
+            const sizeRows = Array.from(itemsContainer.querySelectorAll('.size-row'));
 
-                if (! productId) {
-                    return false;
-                }
+            itemsContainer.querySelectorAll('.order-item').forEach(clearRowError);
+
+            const invalidRow = sizeRows.find(sizeRow => ! sizeRow.querySelector('[data-product-id]').value);
+
+            if (invalidRow) {
+                event.preventDefault();
+                const block = invalidRow.closest('.order-item');
+                showBlockInfo(block, 'Vui lòng chọn mã hàng và size trước khi lưu đơn.');
+                invalidRow.querySelector('[data-size]').focus();
+                return;
+            }
+
+            const seenProductIds = new Set();
+            const duplicateRow = sizeRows.find(sizeRow => {
+                const productId = sizeRow.querySelector('[data-product-id]').value;
 
                 if (seenProductIds.has(productId)) {
                     return true;
@@ -805,37 +1012,50 @@
                 seenProductIds.add(productId);
                 return false;
             });
-            const invalidQuantityRow = rows.find(row => row.querySelector('[data-product-id]').value && ! validateRow(row));
 
-            if (!invalidRow) {
-                if (duplicateRow) {
-                    event.preventDefault();
-                    duplicateRow.querySelector('[data-row-error]').style.display = 'block';
-                    duplicateRow.querySelector('[data-row-error]').textContent = 'Mã hàng và size này đã được chọn trong đơn.';
-                    duplicateRow.querySelector('[data-size]').focus();
-                    return;
-                }
-
-                if (invalidQuantityRow) {
-                    event.preventDefault();
-                    invalidQuantityRow.querySelector('[data-quantity]').focus();
-                }
-
+            if (duplicateRow) {
+                event.preventDefault();
+                const block = duplicateRow.closest('.order-item');
+                showRowError(block, 'Mã hàng và size này đã được chọn trong đơn.');
+                duplicateRow.querySelector('[data-size]').focus();
                 return;
             }
 
-            event.preventDefault();
-            const searchInput = invalidRow.querySelector('[data-search]');
-            const selectedInfo = invalidRow.querySelector('[data-selected-info]');
-            searchInput.focus();
-            selectedInfo.style.display = 'block';
-            selectedInfo.textContent = 'Vui lòng chọn mã hàng và size trước khi lưu đơn.';
+            const invalidQuantityRow = sizeRows.find(sizeRow => ! validateSizeRow(sizeRow));
+
+            if (invalidQuantityRow) {
+                event.preventDefault();
+                const block = invalidQuantityRow.closest('.order-item');
+                const max = invalidQuantityRow.querySelector('[data-quantity]').max;
+                showRowError(block, `Số lượng không được vượt quá tồn dự kiến (${max}).`);
+                invalidQuantityRow.querySelector('[data-quantity]').focus();
+            }
         });
 
-        if (initialItems.length > 0) {
-            initialItems.forEach(item => addItemRow(item));
+        const groupedBlocks = [];
+        const codeToBlockIndex = new Map();
+
+        initialItems.forEach(item => {
+            const selected = findProductById(item.product_id);
+            const code = selected ? selected.group.code : null;
+            const sizeData = { product_id: item.product_id, quantity: item.quantity };
+
+            if (code && codeToBlockIndex.has(code)) {
+                groupedBlocks[codeToBlockIndex.get(code)].sizes.push(sizeData);
+                return;
+            }
+
+            if (code) {
+                codeToBlockIndex.set(code, groupedBlocks.length);
+            }
+
+            groupedBlocks.push({ code, sizes: [sizeData] });
+        });
+
+        if (groupedBlocks.length > 0) {
+            groupedBlocks.forEach(blockData => addItemBlock(blockData));
         } else {
-            addItemRow();
+            addItemBlock();
         }
 
         resetAvailabilityToCurrentStock();

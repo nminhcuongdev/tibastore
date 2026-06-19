@@ -117,7 +117,26 @@ class ProductController extends Controller
                 ? $source->expectedReceipts->whereNull('received_at')->values()
                 : collect(),
             'mode' => 'create',
+            'existingCodes' => $this->existingCodeSuggestions(),
         ]);
+    }
+
+    /**
+     * Danh sách mã hàng đang có kèm các size, dùng để gợi ý mã khi tạo sản phẩm
+     * mới và cảnh báo sớm trùng mã + size ngay trên form.
+     */
+    private function existingCodeSuggestions(): array
+    {
+        return Product::query()
+            ->orderBy('code')
+            ->get(['code', 'size'])
+            ->groupBy('code')
+            ->map(fn ($rows, $code) => [
+                'code' => (string) $code,
+                'sizes' => $rows->pluck('size')->map(fn ($size) => (string) $size)->values()->all(),
+            ])
+            ->values()
+            ->all();
     }
 
     public function show(Request $request, Product $product): View
@@ -248,6 +267,11 @@ class ProductController extends Controller
         unset($data['expected_receipts']);
         unset($data['image']);
 
+        $oldCode = $product->code;
+        $newCode = $data['code'];
+
+        $this->ensureGroupCodeChangeIsValid($product, $newCode, $data['size']);
+
         if ($request->hasFile('image')) {
             if ($product->image_path) {
                 $this->deleteProductImageIfUnused($product->image_path, $product->id);
@@ -256,12 +280,19 @@ class ProductController extends Controller
             $data['image_path'] = $request->file('image')->store('products', 'public');
         }
 
-        DB::transaction(function () use ($data, $expectedReceipts, $product) {
+        DB::transaction(function () use ($data, $expectedReceipts, $product, $oldCode, $newCode) {
             $lockedProduct = Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
             $previousQuantity = $lockedProduct->stock_quantity;
 
             $lockedProduct->update($data);
             $this->replacePendingExpectedReceipts($lockedProduct, $expectedReceipts);
+
+            if ($newCode !== $oldCode) {
+                Product::where('code', $oldCode)
+                    ->whereKeyNot($lockedProduct->id)
+                    ->lockForUpdate()
+                    ->update(['code' => $newCode]);
+            }
 
             $newQuantity = (int) $lockedProduct->stock_quantity;
 
@@ -373,6 +404,47 @@ class ProductController extends Controller
         $data['expected_receipts'] = $this->normalizeExpectedReceipts($data['expected_receipts'] ?? [], 'expected_receipts');
 
         return $data;
+    }
+
+    /**
+     * Khi đổi mã hàng, toàn bộ size cùng mã sẽ được đổi theo. Hàm này đảm bảo
+     * mã mới không đụng size với một mã hàng đang tồn tại (chống trùng/gộp nhầm).
+     */
+    private function ensureGroupCodeChangeIsValid(Product $product, string $newCode, string $editedSize): void
+    {
+        $oldCode = $product->code;
+
+        if ($newCode === $oldCode) {
+            return;
+        }
+
+        $groupIds = Product::where('code', $oldCode)->pluck('id');
+
+        // Các size sẽ thuộc về $newCode sau khi đổi: mọi dòng cùng mã cũ giữ
+        // nguyên size, riêng dòng đang sửa dùng size mới được nhập.
+        $groupSizes = Product::where('code', $oldCode)
+            ->get(['id', 'size'])
+            ->map(fn ($row) => $row->id === $product->id ? $editedSize : $row->size)
+            ->map(fn ($size) => trim((string) $size));
+
+        // Trùng size ngay trong nhóm sau khi đổi (vd: size mới trùng một size anh em).
+        if ($groupSizes->map(fn ($size) => mb_strtolower($size))->duplicates()->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'code' => 'Sau khi đổi mã, có size bị trùng trong cùng mã hàng.',
+            ]);
+        }
+
+        // Đụng độ với mã hàng đích đang tồn tại (loại trừ chính nhóm đang đổi).
+        $conflictSize = Product::where('code', $newCode)
+            ->whereNotIn('id', $groupIds)
+            ->whereIn('size', $groupSizes->all())
+            ->value('size');
+
+        if ($conflictSize !== null) {
+            throw ValidationException::withMessages([
+                'code' => "Mã {$newCode} đã tồn tại size {$conflictSize}. Vui lòng chọn mã khác.",
+            ]);
+        }
     }
 
     private function normalizeExpectedReceipts(array $receipts, string $fieldPrefix): array
