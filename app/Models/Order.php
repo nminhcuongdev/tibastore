@@ -47,17 +47,37 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    /**
+     * Các trạng thái khiến hàng đang ở ngoài kho (đã trừ kho, chưa cộng lại).
+     */
+    public const STOCK_OUT_STATUSES = ['da_gui', 'da_tra_ve'];
+
+    public const DEFAULT_STATUS = 'chua_cho_size';
+
     public static function statuses(): array
     {
         return [
-            'len_don' => 'Lên đơn',
+            'chua_cho_size' => 'Chưa cho size',
+            'da_in_file' => 'Đã in đơn lên file',
+            'da_in_giay' => 'Đã in đơn ra giấy',
+            'dang_soan' => 'Đang soạn đơn',
+            'da_soan_xong' => 'Đã soạn xong',
             'da_gui' => 'Đã gửi',
-            'thanh_cong' => 'Thành công',
+            'da_tra_ve' => 'Đã trả về',
+            'thanh_cong' => 'Đã kiểm',
         ];
     }
 
     public function statusLabel(): string
     {
         return self::statuses()[$this->status] ?? $this->status;
+    }
+
+    /**
+     * Hàng của đơn có đang phải nằm ngoài kho theo trạng thái hiện tại không.
+     */
+    public function requiresStockOut(): bool
+    {
+        return in_array($this->status, self::STOCK_OUT_STATUSES, true);
     }
 }

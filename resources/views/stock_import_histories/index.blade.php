@@ -215,6 +215,9 @@
             <a href="{{ route('products.index') }}">Kho hàng</a>
             <a href="{{ route('orders.index') }}">Đơn hàng</a>
             <a class="active" href="{{ route('stock-import-histories.index') }}">Lịch sử nhập</a>
+            @if (auth()->user()?->isAdmin())
+                <a href="{{ route('users.index') }}">Người dùng</a>
+            @endif
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button class="logout" type="submit">Đăng xuất</button>

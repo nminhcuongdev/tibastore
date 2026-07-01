@@ -93,7 +93,7 @@ class DatabaseSeeder extends Seeder
                     'event_date' => $order['event_date'],
                     'return_date' => $order['return_date'],
                     'quantity' => $order['quantity'],
-                    'status' => 'len_don',
+                    'status' => 'chua_cho_size',
                     'pickup_reminder_dismissed' => false,
                     'return_reminder_dismissed' => false,
                 ]

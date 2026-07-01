@@ -14,56 +14,60 @@ use Illuminate\Validation\ValidationException;
 
 class OrderInventoryService
 {
+    /**
+     * Đồng bộ các việc theo ngày KHÔNG liên quan trạng thái đơn:
+     * hiện chỉ còn nhập kho theo phiếu nhập dự kiến đến hạn.
+     * Trạng thái đơn không còn tự đổi theo ngày — người dùng tự cập nhật.
+     */
     public function syncDueOrders(?Carbon $today = null): void
     {
         $today = $this->date($today ?? now());
 
         $this->syncDueExpectedReceipts($today);
-        $this->reconcileUndueAdjustments($today);
-        $this->syncDueReturns($today);
-        $this->syncDuePickups($today);
-        $this->refreshStatuses($today);
     }
 
-    public function syncOrder(Order $order, ?Carbon $today = null): void
+    public function syncOrder(Order $order): void
     {
-        DB::transaction(function () use ($order, $today) {
+        DB::transaction(function () use ($order) {
             $lockedOrder = Order::whereKey($order->id)
                 ->with('items')
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $this->applyDueAdjustment($lockedOrder, $today);
+            $this->applyStatusAdjustment($lockedOrder);
         });
     }
 
-    public function applyDueAdjustment(Order $order, ?Carbon $today = null): void
+    /**
+     * Đồng bộ kho theo trạng thái hiện tại của đơn:
+     * - Trạng thái "đã gửi"/"đã trả về": hàng phải nằm ngoài kho (trừ kho).
+     * - Các trạng thái còn lại (kể cả "đã kiểm"): hàng nằm trong kho (cộng lại nếu đang nợ).
+     * Idempotent nhờ hai mốc stock_decreased_at / stock_returned_at.
+     */
+    public function applyStatusAdjustment(Order $order): void
     {
-        $today = $this->date($today ?? now());
-        $now = now();
-        $updates = [];
+        $order->loadMissing('items');
 
-        if ($this->isReturnDue($order, $today)) {
-            if ($order->stock_decreased_at !== null && $order->stock_returned_at === null) {
-                $this->increaseStocks($this->itemsForStock($order));
-            }
+        $shouldBeOut = $order->requiresStockOut();
+        $currentlyOut = $order->stock_decreased_at !== null && $order->stock_returned_at === null;
 
-            $updates['stock_decreased_at'] = $order->stock_decreased_at ?? $now;
-            $updates['stock_returned_at'] = $order->stock_returned_at ?? $now;
-            $updates['status'] = 'thanh_cong';
-        } elseif ($this->isPickupDue($order, $today)) {
-            if ($order->stock_decreased_at === null) {
-                $this->decreaseStocks($this->itemsForStock($order));
-                $updates['stock_decreased_at'] = $now;
-            }
+        if ($shouldBeOut && ! $currentlyOut) {
+            $this->decreaseStocks($this->itemsForStock($order));
 
-            $updates['status'] = 'da_gui';
-        } else {
-            $updates['status'] = 'len_don';
+            $order->forceFill([
+                'stock_decreased_at' => now(),
+                'stock_returned_at' => null,
+            ])->save();
+
+            return;
         }
 
-        if ($updates !== []) {
-            $order->forceFill($updates)->save();
+        if (! $shouldBeOut && $currentlyOut) {
+            $this->increaseStocks($this->itemsForStock($order));
+
+            $order->forceFill([
+                'stock_returned_at' => now(),
+            ])->save();
         }
     }
 
@@ -227,77 +231,6 @@ class OrderInventoryService
             ->all();
     }
 
-    private function syncDueReturns(Carbon $today): void
-    {
-        Order::query()
-            ->whereDate('return_date', '<=', $today)
-            ->whereNull('stock_returned_at')
-            ->chunkById(50, function ($orders) use ($today) {
-                foreach ($orders as $order) {
-                    $this->syncOrder($order, $today);
-                }
-            });
-    }
-
-    private function reconcileUndueAdjustments(Carbon $today): void
-    {
-        Order::query()
-            ->where(function ($query) use ($today) {
-                $query->where(function ($futurePickup) use ($today) {
-                    $futurePickup->whereDate('pickup_date', '>', $today)
-                        ->whereNotNull('stock_decreased_at');
-                })->orWhere(function ($futureReturn) use ($today) {
-                    $futureReturn->whereDate('return_date', '>', $today)
-                        ->whereNotNull('stock_returned_at');
-                });
-            })
-            ->chunkById(50, function ($orders) use ($today) {
-                foreach ($orders as $order) {
-                    DB::transaction(function () use ($order, $today) {
-                        $lockedOrder = Order::whereKey($order->id)
-                            ->with('items')
-                            ->lockForUpdate()
-                            ->firstOrFail();
-
-                        $this->resetAdjustment($lockedOrder);
-                        $this->applyDueAdjustment($lockedOrder, $today);
-                    });
-                }
-            });
-    }
-
-    private function syncDuePickups(Carbon $today): void
-    {
-        Order::query()
-            ->whereDate('pickup_date', '<=', $today)
-            ->whereDate('return_date', '>', $today)
-            ->whereNull('stock_decreased_at')
-            ->chunkById(50, function ($orders) use ($today) {
-                foreach ($orders as $order) {
-                    $this->syncOrder($order, $today);
-                }
-            });
-    }
-
-    private function refreshStatuses(Carbon $today): void
-    {
-        Order::query()
-            ->whereDate('return_date', '<=', $today)
-            ->where('status', '!=', 'thanh_cong')
-            ->update(['status' => 'thanh_cong']);
-
-        Order::query()
-            ->whereDate('pickup_date', '<=', $today)
-            ->whereDate('return_date', '>', $today)
-            ->where('status', '!=', 'da_gui')
-            ->update(['status' => 'da_gui']);
-
-        Order::query()
-            ->whereDate('pickup_date', '>', $today)
-            ->where('status', '!=', 'len_don')
-            ->update(['status' => 'len_don']);
-    }
-
     private function openStockQuantities(array $productIds): array
     {
         return OrderItem::query()
@@ -371,16 +304,6 @@ class OrderInventoryService
         }
 
         return $reservedQuantities;
-    }
-
-    private function isPickupDue(Order $order, Carbon $today): bool
-    {
-        return $this->date($order->pickup_date)->lte($today);
-    }
-
-    private function isReturnDue(Order $order, Carbon $today): bool
-    {
-        return $this->date($order->return_date)->lte($today);
     }
 
     private function decreaseStock(int $productId, int $quantity): void

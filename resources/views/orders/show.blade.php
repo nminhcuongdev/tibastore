@@ -107,9 +107,30 @@
             margin-top: 8px;
             padding: 7px 11px;
         }
-        .status-len_don { background: #fff4f7; color: #9d345a; }
+        .status-chua_cho_size { background: #f3eef1; color: #6b5560; }
+        .status-da_in_file { background: #eaf2fd; color: #2f5fa6; }
+        .status-da_in_giay { background: #eef0fb; color: #45489c; }
+        .status-dang_soan { background: #f6ecfb; color: #7d3aa3; }
+        .status-da_soan_xong { background: #e8f6f4; color: #1f7d6e; }
         .status-da_gui { background: #fff7d6; color: #8a5a00; }
+        .status-da_tra_ve { background: #ffeede; color: #a85a18; }
         .status-thanh_cong { background: #e8f7ef; color: #247857; }
+        .status-form { margin: 0; }
+        .status-select {
+            border: 1px solid #f0d3dc;
+            border-radius: 999px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 900;
+            max-width: 200px;
+            min-height: 44px;
+            padding: 9px 12px;
+        }
+        .status-select:focus {
+            border-color: #c9577d;
+            box-shadow: 0 0 0 3px rgba(201, 87, 125, .16);
+            outline: none;
+        }
         .section { padding: 24px; }
         .section + .section { border-top: 1px solid #f7e3e9; }
         .section-title {
@@ -288,6 +309,15 @@
     <header class="topbar no-print">
         <a class="brand" href="{{ route('orders.index') }}">Tiba Boutique</a>
         <div class="actions">
+            <form method="POST" action="{{ route('orders.status', $order) }}" class="status-form">
+                @csrf
+                @method('PATCH')
+                <select name="status" class="status-select status-{{ $order->status }}" onchange="this.form.submit()" aria-label="Cập nhật trạng thái đơn">
+                    @foreach ($statuses as $value => $label)
+                        <option value="{{ $value }}" @selected($order->status === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </form>
             <a class="button secondary" href="{{ route('orders.index') }}">Về danh sách</a>
             <a class="button secondary" href="{{ route('orders.edit', $order) }}">Sửa đơn</a>
             <button class="button" type="button" onclick="window.print()">In / chụp đơn</button>

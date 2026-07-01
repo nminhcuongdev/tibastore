@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class OrderController extends Controller
@@ -72,6 +73,7 @@ class OrderController extends Controller
             'query' => $query,
             'sort' => $sort,
             'direction' => $direction,
+            'statuses' => Order::statuses(),
         ]);
     }
 
@@ -127,7 +129,7 @@ class OrderController extends Controller
         $products = Product::with('expectedReceipts')->orderBy('code')->orderBy('size')->get();
 
         return view('orders.form', [
-            'order' => new Order(['status' => 'len_don']),
+            'order' => new Order(['status' => Order::DEFAULT_STATUS]),
             'orderItems' => collect(),
             'products' => $products,
             'productOptions' => $this->productOptions($products),
@@ -149,7 +151,7 @@ class OrderController extends Controller
             $order->items()->createMany($items);
             $order->load('items');
 
-            $this->inventory->applyDueAdjustment($order);
+            $this->inventory->applyStatusAdjustment($order);
 
             return $order;
         });
@@ -167,6 +169,7 @@ class OrderController extends Controller
 
         return view('orders.show', [
             'order' => $order,
+            'statuses' => Order::statuses(),
         ]);
     }
 
@@ -208,12 +211,35 @@ class OrderController extends Controller
             $lockedOrder->items()->createMany($items);
             $lockedOrder->load('items');
 
-            $this->inventory->applyDueAdjustment($lockedOrder);
+            $this->inventory->applyStatusAdjustment($lockedOrder);
         });
 
         return redirect()
             ->route('orders.index')
             ->with('status', 'Đã cập nhật đơn hàng.');
+    }
+
+    public function updateStatus(Request $request, Order $order): RedirectResponse
+    {
+        $data = $request->validate([
+            'status' => ['required', Rule::in(array_keys(Order::statuses()))],
+        ], [
+            'status.required' => 'Vui lòng chọn trạng thái.',
+            'status.in' => 'Trạng thái không hợp lệ.',
+        ]);
+
+        DB::transaction(function () use ($data, $order) {
+            $lockedOrder = Order::whereKey($order->id)
+                ->with('items')
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $lockedOrder->update(['status' => $data['status']]);
+
+            $this->inventory->applyStatusAdjustment($lockedOrder);
+        });
+
+        return back()->with('status', 'Đã cập nhật trạng thái đơn hàng.');
     }
 
     public function destroy(Order $order): RedirectResponse
@@ -243,6 +269,7 @@ class OrderController extends Controller
             'event_date' => ['required', 'date', 'after_or_equal:pickup_date'],
             'return_date' => ['required', 'date', 'after_or_equal:event_date'],
             'order_name' => ['required', 'string', 'max:255'],
+            'status' => ['required', Rule::in(array_keys(Order::statuses()))],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'distinct', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
@@ -254,6 +281,8 @@ class OrderController extends Controller
             'return_date.required' => 'Vui lòng nhập ngày trả.',
             'return_date.after_or_equal' => 'Ngày trả phải bằng hoặc sau ngày diễn.',
             'order_name.required' => 'Vui lòng nhập tên đơn.',
+            'status.required' => 'Vui lòng chọn trạng thái.',
+            'status.in' => 'Trạng thái không hợp lệ.',
             'items.required' => 'Vui lòng thêm ít nhất một sản phẩm.',
             'items.min' => 'Vui lòng thêm ít nhất một sản phẩm.',
             'items.*.product_id.required' => 'Vui lòng chọn mã hàng và size.',
@@ -284,6 +313,7 @@ class OrderController extends Controller
             'event_date' => $data['event_date'],
             'return_date' => $data['return_date'],
             'order_name' => $data['order_name'],
+            'status' => $data['status'],
             'product_id' => $firstItem['product_id'],
             'quantity' => $firstItem['quantity'],
         ];

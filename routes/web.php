@@ -5,6 +5,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrderReminderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\StockImportHistoryController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -35,6 +36,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/products/{product}/track', [ProductController::class, 'track'])->name('products.track');
     Route::resource('products', ProductController::class);
     Route::post('/orders/availability', [OrderController::class, 'availability'])->name('orders.availability');
+    Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
     Route::resource('orders', OrderController::class);
     Route::post('/order-reminders/{order}/confirm', [OrderReminderController::class, 'confirm'])
         ->name('order-reminders.confirm');
@@ -42,6 +44,10 @@ Route::middleware('auth')->group(function () {
         ->name('order-reminders.dismiss');
     Route::get('/stock-import-histories', [StockImportHistoryController::class, 'index'])
         ->name('stock-import-histories.index');
+
+    Route::middleware('role:admin')->group(function () {
+        Route::resource('users', UserController::class)->except(['show']);
+    });
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });

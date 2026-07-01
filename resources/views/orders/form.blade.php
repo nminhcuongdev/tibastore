@@ -357,8 +357,13 @@
             </div>
 
             <div class="field">
-                <label>Trạng thái</label>
-                <div class="readonly-value">{{ $order->statusLabel() }}</div>
+                <label for="status">Trạng thái</label>
+                <select id="status" name="status" required>
+                    @foreach ($statuses as $value => $label)
+                        <option value="{{ $value }}" @selected(old('status', $order->status ?? \App\Models\Order::DEFAULT_STATUS) === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                @error('status') <div class="error">{{ $message }}</div> @enderror
             </div>
 
             <div class="field full">
