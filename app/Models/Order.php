@@ -20,6 +20,7 @@ class Order extends Model
         'product_id',
         'quantity',
         'status',
+        'payment_status',
         'pickup_reminder_dismissed',
         'return_reminder_dismissed',
         'stock_decreased_at',
@@ -54,6 +55,8 @@ class Order extends Model
 
     public const DEFAULT_STATUS = 'chua_cho_size';
 
+    public const DEFAULT_PAYMENT_STATUS = 'coc';
+
     public static function statuses(): array
     {
         return [
@@ -68,9 +71,24 @@ class Order extends Model
         ];
     }
 
+    public static function paymentStatuses(): array
+    {
+        return [
+            'coc' => 'Cọc',
+            'thanh_toan_1' => 'Thanh toán lần 1',
+            'thanh_toan_2' => 'Thanh toán lần 2',
+            'con_lai' => 'Còn lại',
+        ];
+    }
+
     public function statusLabel(): string
     {
         return self::statuses()[$this->status] ?? $this->status;
+    }
+
+    public function paymentStatusLabel(): string
+    {
+        return self::paymentStatuses()[$this->payment_status] ?? $this->payment_status;
     }
 
     /**

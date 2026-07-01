@@ -224,6 +224,10 @@
         .status-da_gui { background: #fff7d6; color: #8a5a00; }
         .status-da_tra_ve { background: #ffeede; color: #a85a18; }
         .status-thanh_cong { background: #e8f7ef; color: #247857; }
+        .pay-coc { background: #f3eef1; color: #6b5560; }
+        .pay-thanh_toan_1 { background: #eaf2fd; color: #2f5fa6; }
+        .pay-thanh_toan_2 { background: #f6ecfb; color: #7d3aa3; }
+        .pay-con_lai { background: #fff7d6; color: #8a5a00; }
         .row-actions {
             display: flex;
             gap: 8px;
@@ -347,6 +351,7 @@
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'product_code', 'direction' => $sort === 'product_code' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Mã hàng {{ $sort === 'product_code' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'quantity', 'direction' => $sort === 'quantity' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Số lượng {{ $sort === 'quantity' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'status', 'direction' => $sort === 'status' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Trạng thái {{ $sort === 'status' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
+                        <th>Thanh toán</th>
                         <th>Thao tác</th>
                     </tr>
                 </thead>
@@ -394,6 +399,17 @@
                                 </form>
                             </td>
                             <td>
+                                <form method="POST" action="{{ route('orders.payment-status', $order) }}" class="status-form">
+                                    @csrf
+                                    @method('PATCH')
+                                    <select name="payment_status" class="status-select pay-{{ $order->payment_status }}" onchange="this.form.submit()" aria-label="Cập nhật trạng thái thanh toán">
+                                        @foreach ($paymentStatuses as $value => $label)
+                                            <option value="{{ $value }}" @selected($order->payment_status === $value)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </form>
+                            </td>
+                            <td>
                                 <div class="row-actions">
                                     <a class="link-action" href="{{ route('orders.show', $order) }}">Xem</a>
                                     <a class="link-action" href="{{ route('orders.edit', $order) }}">Sửa</a>
@@ -407,7 +423,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td class="empty" colspan="9">Chưa có đơn hàng phù hợp.</td>
+                            <td class="empty" colspan="10">Chưa có đơn hàng phù hợp.</td>
                         </tr>
                     @endforelse
                 </tbody>

@@ -115,6 +115,10 @@
         .status-da_gui { background: #fff7d6; color: #8a5a00; }
         .status-da_tra_ve { background: #ffeede; color: #a85a18; }
         .status-thanh_cong { background: #e8f7ef; color: #247857; }
+        .pay-coc { background: #f3eef1; color: #6b5560; }
+        .pay-thanh_toan_1 { background: #eaf2fd; color: #2f5fa6; }
+        .pay-thanh_toan_2 { background: #f6ecfb; color: #7d3aa3; }
+        .pay-con_lai { background: #fff7d6; color: #8a5a00; }
         .status-form { margin: 0; }
         .status-select {
             border: 1px solid #f0d3dc;
@@ -318,6 +322,15 @@
                     @endforeach
                 </select>
             </form>
+            <form method="POST" action="{{ route('orders.payment-status', $order) }}" class="status-form">
+                @csrf
+                @method('PATCH')
+                <select name="payment_status" class="status-select pay-{{ $order->payment_status }}" onchange="this.form.submit()" aria-label="Cập nhật trạng thái thanh toán">
+                    @foreach ($paymentStatuses as $value => $label)
+                        <option value="{{ $value }}" @selected($order->payment_status === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </form>
             <a class="button secondary" href="{{ route('orders.index') }}">Về danh sách</a>
             <a class="button secondary" href="{{ route('orders.edit', $order) }}">Sửa đơn</a>
             <button class="button" type="button" onclick="window.print()">In / chụp đơn</button>
@@ -349,6 +362,7 @@
                 <div class="order-id">
                     <div>Mã đơn: #{{ $order->id }}</div>
                     <span class="status-badge status-{{ $order->status }}">{{ $order->statusLabel() }}</span>
+                    <span class="status-badge pay-{{ $order->payment_status }}">{{ $order->paymentStatusLabel() }}</span>
                 </div>
             </div>
 

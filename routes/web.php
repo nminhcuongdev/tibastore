@@ -37,6 +37,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('products', ProductController::class);
     Route::post('/orders/availability', [OrderController::class, 'availability'])->name('orders.availability');
     Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
+    Route::patch('/orders/{order}/payment-status', [OrderController::class, 'updatePaymentStatus'])->name('orders.payment-status');
     Route::resource('orders', OrderController::class);
     Route::post('/order-reminders/{order}/confirm', [OrderReminderController::class, 'confirm'])
         ->name('order-reminders.confirm');

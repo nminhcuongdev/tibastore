@@ -74,6 +74,7 @@ class OrderController extends Controller
             'sort' => $sort,
             'direction' => $direction,
             'statuses' => Order::statuses(),
+            'paymentStatuses' => Order::paymentStatuses(),
         ]);
     }
 
@@ -170,6 +171,7 @@ class OrderController extends Controller
         return view('orders.show', [
             'order' => $order,
             'statuses' => Order::statuses(),
+            'paymentStatuses' => Order::paymentStatuses(),
         ]);
     }
 
@@ -240,6 +242,20 @@ class OrderController extends Controller
         });
 
         return back()->with('status', 'Đã cập nhật trạng thái đơn hàng.');
+    }
+
+    public function updatePaymentStatus(Request $request, Order $order): RedirectResponse
+    {
+        $data = $request->validate([
+            'payment_status' => ['required', Rule::in(array_keys(Order::paymentStatuses()))],
+        ], [
+            'payment_status.required' => 'Vui lòng chọn trạng thái thanh toán.',
+            'payment_status.in' => 'Trạng thái thanh toán không hợp lệ.',
+        ]);
+
+        $order->update(['payment_status' => $data['payment_status']]);
+
+        return back()->with('status', 'Đã cập nhật trạng thái thanh toán.');
     }
 
     public function destroy(Order $order): RedirectResponse
