@@ -13,10 +13,12 @@ class OrderItem extends Model
     protected $fillable = [
         'product_id',
         'quantity',
+        'returned_quantity',
     ];
 
     protected $casts = [
         'quantity' => 'integer',
+        'returned_quantity' => 'integer',
     ];
 
     public function order(): BelongsTo

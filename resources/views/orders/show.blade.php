@@ -313,10 +313,26 @@
     <header class="topbar no-print">
         <a class="brand" href="{{ route('orders.index') }}">Tiba Boutique</a>
         <div class="actions">
+            @php
+                $checkItems = $order->items->map(fn ($item) => [
+                    'id' => $item->id,
+                    'code' => $item->product?->code ?? 'N/A',
+                    'size' => $item->product?->size ?? 'N/A',
+                    'name' => $item->product?->name ?? '',
+                    'quantity' => (int) $item->quantity,
+                    'returned' => $item->returned_quantity ?? (int) $item->quantity,
+                ])->values();
+            @endphp
             <form method="POST" action="{{ route('orders.status', $order) }}" class="status-form">
                 @csrf
                 @method('PATCH')
-                <select name="status" class="status-select status-{{ $order->status }}" onchange="this.form.submit()" aria-label="Cập nhật trạng thái đơn">
+                <select name="status" class="status-select status-{{ $order->status }}"
+                    data-current="{{ $order->status }}"
+                    data-order-name="{{ $order->order_name }}"
+                    data-check-url="{{ route('orders.status', $order) }}"
+                    data-check-note="{{ $order->check_note }}"
+                    data-items="{{ json_encode($checkItems, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}"
+                    aria-label="Cập nhật trạng thái đơn">
                     @foreach ($statuses as $value => $label)
                         <option value="{{ $value }}" @selected($order->status === $value)>{{ $label }}</option>
                     @endforeach
@@ -453,12 +469,53 @@
                     </div>
                 </div>
             </section>
+
+            @if ($order->status === \App\Models\Order::CHECKED_STATUS && $order->items->isNotEmpty())
+                <section class="section">
+                    <h2 class="section-title">Kết quả kiểm đơn</h2>
+                    <div class="table-shell">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Mã hàng</th>
+                                    <th>Size</th>
+                                    <th>SL đơn</th>
+                                    <th>Nhận lại kho</th>
+                                    <th>Thiếu (mất/hỏng)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($order->items as $item)
+                                    @php
+                                        $returned = $item->returned_quantity ?? $item->quantity;
+                                        $missing = $item->quantity - $returned;
+                                    @endphp
+                                    <tr>
+                                        <td class="code">{{ $item->product?->code ?? 'N/A' }}</td>
+                                        <td>{{ $item->product?->size ?? 'N/A' }}</td>
+                                        <td>{{ number_format($item->quantity) }}</td>
+                                        <td>{{ number_format($returned) }}</td>
+                                        <td>{{ $missing > 0 ? number_format($missing) : '—' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    @if ($order->check_note)
+                        <div class="detail" style="margin-top: 14px;">
+                            <div class="label">Ghi chú kiểm đơn</div>
+                            <div class="value">{{ $order->check_note }}</div>
+                        </div>
+                    @endif
+                </section>
+            @endif
         </article>
     </main>
 
     <div class="image-lightbox" data-image-lightbox aria-hidden="true">
         <img data-lightbox-image src="" alt="">
     </div>
+    @include('orders.check-modal')
     @include('orders.reminders-popup')
     <script>
         const lightbox = document.querySelector('[data-image-lightbox]');

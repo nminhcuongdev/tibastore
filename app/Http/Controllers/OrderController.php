@@ -223,18 +223,48 @@ class OrderController extends Controller
 
     public function updateStatus(Request $request, Order $order): RedirectResponse
     {
-        $data = $request->validate([
+        $isChecking = $request->input('status') === Order::CHECKED_STATUS;
+
+        $rules = [
             'status' => ['required', Rule::in(array_keys(Order::statuses()))],
-        ], [
+        ];
+
+        if ($isChecking) {
+            $rules['check_note'] = ['nullable', 'string', 'max:1000'];
+            $rules['returned_quantities'] = ['nullable', 'array'];
+            $rules['returned_quantities.*'] = ['nullable', 'integer', 'min:0'];
+        }
+
+        $data = $request->validate($rules, [
             'status.required' => 'Vui lòng chọn trạng thái.',
             'status.in' => 'Trạng thái không hợp lệ.',
+            'returned_quantities.*.integer' => 'Số lượng nhận lại phải là số nguyên.',
+            'returned_quantities.*.min' => 'Số lượng nhận lại không được nhỏ hơn 0.',
         ]);
 
-        DB::transaction(function () use ($data, $order) {
+        DB::transaction(function () use ($data, $order, $isChecking) {
             $lockedOrder = Order::whereKey($order->id)
                 ->with('items')
                 ->lockForUpdate()
                 ->firstOrFail();
+
+            if ($isChecking) {
+                $returned = $data['returned_quantities'] ?? [];
+
+                foreach ($lockedOrder->items as $item) {
+                    // Mặc định nhận lại đủ; giới hạn trong [0, số lượng đơn].
+                    $quantity = array_key_exists($item->id, $returned) && $returned[$item->id] !== null
+                        ? (int) $returned[$item->id]
+                        : $item->quantity;
+
+                    $item->forceFill([
+                        'returned_quantity' => max(0, min($quantity, $item->quantity)),
+                    ])->save();
+                }
+
+                $lockedOrder->forceFill(['check_note' => $data['check_note'] ?? null])->save();
+                $lockedOrder->load('items');
+            }
 
             $lockedOrder->update(['status' => $data['status']]);
 

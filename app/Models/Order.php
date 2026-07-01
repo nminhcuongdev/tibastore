@@ -21,6 +21,7 @@ class Order extends Model
         'quantity',
         'status',
         'payment_status',
+        'check_note',
         'pickup_reminder_dismissed',
         'return_reminder_dismissed',
         'stock_decreased_at',
@@ -52,6 +53,12 @@ class Order extends Model
      * Các trạng thái khiến hàng đang ở ngoài kho (đã trừ kho, chưa cộng lại).
      */
     public const STOCK_OUT_STATUSES = ['da_gui', 'da_tra_ve'];
+
+    /**
+     * Trạng thái "đã kiểm": khi chuyển sang, người dùng nhập số lượng thực nhận lại
+     * vào kho cho từng dòng sản phẩm; phần thiếu coi như mất/hỏng, không hoàn kho.
+     */
+    public const CHECKED_STATUS = 'thanh_cong';
 
     public const DEFAULT_STATUS = 'chua_cho_size';
 

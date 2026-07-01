@@ -388,10 +388,26 @@
                             </td>
                             <td>{{ number_format($order->items->sum('quantity') ?: $order->quantity) }}</td>
                             <td>
+                                @php
+                                    $checkItems = $order->items->map(fn ($item) => [
+                                        'id' => $item->id,
+                                        'code' => $item->product?->code ?? 'N/A',
+                                        'size' => $item->product?->size ?? 'N/A',
+                                        'name' => $item->product?->name ?? '',
+                                        'quantity' => (int) $item->quantity,
+                                        'returned' => $item->returned_quantity ?? (int) $item->quantity,
+                                    ])->values();
+                                @endphp
                                 <form method="POST" action="{{ route('orders.status', $order) }}" class="status-form">
                                     @csrf
                                     @method('PATCH')
-                                    <select name="status" class="status-select status-{{ $order->status }}" onchange="this.form.submit()" aria-label="Cập nhật trạng thái đơn">
+                                    <select name="status" class="status-select status-{{ $order->status }}"
+                                        data-current="{{ $order->status }}"
+                                        data-order-name="{{ $order->order_name }}"
+                                        data-check-url="{{ route('orders.status', $order) }}"
+                                        data-check-note="{{ $order->check_note }}"
+                                        data-items="{{ json_encode($checkItems, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}"
+                                        aria-label="Cập nhật trạng thái đơn">
                                         @foreach ($statuses as $value => $label)
                                             <option value="{{ $value }}" @selected($order->status === $value)>{{ $label }}</option>
                                         @endforeach
@@ -459,6 +475,7 @@
             </nav>
         @endif
     </main>
+    @include('orders.check-modal')
     @include('orders.reminders-popup')
 </body>
 </html>

@@ -52,7 +52,10 @@ class OrderInventoryService
         $currentlyOut = $order->stock_decreased_at !== null && $order->stock_returned_at === null;
 
         if ($shouldBeOut && ! $currentlyOut) {
-            $this->decreaseStocks($this->itemsForStock($order));
+            // Chỉ trừ đúng số hàng đang thực nằm trong kho của đơn.
+            // Nếu đơn từng được kiểm (hoàn lại một phần) thì chỉ còn lại phần đã nhận.
+            $this->decreaseStocks($this->inStockItems($order));
+            $this->clearInspectionData($order);
 
             $order->forceFill([
                 'stock_decreased_at' => now(),
@@ -63,7 +66,9 @@ class OrderInventoryService
         }
 
         if (! $shouldBeOut && $currentlyOut) {
-            $this->increaseStocks($this->itemsForStock($order));
+            // Trạng thái "đã kiểm": chỉ hoàn số lượng thực nhận lại (đã set trước khi gọi).
+            // Các trạng thái khác: hoàn đủ toàn bộ số lượng đơn.
+            $this->increaseStocks($this->inStockItems($order));
 
             $order->forceFill([
                 'stock_returned_at' => now(),
@@ -363,6 +368,50 @@ class OrderInventoryService
             'product_id' => $order->product_id,
             'quantity' => $order->quantity,
         ]];
+    }
+
+    /**
+     * Số lượng của đơn đang thực nằm trong kho theo từng sản phẩm:
+     * - Nếu đơn đã được kiểm (có số lượng nhận lại): dùng số đã nhận lại.
+     * - Ngược lại: dùng đủ số lượng đơn.
+     */
+    private function inStockItems(Order $order): array
+    {
+        $order->loadMissing('items');
+
+        $hasReturned = $order->items->isNotEmpty()
+            && $order->items->contains(fn (OrderItem $item) => $item->returned_quantity !== null);
+
+        if ($hasReturned) {
+            return $order->items
+                ->map(fn (OrderItem $item) => [
+                    'product_id' => $item->product_id,
+                    'quantity' => (int) ($item->returned_quantity ?? 0),
+                ])
+                ->values()
+                ->all();
+        }
+
+        return $this->itemsForStock($order);
+    }
+
+    /**
+     * Xóa dữ liệu kiểm đơn (số nhận lại + ghi chú) khi đơn rời trạng thái đã kiểm
+     * để quay lại ngoài kho, tránh dùng nhầm số cũ cho lần kiểm sau.
+     */
+    private function clearInspectionData(Order $order): void
+    {
+        $order->loadMissing('items');
+
+        foreach ($order->items as $item) {
+            if ($item->returned_quantity !== null) {
+                $item->forceFill(['returned_quantity' => null])->save();
+            }
+        }
+
+        if ($order->check_note !== null) {
+            $order->forceFill(['check_note' => null])->save();
+        }
     }
 
     private function date($value): Carbon
