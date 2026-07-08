@@ -366,6 +366,30 @@
                 @error('status') <div class="error">{{ $message }}</div> @enderror
             </div>
 
+            <div class="field">
+                <label for="total_amount">Tổng đơn</label>
+                <input id="total_amount" name="total_amount" type="number" min="0" step="1" value="{{ old('total_amount', $order->total_amount ?? 0) }}">
+                @error('total_amount') <div class="error">{{ $message }}</div> @enderror
+            </div>
+
+            <div class="field">
+                <label for="shipping_fee">Tiền ship</label>
+                <input id="shipping_fee" name="shipping_fee" type="number" min="0" step="1" value="{{ old('shipping_fee', $order->shipping_fee ?? 0) }}">
+                @error('shipping_fee') <div class="error">{{ $message }}</div> @enderror
+            </div>
+
+            <div class="field">
+                <label for="payment_1">Thanh toán lần 1</label>
+                <input id="payment_1" name="payment_1" type="number" min="0" step="1" value="{{ old('payment_1', $order->payment_1 ?? 0) }}">
+                @error('payment_1') <div class="error">{{ $message }}</div> @enderror
+            </div>
+
+            <div class="field">
+                <label for="payment_2">Thanh toán lần 2</label>
+                <input id="payment_2" name="payment_2" type="number" min="0" step="1" value="{{ old('payment_2', $order->payment_2 ?? 0) }}">
+                @error('payment_2') <div class="error">{{ $message }}</div> @enderror
+            </div>
+
             <div class="field full">
                 <label>Sản phẩm trong đơn</label>
                 <div id="order_items" class="order-items"></div>

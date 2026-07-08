@@ -37,6 +37,7 @@ class OrderController extends Controller
         $sort = $request->query('sort', 'updated');
         $direction = $request->query('direction', 'desc');
         $query = trim((string) $request->query('q', ''));
+        $status = (string) $request->query('status', '');
 
         if (! array_key_exists($sort, $sortMap)) {
             $sort = 'updated';
@@ -46,10 +47,15 @@ class OrderController extends Controller
             $direction = 'desc';
         }
 
+        if (! array_key_exists($status, Order::statuses())) {
+            $status = '';
+        }
+
         $orders = Order::query()
             ->select('orders.*')
             ->with(['product', 'items.product'])
             ->join('products', 'products.id', '=', 'orders.product_id')
+            ->when($status !== '', fn ($builder) => $builder->where('orders.status', $status))
             ->when($query !== '', function ($builder) use ($query) {
                 $builder->where(function ($search) use ($query) {
                     $search->where('orders.closer_name', 'like', "%{$query}%")
@@ -71,6 +77,7 @@ class OrderController extends Controller
         return view('orders.index', [
             'orders' => $orders,
             'query' => $query,
+            'status' => $status,
             'sort' => $sort,
             'direction' => $direction,
             'statuses' => Order::statuses(),
@@ -233,6 +240,7 @@ class OrderController extends Controller
             $rules['check_note'] = ['nullable', 'string', 'max:1000'];
             $rules['returned_quantities'] = ['nullable', 'array'];
             $rules['returned_quantities.*'] = ['nullable', 'integer', 'min:0'];
+            $rules['compensation_amount'] = ['nullable', 'integer', 'min:0'];
         }
 
         $data = $request->validate($rules, [
@@ -240,6 +248,8 @@ class OrderController extends Controller
             'status.in' => 'Trạng thái không hợp lệ.',
             'returned_quantities.*.integer' => 'Số lượng nhận lại phải là số nguyên.',
             'returned_quantities.*.min' => 'Số lượng nhận lại không được nhỏ hơn 0.',
+            'compensation_amount.integer' => 'Tiền bồi thường phải là số.',
+            'compensation_amount.min' => 'Tiền bồi thường không được nhỏ hơn 0.',
         ]);
 
         DB::transaction(function () use ($data, $order, $isChecking) {
@@ -262,7 +272,10 @@ class OrderController extends Controller
                     ])->save();
                 }
 
-                $lockedOrder->forceFill(['check_note' => $data['check_note'] ?? null])->save();
+                $lockedOrder->forceFill([
+                    'check_note' => $data['check_note'] ?? null,
+                    'compensation_amount' => $data['compensation_amount'] ?? 0,
+                ])->save();
                 $lockedOrder->load('items');
             }
 
@@ -316,6 +329,10 @@ class OrderController extends Controller
             'return_date' => ['required', 'date', 'after_or_equal:event_date'],
             'order_name' => ['required', 'string', 'max:255'],
             'status' => ['required', Rule::in(array_keys(Order::statuses()))],
+            'total_amount' => ['nullable', 'integer', 'min:0'],
+            'shipping_fee' => ['nullable', 'integer', 'min:0'],
+            'payment_1' => ['nullable', 'integer', 'min:0'],
+            'payment_2' => ['nullable', 'integer', 'min:0'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'distinct', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
@@ -329,6 +346,14 @@ class OrderController extends Controller
             'order_name.required' => 'Vui lòng nhập tên đơn.',
             'status.required' => 'Vui lòng chọn trạng thái.',
             'status.in' => 'Trạng thái không hợp lệ.',
+            'total_amount.integer' => 'Tổng đơn phải là số.',
+            'total_amount.min' => 'Tổng đơn không được nhỏ hơn 0.',
+            'shipping_fee.integer' => 'Tiền ship phải là số.',
+            'shipping_fee.min' => 'Tiền ship không được nhỏ hơn 0.',
+            'payment_1.integer' => 'Thanh toán lần 1 phải là số.',
+            'payment_1.min' => 'Thanh toán lần 1 không được nhỏ hơn 0.',
+            'payment_2.integer' => 'Thanh toán lần 2 phải là số.',
+            'payment_2.min' => 'Thanh toán lần 2 không được nhỏ hơn 0.',
             'items.required' => 'Vui lòng thêm ít nhất một sản phẩm.',
             'items.min' => 'Vui lòng thêm ít nhất một sản phẩm.',
             'items.*.product_id.required' => 'Vui lòng chọn mã hàng và size.',
@@ -360,6 +385,10 @@ class OrderController extends Controller
             'return_date' => $data['return_date'],
             'order_name' => $data['order_name'],
             'status' => $data['status'],
+            'total_amount' => $data['total_amount'] ?? 0,
+            'shipping_fee' => $data['shipping_fee'] ?? 0,
+            'payment_1' => $data['payment_1'] ?? 0,
+            'payment_2' => $data['payment_2'] ?? 0,
             'product_id' => $firstItem['product_id'],
             'quantity' => $firstItem['quantity'],
         ];

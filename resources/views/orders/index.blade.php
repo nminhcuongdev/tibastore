@@ -85,7 +85,32 @@
         .search {
             display: grid;
             gap: 8px;
-            max-width: 560px;
+            max-width: 760px;
+        }
+        .filter-grid {
+            align-items: end;
+            display: grid;
+            gap: 12px;
+            grid-template-columns: 1fr 220px;
+        }
+        .filter-field {
+            display: grid;
+            gap: 8px;
+        }
+        select {
+            background: #fff;
+            border: 1px solid #ebc5d2;
+            border-radius: 8px;
+            color: #3f2730;
+            font-size: 15px;
+            min-height: 44px;
+            padding: 10px 13px;
+            width: 100%;
+        }
+        select:focus {
+            border-color: #c9577d;
+            box-shadow: 0 0 0 3px rgba(201, 87, 125, .16);
+            outline: none;
         }
         label {
             color: #7a344c;
@@ -147,7 +172,7 @@
         }
         table {
             border-collapse: collapse;
-            min-width: 1120px;
+            min-width: 1440px;
             width: 100%;
         }
         th, td {
@@ -224,6 +249,7 @@
         .status-da_gui { background: #fff7d6; color: #8a5a00; }
         .status-da_tra_ve { background: #ffeede; color: #a85a18; }
         .status-thanh_cong { background: #e8f7ef; color: #247857; }
+        .status-thanh_cong_thieu { background: #fdecec; color: #b4233f; }
         .pay-coc { background: #f3eef1; color: #6b5560; }
         .pay-thanh_toan_1 { background: #eaf2fd; color: #2f5fa6; }
         .pay-thanh_toan_2 { background: #f6ecfb; color: #7d3aa3; }
@@ -288,7 +314,8 @@
         }
         @media (max-width: 760px) {
             .topbar,
-            .toolbar {
+            .toolbar,
+            .filter-grid {
                 align-items: stretch;
                 grid-template-columns: 1fr;
             }
@@ -327,8 +354,21 @@
 
         <div class="toolbar">
             <form class="search" method="GET" action="{{ route('orders.index') }}">
-                <label for="q">Tìm theo người chốt, tên đơn, mã hàng hoặc tên hàng</label>
-                <input id="q" name="q" type="search" value="{{ $query }}" placeholder="VD: Linh, đơn chụp lookbook, VAY001...">
+                <div class="filter-grid">
+                    <div class="filter-field">
+                        <label for="q">Tìm theo người chốt, tên đơn, mã hàng hoặc tên hàng</label>
+                        <input id="q" name="q" type="search" value="{{ $query }}" placeholder="VD: Linh, đơn chụp lookbook, VAY001...">
+                    </div>
+                    <div class="filter-field">
+                        <label for="status">Lọc trạng thái</label>
+                        <select id="status" name="status" onchange="this.form.submit()">
+                            <option value="">Tất cả trạng thái</option>
+                            @foreach ($statuses as $value => $label)
+                                <option value="{{ $value }}" @selected($status === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
                 <input type="hidden" name="sort" value="{{ $sort }}">
                 <input type="hidden" name="direction" value="{{ $direction }}">
             </form>
@@ -351,7 +391,11 @@
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'product_code', 'direction' => $sort === 'product_code' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Mã hàng {{ $sort === 'product_code' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'quantity', 'direction' => $sort === 'quantity' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Số lượng {{ $sort === 'quantity' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'status', 'direction' => $sort === 'status' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Trạng thái {{ $sort === 'status' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
-                        <th>Thanh toán</th>
+                        <th>Tổng đơn</th>
+                        <th>Tiền ship</th>
+                        <th>Thanh toán lần 1</th>
+                        <th>Thanh toán lần 2</th>
+                        <th>Còn lại</th>
                         <th>Thao tác</th>
                     </tr>
                 </thead>
@@ -401,11 +445,12 @@
                                 <form method="POST" action="{{ route('orders.status', $order) }}" class="status-form">
                                     @csrf
                                     @method('PATCH')
-                                    <select name="status" class="status-select status-{{ $order->status }}"
+                                    <select name="status" class="status-select status-{{ $order->statusColorKey() }}"
                                         data-current="{{ $order->status }}"
                                         data-order-name="{{ $order->order_name }}"
                                         data-check-url="{{ route('orders.status', $order) }}"
                                         data-check-note="{{ $order->check_note }}"
+                                        data-compensation="{{ $order->compensation_amount }}"
                                         data-items="{{ json_encode($checkItems, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}"
                                         aria-label="Cập nhật trạng thái đơn">
                                         @foreach ($statuses as $value => $label)
@@ -414,17 +459,11 @@
                                     </select>
                                 </form>
                             </td>
-                            <td>
-                                <form method="POST" action="{{ route('orders.payment-status', $order) }}" class="status-form">
-                                    @csrf
-                                    @method('PATCH')
-                                    <select name="payment_status" class="status-select pay-{{ $order->payment_status }}" onchange="this.form.submit()" aria-label="Cập nhật trạng thái thanh toán">
-                                        @foreach ($paymentStatuses as $value => $label)
-                                            <option value="{{ $value }}" @selected($order->payment_status === $value)>{{ $label }}</option>
-                                        @endforeach
-                                    </select>
-                                </form>
-                            </td>
+                            <td>{{ number_format($order->total_with_compensation) }}</td>
+                            <td>{{ number_format($order->shipping_fee) }}</td>
+                            <td>{{ number_format($order->payment_1) }}</td>
+                            <td>{{ number_format($order->payment_2) }}</td>
+                            <td>{{ number_format($order->remaining) }}</td>
                             <td>
                                 <div class="row-actions">
                                     <a class="link-action" href="{{ route('orders.show', $order) }}">Xem</a>
@@ -439,7 +478,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td class="empty" colspan="10">Chưa có đơn hàng phù hợp.</td>
+                            <td class="empty" colspan="14">Chưa có đơn hàng phù hợp.</td>
                         </tr>
                     @endforelse
                 </tbody>

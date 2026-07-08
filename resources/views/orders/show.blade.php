@@ -115,6 +115,7 @@
         .status-da_gui { background: #fff7d6; color: #8a5a00; }
         .status-da_tra_ve { background: #ffeede; color: #a85a18; }
         .status-thanh_cong { background: #e8f7ef; color: #247857; }
+        .status-thanh_cong_thieu { background: #fdecec; color: #b4233f; }
         .pay-coc { background: #f3eef1; color: #6b5560; }
         .pay-thanh_toan_1 { background: #eaf2fd; color: #2f5fa6; }
         .pay-thanh_toan_2 { background: #f6ecfb; color: #7d3aa3; }
@@ -326,24 +327,16 @@
             <form method="POST" action="{{ route('orders.status', $order) }}" class="status-form">
                 @csrf
                 @method('PATCH')
-                <select name="status" class="status-select status-{{ $order->status }}"
+                <select name="status" class="status-select status-{{ $order->statusColorKey() }}"
                     data-current="{{ $order->status }}"
                     data-order-name="{{ $order->order_name }}"
                     data-check-url="{{ route('orders.status', $order) }}"
                     data-check-note="{{ $order->check_note }}"
+                    data-compensation="{{ $order->compensation_amount }}"
                     data-items="{{ json_encode($checkItems, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}"
                     aria-label="Cập nhật trạng thái đơn">
                     @foreach ($statuses as $value => $label)
                         <option value="{{ $value }}" @selected($order->status === $value)>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </form>
-            <form method="POST" action="{{ route('orders.payment-status', $order) }}" class="status-form">
-                @csrf
-                @method('PATCH')
-                <select name="payment_status" class="status-select pay-{{ $order->payment_status }}" onchange="this.form.submit()" aria-label="Cập nhật trạng thái thanh toán">
-                    @foreach ($paymentStatuses as $value => $label)
-                        <option value="{{ $value }}" @selected($order->payment_status === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
             </form>
@@ -377,8 +370,7 @@
                 </div>
                 <div class="order-id">
                     <div>Mã đơn: #{{ $order->id }}</div>
-                    <span class="status-badge status-{{ $order->status }}">{{ $order->statusLabel() }}</span>
-                    <span class="status-badge pay-{{ $order->payment_status }}">{{ $order->paymentStatusLabel() }}</span>
+                    <span class="status-badge status-{{ $order->statusColorKey() }}">{{ $order->statusLabel() }}{{ $order->hasShortage() ? ' (thiếu)' : '' }}</span>
                 </div>
             </div>
 
@@ -408,6 +400,36 @@
                     <div class="detail">
                         <div class="label">Ngày trả</div>
                         <div class="value">{{ $order->return_date?->format('d/m/Y') }}</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <h2 class="section-title">Thanh toán</h2>
+                <div class="details">
+                    <div class="detail">
+                        <div class="label">Tổng đơn</div>
+                        <div class="value">{{ number_format($order->total_with_compensation) }}</div>
+                    </div>
+                    <div class="detail">
+                        <div class="label">Tiền bồi thường</div>
+                        <div class="value">{{ number_format($order->compensation_amount) }}</div>
+                    </div>
+                    <div class="detail">
+                        <div class="label">Tiền ship</div>
+                        <div class="value">{{ number_format($order->shipping_fee) }}</div>
+                    </div>
+                    <div class="detail">
+                        <div class="label">Thanh toán lần 1</div>
+                        <div class="value">{{ number_format($order->payment_1) }}</div>
+                    </div>
+                    <div class="detail">
+                        <div class="label">Thanh toán lần 2</div>
+                        <div class="value">{{ number_format($order->payment_2) }}</div>
+                    </div>
+                    <div class="detail">
+                        <div class="label">Còn lại</div>
+                        <div class="value">{{ number_format($order->remaining) }}</div>
                     </div>
                 </div>
             </section>

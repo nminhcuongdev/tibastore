@@ -21,6 +21,11 @@ class Order extends Model
         'quantity',
         'status',
         'payment_status',
+        'total_amount',
+        'shipping_fee',
+        'payment_1',
+        'payment_2',
+        'compensation_amount',
         'check_note',
         'pickup_reminder_dismissed',
         'return_reminder_dismissed',
@@ -33,6 +38,11 @@ class Order extends Model
         'event_date' => 'date',
         'return_date' => 'date',
         'quantity' => 'integer',
+        'total_amount' => 'integer',
+        'shipping_fee' => 'integer',
+        'payment_1' => 'integer',
+        'payment_2' => 'integer',
+        'compensation_amount' => 'integer',
         'pickup_reminder_dismissed' => 'boolean',
         'return_reminder_dismissed' => 'boolean',
         'stock_decreased_at' => 'datetime',
@@ -86,6 +96,55 @@ class Order extends Model
             'thanh_toan_2' => 'Thanh toán lần 2',
             'con_lai' => 'Còn lại',
         ];
+    }
+
+    /**
+     * Tổng đơn đã cộng tiền bồi thường (nếu có).
+     */
+    public function getTotalWithCompensationAttribute(): int
+    {
+        return (int) $this->total_amount + (int) $this->compensation_amount;
+    }
+
+    /**
+     * Số tiền còn lại theo công thức:
+     * (tổng đơn - thanh toán lần 1 + thanh toán lần 2 + tiền ship).
+     * "Tổng đơn" đã bao gồm tiền bồi thường.
+     */
+    public function getRemainingAttribute(): int
+    {
+        return $this->total_with_compensation
+            - (int) $this->payment_1
+            + (int) $this->payment_2
+            + (int) $this->shipping_fee;
+    }
+
+    /**
+     * Đơn đã kiểm nhưng thiếu: có ít nhất một mã hàng số nhận lại < số gửi đi.
+     */
+    public function hasShortage(): bool
+    {
+        if ($this->status !== self::CHECKED_STATUS) {
+            return false;
+        }
+
+        return $this->items->contains(function ($item) {
+            $returned = $item->returned_quantity ?? $item->quantity;
+
+            return $returned < $item->quantity;
+        });
+    }
+
+    /**
+     * Khóa màu cho trạng thái: đơn "đã kiểm" nhưng thiếu sẽ bôi đỏ thay vì xanh.
+     */
+    public function statusColorKey(): string
+    {
+        if ($this->status === self::CHECKED_STATUS && $this->hasShortage()) {
+            return 'thanh_cong_thieu';
+        }
+
+        return $this->status;
     }
 
     public function statusLabel(): string

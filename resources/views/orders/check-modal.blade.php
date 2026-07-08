@@ -85,6 +85,9 @@
             <h2 id="check-modal-title" class="check-modal__title">Kiểm đơn: <span data-check-order-name></span></h2>
             <p class="check-modal__hint">Mặc định số hoàn lại bằng số gửi đi. Chỉ cần chỉnh những mã hàng bị thiếu; phần thiếu được coi là mất/hỏng và không hoàn lại kho.</p>
             <div class="check-modal__items" data-check-items></div>
+            <label class="check-modal__label" for="compensation-amount">Tiền bồi thường</label>
+            <input id="compensation-amount" type="number" name="compensation_amount" min="0" step="1" value="0" class="check-modal__note" data-check-compensation placeholder="0">
+            <p class="check-modal__hint" style="margin: 6px 0 16px;">Tiền khách bồi thường cho phần thiếu/hỏng. Số này sẽ được cộng vào tổng đơn.</p>
             <label class="check-modal__label" for="check-note">Ghi chú kiểm đơn</label>
             <textarea id="check-note" name="check_note" rows="3" class="check-modal__note" placeholder="VD: thiếu 1 áo size M do rách..."></textarea>
             <div class="check-modal__actions">
@@ -105,6 +108,7 @@
         const itemsBox = modal.querySelector('[data-check-items]');
         const orderNameEl = modal.querySelector('[data-check-order-name]');
         const noteEl = modal.querySelector('[name="check_note"]');
+        const compensationEl = modal.querySelector('[data-check-compensation]');
         let activeSelect = null;
 
         function openModal(select) {
@@ -112,6 +116,7 @@
             form.setAttribute('action', select.dataset.checkUrl || select.form.getAttribute('action'));
             orderNameEl.textContent = select.dataset.orderName || '';
             noteEl.value = select.dataset.checkNote || '';
+            compensationEl.value = select.dataset.compensation || '0';
 
             let items = [];
             try { items = JSON.parse(select.dataset.items || '[]'); } catch (e) { items = []; }
