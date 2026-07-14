@@ -390,6 +390,67 @@
             color: #fff;
         }
 
+        .groups-summary {
+            align-items: center;
+            color: #8b6672;
+            display: flex;
+            flex-wrap: wrap;
+            font-size: 14px;
+            gap: 12px;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .category-group {
+            margin-bottom: 24px;
+        }
+
+        .category-head {
+            align-items: center;
+            background: #fff0f4;
+            border: 1px solid #f0d3dc;
+            border-radius: 8px;
+            color: #81304c;
+            cursor: pointer;
+            display: flex;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 800;
+            gap: 12px;
+            margin-bottom: 10px;
+            padding: 14px 16px;
+            text-align: left;
+            width: 100%;
+        }
+
+        .category-head:hover {
+            background: #ffe6ee;
+        }
+
+        .category-caret {
+            font-size: 13px;
+            transition: transform .18s ease;
+        }
+
+        .category-group.is-collapsed .category-caret {
+            transform: rotate(-90deg);
+        }
+
+        .category-group.is-collapsed [data-category-body] {
+            display: none;
+        }
+
+        .category-name {
+            flex: 1;
+        }
+
+        .category-meta {
+            color: #8b6672;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: none;
+        }
+
         @media (max-width: 760px) {
             .topbar,
             .toolbar {
@@ -454,114 +515,101 @@
             </div>
         </div>
 
-        <div class="table-shell">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Hình ảnh</th>
-                        <th>
-                            <a href="{{ route('products.index', array_merge(request()->except('page'), ['sort' => 'code', 'direction' => $sort === 'code' && $direction === 'asc' ? 'desc' : 'asc'])) }}">
-                                Mã sản phẩm {{ $sort === 'code' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}
-                            </a>
-                        </th>
-                        <th>
-                            <a href="{{ route('products.index', array_merge(request()->except('page'), ['sort' => 'name', 'direction' => $sort === 'name' && $direction === 'asc' ? 'desc' : 'asc'])) }}">
-                                Tên sản phẩm {{ $sort === 'name' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}
-                            </a>
-                        </th>
-                        <th>
-                            <a href="{{ route('products.index', array_merge(request()->except('page'), ['sort' => 'quantity', 'direction' => $sort === 'quantity' && $direction === 'asc' ? 'desc' : 'asc'])) }}">
-                                Số lượng {{ $sort === 'quantity' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}
-                            </a>
-                        </th>
-                        <th>Vải</th>
-                        <th>Ngày dự kiến nhận</th>
-                        <th>SL nhận dự kiến</th>
-                        <th>Số size</th>
-                        <th>Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($products as $product)
-                        <tr>
-                            <td>
-                                @if ($product->image_path)
-                                    <button class="thumb has-image" type="button" data-full-image="{{ asset('storage/' . $product->image_path) }}" aria-label="Phóng to ảnh {{ $product->name }}">
-                                        <img src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $product->name }}">
-                                    </button>
-                                @else
-                                    <div class="thumb">
-                                        CHƯA CÓ ẢNH
-                                    </div>
-                                @endif
-                            </td>
-                            <td class="code">
-                                <div class="code-line">
-                                    <a href="{{ route('products.show', $product) }}">{{ $product->code }}</a>
-                                    <button class="copy-code" type="button" data-copy-code="{{ $product->code }}">copy</button>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="name">
-                                    <a href="{{ route('products.show', $product) }}">{{ $product->name }}</a>
-                                </div>
-                                <div class="muted">Cập nhật: {{ $product->updated_at?->format('d/m/Y') }}</div>
-                            </td>
-                            <td>{{ number_format($product->total_stock_quantity) }}</td>
-                            <td>{{ $product->fabric }}</td>
-                            <td>{{ $product->expected_receive_date ? \Illuminate\Support\Carbon::parse($product->expected_receive_date)->format('d/m/Y') : 'N/A' }}</td>
-                            <td>{{ number_format($product->total_expected_receive_quantity ?? 0) }}</td>
-                            <td>{{ number_format($product->size_count) }}</td>
-                            <td>
-                                <div class="row-actions">
-                                    <a class="link-action" href="{{ route('products.show', $product) }}">Chi tiết</a>
-                                    <a class="link-action" href="{{ route('products.create', ['copy_from' => $product->id]) }}">Thêm size</a>
-                                    <form method="POST" action="{{ route('products.destroy', $product) }}" onsubmit="return confirm('Xóa mã hàng này và toàn bộ size khỏi kho?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <input type="hidden" name="delete_scope" value="code">
-                                        <button class="danger" type="submit">Xóa mã</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td class="empty" colspan="9">Chưa có sản phẩm phù hợp.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+        <div class="groups-summary">
+            <span>{{ number_format($totalProducts) }} mã hàng trong {{ number_format($productGroups->count()) }} danh mục</span>
+            @if ($productGroups->isNotEmpty())
+                <button type="button" class="button secondary" data-bulk-toggle>Sổ hết tất cả</button>
+            @endif
         </div>
 
-        @if ($products->hasPages())
-            <nav class="pagination" aria-label="Phân trang">
-                <div class="muted">
-                    Hiển thị {{ $products->firstItem() }}-{{ $products->lastItem() }} trong {{ $products->total() }} sản phẩm
+        @forelse ($productGroups as $category => $items)
+            <section class="category-group is-collapsed" data-category-group>
+                <button type="button" class="category-head" data-category-toggle aria-expanded="false">
+                    <span class="category-caret" aria-hidden="true">▾</span>
+                    <span class="category-name">{{ $category }}</span>
+                    <span class="category-meta">{{ number_format($items->count()) }} mã · {{ number_format($items->sum('total_stock_quantity')) }} sp tồn</span>
+                </button>
+                <div class="table-shell" data-category-body>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Hình ảnh</th>
+                                <th>
+                                    <a href="{{ route('products.index', array_merge(request()->except('page'), ['sort' => 'code', 'direction' => $sort === 'code' && $direction === 'asc' ? 'desc' : 'asc'])) }}">
+                                        Mã sản phẩm {{ $sort === 'code' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="{{ route('products.index', array_merge(request()->except('page'), ['sort' => 'name', 'direction' => $sort === 'name' && $direction === 'asc' ? 'desc' : 'asc'])) }}">
+                                        Tên sản phẩm {{ $sort === 'name' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="{{ route('products.index', array_merge(request()->except('page'), ['sort' => 'quantity', 'direction' => $sort === 'quantity' && $direction === 'asc' ? 'desc' : 'asc'])) }}">
+                                        Số lượng {{ $sort === 'quantity' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}
+                                    </a>
+                                </th>
+                                <th>Vải</th>
+                                <th>Ngày dự kiến nhận</th>
+                                <th>SL nhận dự kiến</th>
+                                <th>Số size</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($items as $product)
+                                <tr>
+                                    <td>
+                                        @if ($product->image_path)
+                                            <button class="thumb has-image" type="button" data-full-image="{{ asset('storage/' . $product->image_path) }}" aria-label="Phóng to ảnh {{ $product->name }}">
+                                                <img src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $product->name }}">
+                                            </button>
+                                        @else
+                                            <div class="thumb">
+                                                CHƯA CÓ ẢNH
+                                            </div>
+                                        @endif
+                                    </td>
+                                    <td class="code">
+                                        <div class="code-line">
+                                            <a href="{{ route('products.show', $product) }}">{{ $product->code }}</a>
+                                            <button class="copy-code" type="button" data-copy-code="{{ $product->code }}">copy</button>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="name">
+                                            <a href="{{ route('products.show', $product) }}">{{ $product->name }}</a>
+                                        </div>
+                                        <div class="muted">Cập nhật: {{ $product->updated_at?->format('d/m/Y') }}</div>
+                                    </td>
+                                    <td>{{ number_format($product->total_stock_quantity) }}</td>
+                                    <td>{{ $product->fabric }}</td>
+                                    <td>{{ $product->expected_receive_date ? \Illuminate\Support\Carbon::parse($product->expected_receive_date)->format('d/m/Y') : 'N/A' }}</td>
+                                    <td>{{ number_format($product->total_expected_receive_quantity ?? 0) }}</td>
+                                    <td>{{ number_format($product->size_count) }}</td>
+                                    <td>
+                                        <div class="row-actions">
+                                            <a class="link-action" href="{{ route('products.show', $product) }}">Chi tiết</a>
+                                            <a class="link-action" href="{{ route('products.create', ['copy_from' => $product->id]) }}">Thêm size</a>
+                                            <form method="POST" action="{{ route('products.destroy', $product) }}" onsubmit="return confirm('Xóa mã hàng này và toàn bộ size khỏi kho?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <input type="hidden" name="delete_scope" value="code">
+                                                <button class="danger" type="submit">Xóa mã</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
-                <div class="pages">
-                    @if ($products->onFirstPage())
-                        <span class="page-link">Trước</span>
-                    @else
-                        <a class="page-link" href="{{ $products->previousPageUrl() }}">Trước</a>
-                    @endif
-
-                    @for ($page = 1; $page <= $products->lastPage(); $page++)
-                        @if ($page === $products->currentPage())
-                            <span class="page-current">{{ $page }}</span>
-                        @else
-                            <a class="page-link" href="{{ $products->url($page) }}">{{ $page }}</a>
-                        @endif
-                    @endfor
-
-                    @if ($products->hasMorePages())
-                        <a class="page-link" href="{{ $products->nextPageUrl() }}">Sau</a>
-                    @else
-                        <span class="page-link">Sau</span>
-                    @endif
-                </div>
-            </nav>
-        @endif
+            </section>
+        @empty
+            <div class="table-shell">
+                <div class="empty">Chưa có sản phẩm phù hợp.</div>
+            </div>
+        @endforelse
     </main>
     <div class="image-lightbox" data-image-lightbox aria-hidden="true">
         <img data-lightbox-image src="" alt="">
@@ -593,6 +641,48 @@
                 closeLightbox();
             }
         });
+
+        const categoryGroups = Array.from(document.querySelectorAll('[data-category-group]'));
+        const bulkToggle = document.querySelector('[data-bulk-toggle]');
+
+        function anyGroupExpanded() {
+            return categoryGroups.some(group => ! group.classList.contains('is-collapsed'));
+        }
+
+        function updateBulkToggleLabel() {
+            if (! bulkToggle) {
+                return;
+            }
+
+            bulkToggle.textContent = anyGroupExpanded() ? 'Gom hết tất cả' : 'Sổ hết tất cả';
+        }
+
+        function setGroupCollapsed(group, collapsed) {
+            group.classList.toggle('is-collapsed', collapsed);
+            const head = group.querySelector('[data-category-toggle]');
+
+            if (head) {
+                head.setAttribute('aria-expanded', String(! collapsed));
+            }
+        }
+
+        document.querySelectorAll('[data-category-toggle]').forEach(button => {
+            button.addEventListener('click', () => {
+                const group = button.closest('[data-category-group]');
+                setGroupCollapsed(group, ! group.classList.contains('is-collapsed'));
+                updateBulkToggleLabel();
+            });
+        });
+
+        if (bulkToggle) {
+            bulkToggle.addEventListener('click', () => {
+                const collapseAll = anyGroupExpanded();
+                categoryGroups.forEach(group => setGroupCollapsed(group, collapseAll));
+                updateBulkToggleLabel();
+            });
+        }
+
+        updateBulkToggleLabel();
 
         document.querySelectorAll('[data-copy-code]').forEach(button => {
             button.addEventListener('click', async event => {

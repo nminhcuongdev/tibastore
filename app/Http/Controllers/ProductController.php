@@ -54,6 +54,7 @@ class ProductController extends Controller
             ->selectRaw('COUNT(*) as size_count')
             ->selectRaw('MAX(image_path) as image_path')
             ->selectRaw('MAX(fabric) as fabric')
+            ->selectRaw('MAX(category) as category')
             ->selectRaw('MAX(updated_at) as updated_at')
             ->when($query !== '', function ($builder) use ($query) {
                 $builder->where(function ($search) use ($query) {
@@ -64,10 +65,9 @@ class ProductController extends Controller
             ->groupBy('code')
             ->orderBy($sortMap[$sort], $direction)
             ->orderBy('id', 'desc')
-            ->paginate(8)
-            ->withQueryString();
+            ->get();
 
-        $products->getCollection()->each(function ($product) {
+        $products->each(function ($product) {
             $expectedReceipts = ProductExpectedReceipt::query()
                 ->join('products', 'products.id', '=', 'product_expected_receipts.product_id')
                 ->where('products.code', $product->code)
@@ -82,8 +82,21 @@ class ProductController extends Controller
             $product->total_expected_receive_quantity = $expectedReceipts->sum('expected_receive_quantity');
         });
 
+        $uncategorizedLabel = 'Chưa phân loại';
+
+        // Nhóm các mã hàng theo danh mục; danh mục trống gộp vào "Chưa phân loại".
+        $grouped = $products->groupBy(fn ($product) => filled($product->category)
+            ? trim($product->category)
+            : $uncategorizedLabel);
+
+        // Sắp xếp danh mục theo bảng chữ cái, "Chưa phân loại" xuống cuối.
+        $productGroups = $grouped
+            ->sortKeys()
+            ->sortBy(fn ($items, $category) => $category === $uncategorizedLabel ? 1 : 0);
+
         return view('products.index', [
-            'products' => $products,
+            'productGroups' => $productGroups,
+            'totalProducts' => $products->count(),
             'query' => $query,
             'sort' => $sort,
             'direction' => $direction,
@@ -103,7 +116,9 @@ class ProductController extends Controller
                     'code' => $source->code,
                     'name' => $source->name,
                     'fabric' => $source->fabric,
+                    'category' => $source->category,
                     'import_price' => $source->import_price,
+                    'rental_price' => $source->rental_price,
                     'image_path' => $source->image_path,
                 ]);
                 $sourceProductId = $source->id;
@@ -232,8 +247,10 @@ class ProductController extends Controller
                     'image_path' => $data['image_path'] ?? null,
                     'stock_quantity' => $variant['stock_quantity'],
                     'fabric' => $data['fabric'],
+                    'category' => $data['category'] ?? null,
                     'size' => $variant['size'],
                     'import_price' => $data['import_price'],
+                    'rental_price' => $data['rental_price'] ?? 0,
                 ]);
 
                 $this->replacePendingExpectedReceipts($product, $variant['expected_receipts']);
@@ -379,8 +396,10 @@ class ProductController extends Controller
             'expected_receipts.*.expected_receive_date' => ['nullable', 'date'],
             'expected_receipts.*.expected_receive_quantity' => ['nullable', 'integer', 'min:0'],
             'fabric' => ['required', 'string', 'max:255'],
+            'category' => ['nullable', 'string', 'max:255'],
             'size' => ['required', 'string', 'max:50'],
             'import_price' => ['required', 'numeric', 'min:0'],
+            'rental_price' => ['nullable', 'integer', 'min:0'],
         ], [
             'code.required' => 'Vui lòng nhập mã sản phẩm.',
             'code.unique' => 'Cặp mã sản phẩm và size đã tồn tại.',
@@ -398,9 +417,12 @@ class ProductController extends Controller
             'import_price.required' => 'Vui lòng nhập giá nhập.',
             'import_price.numeric' => 'Giá nhập phải là số.',
             'import_price.min' => 'Giá nhập không được âm.',
+            'rental_price.integer' => 'Giá thuê phải là số.',
+            'rental_price.min' => 'Giá thuê không được âm.',
         ]);
 
         $data['stock_quantity'] = (int) ($data['stock_quantity'] ?? 0);
+        $data['rental_price'] = (int) ($data['rental_price'] ?? 0);
         $data['expected_receipts'] = $this->normalizeExpectedReceipts($data['expected_receipts'] ?? [], 'expected_receipts');
 
         return $data;
@@ -498,7 +520,9 @@ class ProductController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'image' => ['nullable', 'image', 'max:2048'],
             'fabric' => ['required', 'string', 'max:255'],
+            'category' => ['nullable', 'string', 'max:255'],
             'import_price' => ['required', 'numeric', 'min:0'],
+            'rental_price' => ['nullable', 'integer', 'min:0'],
             'variants' => ['required', 'array', 'min:1'],
             'variants.*.size' => ['required', 'string', 'max:50'],
             'variants.*.stock_quantity' => ['nullable', 'integer', 'min:0'],
@@ -514,6 +538,8 @@ class ProductController extends Controller
             'import_price.required' => 'Vui lòng nhập giá nhập.',
             'import_price.numeric' => 'Giá nhập phải là số.',
             'import_price.min' => 'Giá nhập không được âm.',
+            'rental_price.integer' => 'Giá thuê phải là số.',
+            'rental_price.min' => 'Giá thuê không được âm.',
             'variants.required' => 'Vui lòng thêm ít nhất một size.',
             'variants.min' => 'Vui lòng thêm ít nhất một size.',
             'variants.*.size.required' => 'Vui lòng nhập size.',

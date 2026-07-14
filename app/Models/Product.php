@@ -19,8 +19,10 @@ class Product extends Model
         'expected_receive_quantity',
         'expected_received_at',
         'fabric',
+        'category',
         'size',
         'import_price',
+        'rental_price',
     ];
 
     protected $casts = [
@@ -29,6 +31,7 @@ class Product extends Model
         'expected_receive_quantity' => 'integer',
         'expected_received_at' => 'datetime',
         'import_price' => 'decimal:2',
+        'rental_price' => 'integer',
     ];
 
     public function orders(): HasMany

@@ -367,9 +367,8 @@
             </div>
 
             <div class="field">
-                <label for="total_amount">Tổng đơn</label>
-                <input id="total_amount" name="total_amount" type="number" min="0" step="1" value="{{ old('total_amount', $order->total_amount ?? 0) }}">
-                @error('total_amount') <div class="error">{{ $message }}</div> @enderror
+                <label>Tổng đơn (tự động: giá thuê × số lượng)</label>
+                <div class="readonly-value" data-total-display>0</div>
             </div>
 
             <div class="field">
@@ -437,6 +436,29 @@
             }
 
             return null;
+        }
+
+        const totalDisplay = document.querySelector('[data-total-display]');
+
+        // Tổng đơn = tổng (giá thuê × số lượng) của mọi dòng size đã chọn.
+        function updateComputedTotal() {
+            if (! totalDisplay) {
+                return;
+            }
+
+            let total = 0;
+
+            itemsContainer.querySelectorAll('.size-row').forEach(sizeRow => {
+                const productId = sizeRow.querySelector('[data-product-id]').value;
+                const quantity = Number(sizeRow.querySelector('[data-quantity]').value || 0);
+                const selected = findProductById(productId);
+
+                if (selected && quantity > 0) {
+                    total += Number(selected.item.rental_price || 0) * quantity;
+                }
+            });
+
+            totalDisplay.textContent = total.toLocaleString('vi-VN');
         }
 
         function stockLimit(product) {
@@ -809,6 +831,7 @@
                 renderSelectedInfo(block);
             });
             updateAllAddSizeButtons();
+            updateComputedTotal();
         }
 
         function addSizeForBlock(block) {
@@ -1087,8 +1110,15 @@
             addItemBlock();
         }
 
+        itemsContainer.addEventListener('input', event => {
+            if (event.target.matches('[data-quantity]')) {
+                updateComputedTotal();
+            }
+        });
+
         resetAvailabilityToCurrentStock();
         refreshAvailability();
+        updateComputedTotal();
     </script>
 </body>
 </html>

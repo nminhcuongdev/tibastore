@@ -329,7 +329,6 @@ class OrderController extends Controller
             'return_date' => ['required', 'date', 'after_or_equal:event_date'],
             'order_name' => ['required', 'string', 'max:255'],
             'status' => ['required', Rule::in(array_keys(Order::statuses()))],
-            'total_amount' => ['nullable', 'integer', 'min:0'],
             'shipping_fee' => ['nullable', 'integer', 'min:0'],
             'payment_1' => ['nullable', 'integer', 'min:0'],
             'payment_2' => ['nullable', 'integer', 'min:0'],
@@ -346,8 +345,6 @@ class OrderController extends Controller
             'order_name.required' => 'Vui lòng nhập tên đơn.',
             'status.required' => 'Vui lòng chọn trạng thái.',
             'status.in' => 'Trạng thái không hợp lệ.',
-            'total_amount.integer' => 'Tổng đơn phải là số.',
-            'total_amount.min' => 'Tổng đơn không được nhỏ hơn 0.',
             'shipping_fee.integer' => 'Tiền ship phải là số.',
             'shipping_fee.min' => 'Tiền ship không được nhỏ hơn 0.',
             'payment_1.integer' => 'Thanh toán lần 1 phải là số.',
@@ -385,13 +382,29 @@ class OrderController extends Controller
             'return_date' => $data['return_date'],
             'order_name' => $data['order_name'],
             'status' => $data['status'],
-            'total_amount' => $data['total_amount'] ?? 0,
+            'total_amount' => $this->calculateItemsTotal($items),
             'shipping_fee' => $data['shipping_fee'] ?? 0,
             'payment_1' => $data['payment_1'] ?? 0,
             'payment_2' => $data['payment_2'] ?? 0,
             'product_id' => $firstItem['product_id'],
             'quantity' => $firstItem['quantity'],
         ];
+    }
+
+    /**
+     * Tổng tiền đơn = tổng (giá thuê của sản phẩm × số lượng) trên tất cả dòng hàng.
+     */
+    private function calculateItemsTotal(array $items): int
+    {
+        $rentalPrices = Product::query()
+            ->whereIn('id', collect($items)->pluck('product_id')->all())
+            ->pluck('rental_price', 'id');
+
+        return collect($items)->reduce(function (int $total, array $item) use ($rentalPrices) {
+            $rentalPrice = (int) ($rentalPrices[$item['product_id']] ?? 0);
+
+            return $total + $rentalPrice * (int) $item['quantity'];
+        }, 0);
     }
 
     private function productOptions($products): array
@@ -409,6 +422,8 @@ class OrderController extends Controller
                     'size' => $product->size,
                     'name' => $product->name,
                         'fabric' => $product->fabric,
+                        'category' => $product->category,
+                        'rental_price' => (int) $product->rental_price,
                         'image_url' => $product->image_path ? asset('storage/' . $product->image_path) : null,
                         'stock_quantity' => $product->stock_quantity,
                         'expected_receipts' => $product->expectedReceipts

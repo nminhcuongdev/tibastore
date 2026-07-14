@@ -293,6 +293,7 @@
                             </a>
                         </th>
                         <th>Vải</th>
+                        <th>Danh mục</th>
                         <th>Ngày dự kiến nhận</th>
                         <th>SL nhận dự kiến</th>
                         <th>
@@ -305,6 +306,7 @@
                                 Giá nhập {{ $sort === 'price' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}
                             </a>
                         </th>
+                        <th>Giá thuê</th>
                         <th>Thao tác</th>
                     </tr>
                 </thead>
@@ -327,6 +329,7 @@
                             </td>
                             <td>{{ number_format($variant->stock_quantity) }}</td>
                             <td>{{ $variant->fabric }}</td>
+                            <td>{{ $variant->category ?: 'N/A' }}</td>
                             <td>
                                 @forelse ($variant->expectedReceipts->whereNull('received_at') as $receipt)
                                     <div>{{ $receipt->expected_receive_date?->format('d/m/Y') }}</div>
@@ -343,6 +346,7 @@
                             </td>
                             <td>{{ $variant->size }}</td>
                             <td>{{ number_format((float) $variant->import_price, 0, ',', '.') }} VND</td>
+                            <td>{{ number_format($variant->rental_price) }} VND</td>
                             <td>
                                 <div class="row-actions">
                                     <a class="link-action" href="{{ route('products.track', $variant) }}">Theo dõi</a>
@@ -357,7 +361,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td class="empty" colspan="10">Chưa có sản phẩm phù hợp.</td>
+                            <td class="empty" colspan="12">Chưa có sản phẩm phù hợp.</td>
                         </tr>
                     @endforelse
                 </tbody>
