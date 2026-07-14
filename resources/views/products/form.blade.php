@@ -368,12 +368,6 @@
                 </div>
 
                 <div class="field">
-                    <label for="import_price">Giá nhập</label>
-                    <input id="import_price" name="import_price" type="number" min="0" step="1000" value="{{ old('import_price', $product->import_price ?? 0) }}" required>
-                    @error('import_price') <div class="error">{{ $message }}</div> @enderror
-                </div>
-
-                <div class="field">
                     <label for="rental_price">Giá thuê</label>
                     <input id="rental_price" name="rental_price" type="number" min="0" step="1000" value="{{ old('rental_price', $product->rental_price ?? 0) }}">
                     @error('rental_price') <div class="error">{{ $message }}</div> @enderror

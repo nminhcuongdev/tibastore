@@ -301,12 +301,6 @@
                                 Size {{ $sort === 'size' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}
                             </a>
                         </th>
-                        <th>
-                            <a href="{{ route('products.show', array_merge(['product' => $product], request()->except('page'), ['sort' => 'price', 'direction' => $sort === 'price' && $direction === 'asc' ? 'desc' : 'asc'])) }}">
-                                Giá nhập {{ $sort === 'price' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}
-                            </a>
-                        </th>
-                        <th>Giá thuê</th>
                         <th>Thao tác</th>
                     </tr>
                 </thead>
@@ -345,8 +339,6 @@
                                 @endforelse
                             </td>
                             <td>{{ $variant->size }}</td>
-                            <td>{{ number_format((float) $variant->import_price, 0, ',', '.') }} VND</td>
-                            <td>{{ number_format($variant->rental_price) }} VND</td>
                             <td>
                                 <div class="row-actions">
                                     <a class="link-action" href="{{ route('products.track', $variant) }}">Theo dõi</a>
@@ -361,7 +353,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td class="empty" colspan="12">Chưa có sản phẩm phù hợp.</td>
+                            <td class="empty" colspan="10">Chưa có sản phẩm phù hợp.</td>
                         </tr>
                     @endforelse
                 </tbody>

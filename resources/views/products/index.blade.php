@@ -553,6 +553,7 @@
                                 <th>Ngày dự kiến nhận</th>
                                 <th>SL nhận dự kiến</th>
                                 <th>Số size</th>
+                                <th>Giá thuê</th>
                                 <th>Thao tác</th>
                             </tr>
                         </thead>
@@ -587,6 +588,7 @@
                                     <td>{{ $product->expected_receive_date ? \Illuminate\Support\Carbon::parse($product->expected_receive_date)->format('d/m/Y') : 'N/A' }}</td>
                                     <td>{{ number_format($product->total_expected_receive_quantity ?? 0) }}</td>
                                     <td>{{ number_format($product->size_count) }}</td>
+                                    <td>{{ number_format($product->rental_price) }} VND</td>
                                     <td>
                                         <div class="row-actions">
                                             <a class="link-action" href="{{ route('products.show', $product) }}">Chi tiết</a>
