@@ -145,6 +145,23 @@
             flex-wrap: wrap;
             gap: 10px;
         }
+        .rental-row {
+            align-items: end;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .rental-field {
+            max-width: 220px;
+        }
+        .block-subtotal {
+            color: #7a344c;
+            font-weight: 800;
+            padding-bottom: 12px;
+        }
+        .block-subtotal span {
+            color: #a13b60;
+        }
         .product-picker-cell {
             min-width: 0;
             position: relative;
@@ -308,15 +325,18 @@
                 ? collect($oldItems)->map(fn ($item) => [
                     'product_id' => $item['product_id'] ?? '',
                     'quantity' => $item['quantity'] ?? 1,
+                    'rental_price' => $item['rental_price'] ?? null,
                 ])->values()
                 : ($orderItems->isNotEmpty()
                     ? $orderItems->map(fn ($item) => [
                         'product_id' => $item->product_id,
                         'quantity' => $item->quantity,
+                        'rental_price' => $item->rental_price,
                     ])->values()
                     : collect([[
                         'product_id' => $order->product_id,
                         'quantity' => $order->quantity ?? 1,
+                        'rental_price' => null,
                     ]])->filter(fn ($item) => ! empty($item['product_id'])));
         @endphp
 
@@ -438,27 +458,59 @@
             return null;
         }
 
-        const totalDisplay = document.querySelector('[data-total-display]');
+        // Giá thuê ở kho theo mã hàng (các size cùng mã dùng chung); chỉ để làm giá mặc định.
+        function codeRentalPrice(code) {
+            const group = productOptions.find(item => item.code === code);
 
-        // Tổng đơn = tổng (giá thuê × số lượng) của mọi dòng size đã chọn.
-        function updateComputedTotal() {
-            if (! totalDisplay) {
-                return;
+            if (! group || ! group.items.length) {
+                return 0;
             }
 
+            const withPrice = group.items.find(item => Number(item.rental_price) > 0);
+
+            return Number((withPrice || group.items[0]).rental_price || 0);
+        }
+
+        const totalDisplay = document.querySelector('[data-total-display]');
+
+        // Giá thuê nhập tại mã hàng áp cho mọi size của mã đó.
+        // Thành tiền mỗi mã = giá thuê × tổng số lượng các size; tổng đơn = cộng dồn các mã.
+        function updateComputedTotal() {
             let total = 0;
 
-            itemsContainer.querySelectorAll('.size-row').forEach(sizeRow => {
-                const productId = sizeRow.querySelector('[data-product-id]').value;
-                const quantity = Number(sizeRow.querySelector('[data-quantity]').value || 0);
-                const selected = findProductById(productId);
+            itemsContainer.querySelectorAll('.order-item').forEach(block => {
+                const rentalInput = block.querySelector('[data-block-rental]');
+                const rental = Number(rentalInput ? rentalInput.value || 0 : 0);
+                let blockQuantity = 0;
 
-                if (selected && quantity > 0) {
-                    total += Number(selected.item.rental_price || 0) * quantity;
+                block.querySelectorAll('.size-row').forEach(sizeRow => {
+                    const productId = sizeRow.querySelector('[data-product-id]').value;
+                    const quantity = Number(sizeRow.querySelector('[data-quantity]').value || 0);
+                    const rentalHidden = sizeRow.querySelector('[data-rental]');
+
+                    // Ghi giá thuê của mã vào input ẩn từng size để gửi lên server.
+                    if (rentalHidden) {
+                        rentalHidden.value = String(rental);
+                    }
+
+                    if (productId && quantity > 0) {
+                        blockQuantity += quantity;
+                    }
+                });
+
+                const subtotal = rental * blockQuantity;
+                const subtotalEl = block.querySelector('[data-block-subtotal]');
+
+                if (subtotalEl) {
+                    subtotalEl.textContent = subtotal.toLocaleString('vi-VN');
                 }
+
+                total += subtotal;
             });
 
-            totalDisplay.textContent = total.toLocaleString('vi-VN');
+            if (totalDisplay) {
+                totalDisplay.textContent = total.toLocaleString('vi-VN');
+            }
         }
 
         function stockLimit(product) {
@@ -661,6 +713,10 @@
             itemsContainer.querySelectorAll('.size-row').forEach(sizeRow => {
                 sizeRow.querySelector('[data-product-id]').name = `items[${index}][product_id]`;
                 sizeRow.querySelector('[data-quantity]').name = `items[${index}][quantity]`;
+                const rentalHidden = sizeRow.querySelector('[data-rental]');
+                if (rentalHidden) {
+                    rentalHidden.name = `items[${index}][rental_price]`;
+                }
                 index += 1;
             });
         }
@@ -789,7 +845,14 @@
             clearSizeRows(block);
             addSizeRow(block);
 
+            // Chọn mã mới: lấy giá thuê ở kho làm mặc định (vẫn cho sửa lại).
+            const rentalInput = block.querySelector('[data-block-rental]');
+            if (rentalInput) {
+                rentalInput.value = codeRentalPrice(group ? group.code : '');
+            }
+
             updateAddSizeButton(block);
+            updateComputedTotal();
         }
 
         function renderSelectedInfo(block) {
@@ -871,6 +934,7 @@
                         <option value="">Chọn size</option>
                     </select>
                     <input data-product-id type="hidden" value="${size.product_id || ''}" required>
+                    <input data-rental type="hidden" value="${size.rental_price != null ? size.rental_price : ''}">
                 </div>
                 <div class="field">
                     <label>Số lượng</label>
@@ -934,6 +998,13 @@
                     <div data-suggestions class="product-suggestions"></div>
                 </div>
                 <div data-size-rows class="size-rows"></div>
+                <div class="rental-row">
+                    <div class="field rental-field">
+                        <label>Giá thuê (mã này)</label>
+                        <input data-block-rental type="number" min="0" step="1000" value="0">
+                    </div>
+                    <div class="block-subtotal">Thành tiền: <span data-block-subtotal>0</span></div>
+                </div>
                 <div class="product-actions">
                     <button class="button secondary" data-add-size type="button" disabled>+ Thêm size</button>
                     <button class="button danger" data-remove-block type="button">Xóa mã hàng</button>
@@ -945,6 +1016,8 @@
 
             const searchInput = block.querySelector('[data-search]');
             const selectedInfo = block.querySelector('[data-selected-info]');
+
+            block.querySelector('[data-block-rental]').addEventListener('input', updateComputedTotal);
 
             searchInput.addEventListener('input', () => {
                 if (block.dataset.productCode) {
@@ -985,9 +1058,18 @@
             const sizes = (blockData.sizes && blockData.sizes.length) ? blockData.sizes : [{}];
             sizes.forEach(size => addSizeRow(block, size));
 
+            // Giá thuê mặc định: dùng giá đã lưu trên đơn nếu có, nếu không lấy giá thuê ở kho.
+            const rentalInput = block.querySelector('[data-block-rental]');
+            if (blockData.rental != null && Number(blockData.rental) > 0) {
+                rentalInput.value = Number(blockData.rental);
+            } else if (block.dataset.productCode) {
+                rentalInput.value = codeRentalPrice(block.dataset.productCode);
+            }
+
             renderSelectedInfo(block);
             updateAddSizeButton(block);
             renumberRows();
+            updateComputedTotal();
 
             return block;
         }
@@ -1039,6 +1121,7 @@
         });
 
         orderForm.addEventListener('submit', event => {
+            updateComputedTotal();
             const sizeRows = Array.from(itemsContainer.querySelectorAll('.size-row'));
 
             itemsContainer.querySelectorAll('.order-item').forEach(clearRowError);
@@ -1090,7 +1173,7 @@
         initialItems.forEach(item => {
             const selected = findProductById(item.product_id);
             const code = selected ? selected.group.code : null;
-            const sizeData = { product_id: item.product_id, quantity: item.quantity };
+            const sizeData = { product_id: item.product_id, quantity: item.quantity, rental_price: item.rental_price };
 
             if (code && codeToBlockIndex.has(code)) {
                 groupedBlocks[codeToBlockIndex.get(code)].sizes.push(sizeData);
@@ -1101,7 +1184,8 @@
                 codeToBlockIndex.set(code, groupedBlocks.length);
             }
 
-            groupedBlocks.push({ code, sizes: [sizeData] });
+            // Giá thuê của mã lấy từ dòng đầu tiên (các size cùng mã dùng chung giá).
+            groupedBlocks.push({ code, sizes: [sizeData], rental: item.rental_price });
         });
 
         if (groupedBlocks.length > 0) {

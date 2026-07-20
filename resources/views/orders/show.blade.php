@@ -445,6 +445,8 @@
                                 <th>Tên hàng</th>
                                 <th>Vải</th>
                                 <th>Size - Số lượng</th>
+                                <th>Giá thuê</th>
+                                <th>Thành tiền</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -453,6 +455,8 @@
                                     $firstItem = $items->first();
                                     $product = $firstItem->product;
                                     $sizeQuantities = $items->groupBy(fn ($item) => $item->product?->size ?? 'N/A');
+                                    $lineRental = (int) ($firstItem->rental_price ?? 0);
+                                    $lineTotal = $lineRental * $items->sum('quantity');
                                 @endphp
                                 <tr>
                                     <td>
@@ -479,6 +483,8 @@
                                             @endforeach
                                         </div>
                                     </td>
+                                    <td>{{ number_format($lineRental) }} VND</td>
+                                    <td>{{ number_format($lineTotal) }} VND</td>
                                 </tr>
                             @endforeach
                         </tbody>

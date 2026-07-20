@@ -13,11 +13,13 @@ class OrderItem extends Model
     protected $fillable = [
         'product_id',
         'quantity',
+        'rental_price',
         'returned_quantity',
     ];
 
     protected $casts = [
         'quantity' => 'integer',
+        'rental_price' => 'integer',
         'returned_quantity' => 'integer',
     ];
 

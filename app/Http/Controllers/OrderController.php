@@ -335,6 +335,7 @@ class OrderController extends Controller
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'distinct', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.rental_price' => ['nullable', 'integer', 'min:0'],
         ], [
             'closer_name.required' => 'Vui lòng nhập người chốt.',
             'pickup_date.required' => 'Vui lòng nhập ngày lấy.',
@@ -359,6 +360,8 @@ class OrderController extends Controller
             'items.*.quantity.required' => 'Vui lòng nhập số lượng.',
             'items.*.quantity.integer' => 'Số lượng phải là số nguyên.',
             'items.*.quantity.min' => 'Số lượng phải lớn hơn 0.',
+            'items.*.rental_price.integer' => 'Giá thuê phải là số.',
+            'items.*.rental_price.min' => 'Giá thuê không được nhỏ hơn 0.',
         ]);
 
         $this->inventory->assertItemsAvailable(
@@ -367,6 +370,19 @@ class OrderController extends Controller
             $data['return_date'],
             $order?->id
         );
+
+        // Chuẩn hoá giá thuê từng dòng: dùng giá nhập trên đơn nếu có, nếu không lấy giá thuê ở kho.
+        $productRentals = Product::query()
+            ->whereIn('id', collect($data['items'])->pluck('product_id')->all())
+            ->pluck('rental_price', 'id');
+
+        $data['items'] = collect($data['items'])->map(function ($item) use ($productRentals) {
+            $item['rental_price'] = array_key_exists('rental_price', $item) && $item['rental_price'] !== null && $item['rental_price'] !== ''
+                ? (int) $item['rental_price']
+                : (int) ($productRentals[$item['product_id']] ?? 0);
+
+            return $item;
+        })->all();
 
         return $data;
     }
@@ -392,18 +408,13 @@ class OrderController extends Controller
     }
 
     /**
-     * Tổng tiền đơn = tổng (giá thuê của sản phẩm × số lượng) trên tất cả dòng hàng.
+     * Tổng tiền đơn = tổng (giá thuê trên đơn × số lượng) của mọi dòng hàng.
+     * Giá thuê ở đây là giá nhập riêng cho đơn, không phải giá thuê ở kho.
      */
     private function calculateItemsTotal(array $items): int
     {
-        $rentalPrices = Product::query()
-            ->whereIn('id', collect($items)->pluck('product_id')->all())
-            ->pluck('rental_price', 'id');
-
-        return collect($items)->reduce(function (int $total, array $item) use ($rentalPrices) {
-            $rentalPrice = (int) ($rentalPrices[$item['product_id']] ?? 0);
-
-            return $total + $rentalPrice * (int) $item['quantity'];
+        return collect($items)->reduce(function (int $total, array $item) {
+            return $total + (int) ($item['rental_price'] ?? 0) * (int) $item['quantity'];
         }, 0);
     }
 
