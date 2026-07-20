@@ -382,6 +382,10 @@
                         <div class="value">{{ $order->closer_name }}</div>
                     </div>
                     <div class="detail">
+                        <div class="label">Nguồn hàng</div>
+                        <div class="value">{{ $order->sourceLabel() }}</div>
+                    </div>
+                    <div class="detail">
                         <div class="label">Ngày tạo đơn</div>
                         <div class="value">{{ $order->created_at?->format('d/m/Y H:i') }}</div>
                     </div>

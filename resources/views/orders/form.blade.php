@@ -387,6 +387,16 @@
             </div>
 
             <div class="field">
+                <label for="source">Nguồn hàng</label>
+                <select id="source" name="source" required>
+                    @foreach ($sources as $value => $label)
+                        <option value="{{ $value }}" @selected(old('source', $order->source ?? \App\Models\Order::DEFAULT_SOURCE) === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                @error('source') <div class="error">{{ $message }}</div> @enderror
+            </div>
+
+            <div class="field">
                 <label>Tổng đơn (tự động: giá thuê × số lượng)</label>
                 <div class="readonly-value" data-total-display>0</div>
             </div>

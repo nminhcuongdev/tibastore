@@ -38,6 +38,14 @@ class OrderController extends Controller
         $direction = $request->query('direction', 'desc');
         $query = trim((string) $request->query('q', ''));
         $status = (string) $request->query('status', '');
+        $source = (string) $request->query('source', '');
+        $closer = trim((string) $request->query('closer', ''));
+        $pickupFrom = $this->filterDate($request->query('pickup_from'));
+        $pickupTo = $this->filterDate($request->query('pickup_to'));
+        $eventFrom = $this->filterDate($request->query('event_from'));
+        $eventTo = $this->filterDate($request->query('event_to'));
+        $returnFrom = $this->filterDate($request->query('return_from'));
+        $returnTo = $this->filterDate($request->query('return_to'));
 
         if (! array_key_exists($sort, $sortMap)) {
             $sort = 'updated';
@@ -51,11 +59,23 @@ class OrderController extends Controller
             $status = '';
         }
 
+        if (! array_key_exists($source, Order::sources())) {
+            $source = '';
+        }
+
         $orders = Order::query()
             ->select('orders.*')
             ->with(['product', 'items.product'])
             ->join('products', 'products.id', '=', 'orders.product_id')
             ->when($status !== '', fn ($builder) => $builder->where('orders.status', $status))
+            ->when($source !== '', fn ($builder) => $builder->where('orders.source', $source))
+            ->when($closer !== '', fn ($builder) => $builder->where('orders.closer_name', $closer))
+            ->when($pickupFrom, fn ($builder) => $builder->whereDate('orders.pickup_date', '>=', $pickupFrom))
+            ->when($pickupTo, fn ($builder) => $builder->whereDate('orders.pickup_date', '<=', $pickupTo))
+            ->when($eventFrom, fn ($builder) => $builder->whereDate('orders.event_date', '>=', $eventFrom))
+            ->when($eventTo, fn ($builder) => $builder->whereDate('orders.event_date', '<=', $eventTo))
+            ->when($returnFrom, fn ($builder) => $builder->whereDate('orders.return_date', '>=', $returnFrom))
+            ->when($returnTo, fn ($builder) => $builder->whereDate('orders.return_date', '<=', $returnTo))
             ->when($query !== '', function ($builder) use ($query) {
                 $builder->where(function ($search) use ($query) {
                     $search->where('orders.closer_name', 'like', "%{$query}%")
@@ -74,6 +94,13 @@ class OrderController extends Controller
             ->paginate(8)
             ->withQueryString();
 
+        $closers = Order::query()
+            ->whereNotNull('closer_name')
+            ->where('closer_name', '!=', '')
+            ->distinct()
+            ->orderBy('closer_name')
+            ->pluck('closer_name');
+
         return view('orders.index', [
             'orders' => $orders,
             'query' => $query,
@@ -82,7 +109,29 @@ class OrderController extends Controller
             'direction' => $direction,
             'statuses' => Order::statuses(),
             'paymentStatuses' => Order::paymentStatuses(),
+            'sources' => Order::sources(),
+            'closers' => $closers,
+            'filters' => [
+                'source' => $source,
+                'closer' => $closer,
+                'pickup_from' => $pickupFrom,
+                'pickup_to' => $pickupTo,
+                'event_from' => $eventFrom,
+                'event_to' => $eventTo,
+                'return_from' => $returnFrom,
+                'return_to' => $returnTo,
+            ],
         ]);
+    }
+
+    /**
+     * Chỉ nhận chuỗi ngày dạng Y-m-d (từ input type=date), còn lại trả null.
+     */
+    private function filterDate($value): ?string
+    {
+        $value = trim((string) $value);
+
+        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) ? $value : null;
     }
 
     public function availability(Request $request): JsonResponse
@@ -137,11 +186,12 @@ class OrderController extends Controller
         $products = Product::with('expectedReceipts')->orderBy('code')->orderBy('size')->get();
 
         return view('orders.form', [
-            'order' => new Order(['status' => Order::DEFAULT_STATUS]),
+            'order' => new Order(['status' => Order::DEFAULT_STATUS, 'source' => Order::DEFAULT_SOURCE]),
             'orderItems' => collect(),
             'products' => $products,
             'productOptions' => $this->productOptions($products),
             'statuses' => Order::statuses(),
+            'sources' => Order::sources(),
             'mode' => 'create',
         ]);
     }
@@ -195,6 +245,7 @@ class OrderController extends Controller
             'products' => $products,
             'productOptions' => $this->productOptions($products),
             'statuses' => Order::statuses(),
+            'sources' => Order::sources(),
             'mode' => 'edit',
         ]);
     }
@@ -328,6 +379,7 @@ class OrderController extends Controller
             'event_date' => ['required', 'date', 'after_or_equal:pickup_date'],
             'return_date' => ['required', 'date', 'after_or_equal:event_date'],
             'order_name' => ['required', 'string', 'max:255'],
+            'source' => ['required', Rule::in(array_keys(Order::sources()))],
             'status' => ['required', Rule::in(array_keys(Order::statuses()))],
             'shipping_fee' => ['nullable', 'integer', 'min:0'],
             'payment_1' => ['nullable', 'integer', 'min:0'],
@@ -344,6 +396,8 @@ class OrderController extends Controller
             'return_date.required' => 'Vui lòng nhập ngày trả.',
             'return_date.after_or_equal' => 'Ngày trả phải bằng hoặc sau ngày diễn.',
             'order_name.required' => 'Vui lòng nhập tên đơn.',
+            'source.required' => 'Vui lòng chọn nguồn hàng.',
+            'source.in' => 'Nguồn hàng không hợp lệ.',
             'status.required' => 'Vui lòng chọn trạng thái.',
             'status.in' => 'Trạng thái không hợp lệ.',
             'shipping_fee.integer' => 'Tiền ship phải là số.',
@@ -397,6 +451,7 @@ class OrderController extends Controller
             'event_date' => $data['event_date'],
             'return_date' => $data['return_date'],
             'order_name' => $data['order_name'],
+            'source' => $data['source'],
             'status' => $data['status'],
             'total_amount' => $this->calculateItemsTotal($items),
             'shipping_fee' => $data['shipping_fee'] ?? 0,

@@ -76,26 +76,33 @@
         }
         .content { padding: 28px clamp(18px, 5vw, 56px) 56px; }
         .toolbar {
-            align-items: end;
             display: grid;
             gap: 14px;
-            grid-template-columns: 1fr auto;
+            grid-template-columns: 1fr;
             margin-bottom: 18px;
         }
         .search {
             display: grid;
-            gap: 8px;
-            max-width: 760px;
+            gap: 12px;
+            width: 100%;
         }
         .filter-grid {
             align-items: end;
             display: grid;
             gap: 12px;
-            grid-template-columns: 1fr 220px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         }
         .filter-field {
             display: grid;
             gap: 8px;
+        }
+        .filter-field.wide {
+            grid-column: 1 / -1;
+        }
+        .filter-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         select {
             background: #fff;
@@ -355,28 +362,70 @@
         <div class="toolbar">
             <form class="search" method="GET" action="{{ route('orders.index') }}">
                 <div class="filter-grid">
-                    <div class="filter-field">
+                    <div class="filter-field wide">
                         <label for="q">Tìm theo người chốt, tên đơn, mã hàng hoặc tên hàng</label>
                         <input id="q" name="q" type="search" value="{{ $query }}" placeholder="VD: Linh, đơn chụp lookbook, VAY001...">
                     </div>
                     <div class="filter-field">
-                        <label for="status">Lọc trạng thái</label>
-                        <select id="status" name="status" onchange="this.form.submit()">
+                        <label for="closer">Người chốt</label>
+                        <select id="closer" name="closer">
+                            <option value="">Tất cả người chốt</option>
+                            @foreach ($closers as $name)
+                                <option value="{{ $name }}" @selected($filters['closer'] === $name)>{{ $name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="filter-field">
+                        <label for="source">Nguồn hàng</label>
+                        <select id="source" name="source">
+                            <option value="">Tất cả nguồn</option>
+                            @foreach ($sources as $value => $label)
+                                <option value="{{ $value }}" @selected($filters['source'] === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="filter-field">
+                        <label for="status">Trạng thái</label>
+                        <select id="status" name="status">
                             <option value="">Tất cả trạng thái</option>
                             @foreach ($statuses as $value => $label)
                                 <option value="{{ $value }}" @selected($status === $value)>{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>
+                    <div class="filter-field">
+                        <label for="pickup_from">Ngày lấy từ</label>
+                        <input id="pickup_from" name="pickup_from" type="date" value="{{ $filters['pickup_from'] }}">
+                    </div>
+                    <div class="filter-field">
+                        <label for="pickup_to">Ngày lấy đến</label>
+                        <input id="pickup_to" name="pickup_to" type="date" value="{{ $filters['pickup_to'] }}">
+                    </div>
+                    <div class="filter-field">
+                        <label for="event_from">Ngày diễn từ</label>
+                        <input id="event_from" name="event_from" type="date" value="{{ $filters['event_from'] }}">
+                    </div>
+                    <div class="filter-field">
+                        <label for="event_to">Ngày diễn đến</label>
+                        <input id="event_to" name="event_to" type="date" value="{{ $filters['event_to'] }}">
+                    </div>
+                    <div class="filter-field">
+                        <label for="return_from">Ngày trả từ</label>
+                        <input id="return_from" name="return_from" type="date" value="{{ $filters['return_from'] }}">
+                    </div>
+                    <div class="filter-field">
+                        <label for="return_to">Ngày trả đến</label>
+                        <input id="return_to" name="return_to" type="date" value="{{ $filters['return_to'] }}">
+                    </div>
                 </div>
                 <input type="hidden" name="sort" value="{{ $sort }}">
                 <input type="hidden" name="direction" value="{{ $direction }}">
+                <div class="filter-actions">
+                    <button type="submit" class="button">Lọc</button>
+                    <a class="button secondary" href="{{ route('orders.index') }}">Xóa lọc</a>
+                    <a class="button" href="{{ route('orders.create') }}">+ Tạo đơn hàng</a>
+                </div>
             </form>
-
-            <div class="actions">
-                <a class="button secondary" href="{{ route('orders.index') }}">Làm mới</a>
-                <a class="button" href="{{ route('orders.create') }}">+ Tạo đơn hàng</a>
-            </div>
         </div>
 
         <div class="table-shell">

@@ -17,6 +17,7 @@ class Order extends Model
         'event_date',
         'return_date',
         'order_name',
+        'source',
         'product_id',
         'quantity',
         'status',
@@ -73,6 +74,23 @@ class Order extends Model
     public const DEFAULT_STATUS = 'chua_cho_size';
 
     public const DEFAULT_PAYMENT_STATUS = 'coc';
+
+    public const DEFAULT_SOURCE = 'khm_page';
+
+    public static function sources(): array
+    {
+        return [
+            'khm_page' => 'KHM của page',
+            'khc_page' => 'KHC của page',
+            'khm_sale' => 'KHM của sale',
+            'khc_sale' => 'KHC của sale',
+        ];
+    }
+
+    public function sourceLabel(): string
+    {
+        return self::sources()[$this->source] ?? ($this->source ?? 'N/A');
+    }
 
     public static function statuses(): array
     {
