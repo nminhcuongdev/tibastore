@@ -309,6 +309,10 @@ class ProductController extends Controller
                     ->update(['code' => $newCode]);
             }
 
+            // Danh mục thuộc về mã hàng: đồng bộ cho mọi size cùng mã, không chỉ size đang sửa.
+            Product::where('code', $newCode)
+                ->update(['category' => $data['category'] ?? null]);
+
             $newQuantity = (int) $lockedProduct->stock_quantity;
 
             if ($newQuantity > $previousQuantity) {

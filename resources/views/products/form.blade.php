@@ -364,6 +364,9 @@
                 <div class="field">
                     <label for="category">Danh mục</label>
                     <input id="category" name="category" type="text" value="{{ old('category', $product->category) }}" placeholder="Váy dạ hội, áo dài, vest...">
+                    @if ($mode === 'edit')
+                        <div class="hint">Danh mục áp dụng cho tất cả size của mã hàng này.</div>
+                    @endif
                     @error('category') <div class="error">{{ $message }}</div> @enderror
                 </div>
 
