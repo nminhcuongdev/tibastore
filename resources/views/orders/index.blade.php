@@ -461,13 +461,13 @@
                             </td>
                             <td>
                                 <div class="product-codes">
-                                    @forelse ($order->items->groupBy(fn ($item) => $item->product->code) as $code => $items)
+                                    @forelse ($order->items->groupBy(fn ($item) => $item->product?->code ?? 'N/A') as $code => $items)
                                         <div class="product-code-line">
                                             <span class="code">{{ $code }}</span>
                                             <span class="size-qty">
                                                 -
-                                                @foreach ($items->groupBy(fn ($item) => $item->product->size) as $size => $sizeItems)
-                                                    Size {{ $size }}: {{ number_format($sizeItems->sum('quantity')) }}@if (! $loop->last), @endif
+                                                @foreach ($items->groupBy(fn ($item) => $item->displaySize()) as $size => $sizeItems)
+                                                    {{ $size === 'Chưa chốt' ? $size : 'Size ' . $size }}: {{ number_format($sizeItems->sum('quantity')) }}@if (! $loop->last), @endif
                                                 @endforeach
                                             </span>
                                         </div>
@@ -485,7 +485,7 @@
                                     $checkItems = $order->items->map(fn ($item) => [
                                         'id' => $item->id,
                                         'code' => $item->product?->code ?? 'N/A',
-                                        'size' => $item->product?->size ?? 'N/A',
+                                        'size' => $item->displaySize(),
                                         'name' => $item->product?->name ?? '',
                                         'quantity' => (int) $item->quantity,
                                         'returned' => $item->returned_quantity ?? (int) $item->quantity,

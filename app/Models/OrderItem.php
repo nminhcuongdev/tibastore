@@ -12,6 +12,7 @@ class OrderItem extends Model
 
     protected $fillable = [
         'product_id',
+        'size_pending',
         'quantity',
         'rental_price',
         'returned_quantity',
@@ -21,7 +22,28 @@ class OrderItem extends Model
         'quantity' => 'integer',
         'rental_price' => 'integer',
         'returned_quantity' => 'integer',
+        'size_pending' => 'boolean',
     ];
+
+    /**
+     * Mã hàng hiển thị (lấy từ sản phẩm đại diện).
+     */
+    public function displayCode(): string
+    {
+        return $this->product?->code ?? 'N/A';
+    }
+
+    /**
+     * Size hiển thị: nếu chưa chốt size thì báo "Chưa chốt".
+     */
+    public function displaySize(): string
+    {
+        if ($this->size_pending) {
+            return 'Chưa chốt';
+        }
+
+        return $this->product?->size ?? 'N/A';
+    }
 
     public function order(): BelongsTo
     {

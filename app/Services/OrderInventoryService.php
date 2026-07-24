@@ -96,7 +96,10 @@ class OrderInventoryService
         string $returnDate,
         ?int $excludeOrderId = null
     ): void {
-        $productIds = collect($items)
+        // Item "chưa chốt size" không giữ kho theo size cụ thể nên bỏ qua khi kiểm tồn.
+        $checkableItems = collect($items)->reject(fn ($item) => ! empty($item['size_pending']));
+
+        $productIds = $checkableItems
             ->pluck('product_id')
             ->map(fn ($productId) => (int) $productId)
             ->unique()
@@ -112,6 +115,10 @@ class OrderInventoryService
         $messages = [];
 
         foreach ($items as $index => $item) {
+            if (! empty($item['size_pending'])) {
+                continue;
+            }
+
             $productId = (int) $item['product_id'];
             $availableQuantity = (int) ($availability[$productId] ?? 0);
 
@@ -241,6 +248,7 @@ class OrderInventoryService
         return OrderItem::query()
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->whereIn('order_items.product_id', $productIds)
+            ->where('order_items.size_pending', false)
             ->whereNotNull('orders.stock_decreased_at')
             ->whereNull('orders.stock_returned_at')
             ->selectRaw('order_items.product_id, SUM(order_items.quantity) as open_quantity')
@@ -259,6 +267,7 @@ class OrderInventoryService
         $rows = OrderItem::query()
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->whereIn('order_items.product_id', $productIds)
+            ->where('order_items.size_pending', false)
             ->when($excludeOrderId !== null, fn ($query) => $query->where('orders.id', '!=', $excludeOrderId))
             ->whereDate('orders.pickup_date', '<', $endExclusive)
             ->whereDate('orders.return_date', '>=', $start)
@@ -356,6 +365,7 @@ class OrderInventoryService
     {
         if ($order->items->isNotEmpty()) {
             return $order->items
+                ->reject(fn (OrderItem $item) => $item->size_pending)
                 ->map(fn (OrderItem $item) => [
                     'product_id' => $item->product_id,
                     'quantity' => $item->quantity,
@@ -384,6 +394,7 @@ class OrderInventoryService
 
         if ($hasReturned) {
             return $order->items
+                ->reject(fn (OrderItem $item) => $item->size_pending)
                 ->map(fn (OrderItem $item) => [
                     'product_id' => $item->product_id,
                     'quantity' => (int) ($item->returned_quantity ?? 0),

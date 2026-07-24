@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class OrderController extends Controller
@@ -385,7 +386,8 @@ class OrderController extends Controller
             'payment_1' => ['nullable', 'integer', 'min:0'],
             'payment_2' => ['nullable', 'integer', 'min:0'],
             'items' => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'distinct', 'exists:products,id'],
+            'items.*.product_id' => ['required', 'exists:products,id'],
+            'items.*.size_pending' => ['nullable', 'boolean'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.rental_price' => ['nullable', 'integer', 'min:0'],
         ], [
@@ -409,7 +411,6 @@ class OrderController extends Controller
             'items.required' => 'Vui lòng thêm ít nhất một sản phẩm.',
             'items.min' => 'Vui lòng thêm ít nhất một sản phẩm.',
             'items.*.product_id.required' => 'Vui lòng chọn mã hàng và size.',
-            'items.*.product_id.distinct' => 'Mỗi sản phẩm/size chỉ nên chọn một lần trong đơn.',
             'items.*.product_id.exists' => 'Mã hàng không tồn tại trong kho.',
             'items.*.quantity.required' => 'Vui lòng nhập số lượng.',
             'items.*.quantity.integer' => 'Số lượng phải là số nguyên.',
@@ -418,25 +419,39 @@ class OrderController extends Controller
             'items.*.rental_price.min' => 'Giá thuê không được nhỏ hơn 0.',
         ]);
 
-        $this->inventory->assertItemsAvailable(
-            $data['items'],
-            $data['pickup_date'],
-            $data['return_date'],
-            $order?->id
-        );
-
-        // Chuẩn hoá giá thuê từng dòng: dùng giá nhập trên đơn nếu có, nếu không lấy giá thuê ở kho.
+        // Chuẩn hoá giá thuê + cờ "chưa chốt size" cho từng dòng.
         $productRentals = Product::query()
             ->whereIn('id', collect($data['items'])->pluck('product_id')->all())
             ->pluck('rental_price', 'id');
 
         $data['items'] = collect($data['items'])->map(function ($item) use ($productRentals) {
+            $item['size_pending'] = ! empty($item['size_pending']);
             $item['rental_price'] = array_key_exists('rental_price', $item) && $item['rental_price'] !== null && $item['rental_price'] !== ''
                 ? (int) $item['rental_price']
                 : (int) ($productRentals[$item['product_id']] ?? 0);
 
             return $item;
         })->all();
+
+        // Chống trùng: chỉ áp cho các dòng đã chốt size (dòng "chưa chốt" có thể trùng mã đại diện).
+        $decidedDuplicates = collect($data['items'])
+            ->reject(fn ($item) => $item['size_pending'])
+            ->pluck('product_id')
+            ->duplicates();
+
+        if ($decidedDuplicates->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'items' => 'Mỗi mã hàng/size chỉ nên chọn một lần trong đơn.',
+            ]);
+        }
+
+        // Item "chưa chốt size" không kiểm tồn (chưa biết size cụ thể để giữ kho).
+        $this->inventory->assertItemsAvailable(
+            $data['items'],
+            $data['pickup_date'],
+            $data['return_date'],
+            $order?->id
+        );
 
         return $data;
     }

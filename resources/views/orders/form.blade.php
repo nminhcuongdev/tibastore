@@ -326,17 +326,20 @@
                     'product_id' => $item['product_id'] ?? '',
                     'quantity' => $item['quantity'] ?? 1,
                     'rental_price' => $item['rental_price'] ?? null,
+                    'size_pending' => ! empty($item['size_pending']),
                 ])->values()
                 : ($orderItems->isNotEmpty()
                     ? $orderItems->map(fn ($item) => [
                         'product_id' => $item->product_id,
                         'quantity' => $item->quantity,
                         'rental_price' => $item->rental_price,
+                        'size_pending' => (bool) $item->size_pending,
                     ])->values()
                     : collect([[
                         'product_id' => $order->product_id,
                         'quantity' => $order->quantity ?? 1,
                         'rental_price' => null,
+                        'size_pending' => false,
                     ]])->filter(fn ($item) => ! empty($item['product_id'])));
         @endphp
 
@@ -617,9 +620,16 @@
             }
         }
 
+        function isPendingRow(sizeRow) {
+            const pendingInput = sizeRow.querySelector('[data-size-pending]');
+            return pendingInput && pendingInput.value === '1';
+        }
+
         function selectedProductIds(exceptSizeRow = null) {
             return new Set(Array.from(itemsContainer.querySelectorAll('.size-row'))
                 .filter(sizeRow => sizeRow !== exceptSizeRow)
+                // Dòng "chưa chốt" dùng mã đại diện — không tính là đã chọn size.
+                .filter(sizeRow => ! isPendingRow(sizeRow))
                 .map(sizeRow => sizeRow.querySelector('[data-product-id]').value)
                 .filter(Boolean)
                 .map(String));
@@ -688,6 +698,11 @@
             quantityInput.setCustomValidity('');
             quantityInput.removeAttribute('max');
 
+            // Dòng "chưa chốt" không giữ kho theo size nên không giới hạn số lượng theo tồn.
+            if (isPendingRow(sizeRow)) {
+                return true;
+            }
+
             if (! selected) {
                 return true;
             }
@@ -726,6 +741,10 @@
                 const rentalHidden = sizeRow.querySelector('[data-rental]');
                 if (rentalHidden) {
                     rentalHidden.name = `items[${index}][rental_price]`;
+                }
+                const pendingHidden = sizeRow.querySelector('[data-size-pending]');
+                if (pendingHidden) {
+                    pendingHidden.name = `items[${index}][size_pending]`;
                 }
                 index += 1;
             });
@@ -779,6 +798,8 @@
             const group = productOptions.find(item => item.code === block.dataset.productCode);
             const sizeSelect = sizeRow.querySelector('[data-size]');
             const productIdInput = sizeRow.querySelector('[data-product-id]');
+            const pendingInput = sizeRow.querySelector('[data-size-pending]');
+            const isPending = pendingInput && pendingInput.value === '1';
             const currentSelection = selectedProductId ?? productIdInput.value;
 
             sizeSelect.innerHTML = '<option value="">Chọn size</option>';
@@ -795,18 +816,21 @@
                 const option = document.createElement('option');
                 option.value = product.id;
                 option.textContent = `${product.size} | Tồn dự kiến: ${stockLimit(product)} | Vải: ${product.fabric}`;
-                option.selected = Number(product.id) === Number(currentSelection);
+                option.selected = ! isPending && Number(product.id) === Number(currentSelection);
                 sizeSelect.appendChild(option);
             });
 
-            if (availableProducts.length === 0) {
-                const option = document.createElement('option');
-                option.textContent = 'Mã hàng này không còn size có thể chọn';
-                option.disabled = true;
-                sizeSelect.appendChild(option);
-            }
+            // Luôn có tùy chọn "Chưa chốt" — cập nhật size sau, số lượng vẫn được tính.
+            const pendingOption = document.createElement('option');
+            pendingOption.value = 'pending';
+            pendingOption.textContent = 'Chưa chốt (cập nhật size sau)';
+            pendingOption.selected = isPending;
+            sizeSelect.appendChild(pendingOption);
 
-            if (currentSelection && availableProducts.some(product => Number(product.id) === Number(currentSelection))) {
+            if (isPending) {
+                // Đại diện = biến thể đầu tiên của mã, chỉ để giữ FK/nhóm mã.
+                productIdInput.value = group.items[0].id;
+            } else if (currentSelection && availableProducts.some(product => Number(product.id) === Number(currentSelection))) {
                 productIdInput.value = currentSelection;
             } else {
                 productIdInput.value = '';
@@ -820,7 +844,7 @@
             const img = sizeRow.querySelector('[data-size-thumb-img]');
             const empty = sizeRow.querySelector('[data-size-thumb-empty]');
             const selected = findProductById(sizeRow.querySelector('[data-product-id]').value);
-            const imageUrl = selected && selected.item.image_url ? selected.item.image_url : null;
+            const imageUrl = ! isPendingRow(sizeRow) && selected && selected.item.image_url ? selected.item.image_url : null;
 
             if (imageUrl) {
                 img.src = imageUrl;
@@ -945,6 +969,7 @@
                     </select>
                     <input data-product-id type="hidden" value="${size.product_id || ''}" required>
                     <input data-rental type="hidden" value="${size.rental_price != null ? size.rental_price : ''}">
+                    <input data-size-pending type="hidden" value="${size.size_pending ? '1' : '0'}">
                 </div>
                 <div class="field">
                     <label>Số lượng</label>
@@ -955,9 +980,25 @@
 
             const sizeSelect = sizeRow.querySelector('[data-size]');
             const productIdInput = sizeRow.querySelector('[data-product-id]');
+            const pendingInput = sizeRow.querySelector('[data-size-pending]');
             const quantityInput = sizeRow.querySelector('[data-quantity]');
 
             sizeSelect.addEventListener('change', () => {
+                // "Chưa chốt": dùng biến thể đầu tiên của mã làm đại diện (giữ FK/nhóm mã),
+                // đánh dấu pending để không giữ kho; số lượng vẫn tính vào tổng.
+                if (sizeSelect.value === 'pending') {
+                    const group = productOptions.find(item => item.code === block.dataset.productCode);
+                    pendingInput.value = '1';
+                    productIdInput.value = group ? group.items[0].id : '';
+                    clearRowError(block);
+                    renderSelectedInfo(block);
+                    updateQuantityLimit(sizeRow);
+                    refreshProductChoices();
+                    return;
+                }
+
+                pendingInput.value = '0';
+
                 if (sizeSelect.value && selectedProductIds(sizeRow).has(String(sizeSelect.value))) {
                     productIdInput.value = '';
                     sizeSelect.value = '';
@@ -1148,6 +1189,11 @@
 
             const seenProductIds = new Set();
             const duplicateRow = sizeRows.find(sizeRow => {
+                // Dòng "chưa chốt" dùng mã đại diện nên bỏ qua khi kiểm trùng size.
+                if (isPendingRow(sizeRow)) {
+                    return false;
+                }
+
                 const productId = sizeRow.querySelector('[data-product-id]').value;
 
                 if (seenProductIds.has(productId)) {
@@ -1183,7 +1229,7 @@
         initialItems.forEach(item => {
             const selected = findProductById(item.product_id);
             const code = selected ? selected.group.code : null;
-            const sizeData = { product_id: item.product_id, quantity: item.quantity, rental_price: item.rental_price };
+            const sizeData = { product_id: item.product_id, quantity: item.quantity, rental_price: item.rental_price, size_pending: item.size_pending };
 
             if (code && codeToBlockIndex.has(code)) {
                 groupedBlocks[codeToBlockIndex.get(code)].sizes.push(sizeData);

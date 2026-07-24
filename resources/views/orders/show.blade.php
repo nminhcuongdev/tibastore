@@ -318,7 +318,7 @@
                 $checkItems = $order->items->map(fn ($item) => [
                     'id' => $item->id,
                     'code' => $item->product?->code ?? 'N/A',
-                    'size' => $item->product?->size ?? 'N/A',
+                    'size' => $item->displaySize(),
                     'name' => $item->product?->name ?? '',
                     'quantity' => (int) $item->quantity,
                     'returned' => $item->returned_quantity ?? (int) $item->quantity,
@@ -458,7 +458,7 @@
                                 @php
                                     $firstItem = $items->first();
                                     $product = $firstItem->product;
-                                    $sizeQuantities = $items->groupBy(fn ($item) => $item->product?->size ?? 'N/A');
+                                    $sizeQuantities = $items->groupBy(fn ($item) => method_exists($item, 'displaySize') ? $item->displaySize() : ($item->product?->size ?? 'N/A'));
                                     $lineRental = (int) ($firstItem->rental_price ?? 0);
                                     $lineTotal = $lineRental * $items->sum('quantity');
                                 @endphp
@@ -524,7 +524,7 @@
                                     @endphp
                                     <tr>
                                         <td class="code">{{ $item->product?->code ?? 'N/A' }}</td>
-                                        <td>{{ $item->product?->size ?? 'N/A' }}</td>
+                                        <td>{{ $item->displaySize() }}</td>
                                         <td>{{ number_format($item->quantity) }}</td>
                                         <td>{{ number_format($returned) }}</td>
                                         <td>{{ $missing > 0 ? number_format($missing) : '—' }}</td>
