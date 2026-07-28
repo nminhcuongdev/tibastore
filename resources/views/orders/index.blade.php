@@ -367,6 +367,10 @@
                         <input id="q" name="q" type="search" value="{{ $query }}" placeholder="VD: Linh, đơn chụp lookbook, VAY001...">
                     </div>
                     <div class="filter-field">
+                        <label for="order_name">Tên đơn (tên người đặt)</label>
+                        <input id="order_name" name="order_name" type="search" value="{{ $filters['order_name'] }}" placeholder="Dán tên người đặt...">
+                    </div>
+                    <div class="filter-field">
                         <label for="closer">Người chốt</label>
                         <select id="closer" name="closer">
                             <option value="">Tất cả người chốt</option>

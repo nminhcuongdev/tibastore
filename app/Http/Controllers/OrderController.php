@@ -40,6 +40,7 @@ class OrderController extends Controller
         $query = trim((string) $request->query('q', ''));
         $status = (string) $request->query('status', '');
         $source = (string) $request->query('source', '');
+        $orderName = trim((string) $request->query('order_name', ''));
         $closer = trim((string) $request->query('closer', ''));
         $pickupFrom = $this->filterDate($request->query('pickup_from'));
         $pickupTo = $this->filterDate($request->query('pickup_to'));
@@ -70,6 +71,7 @@ class OrderController extends Controller
             ->join('products', 'products.id', '=', 'orders.product_id')
             ->when($status !== '', fn ($builder) => $builder->where('orders.status', $status))
             ->when($source !== '', fn ($builder) => $builder->where('orders.source', $source))
+            ->when($orderName !== '', fn ($builder) => $builder->where('orders.order_name', 'like', "%{$orderName}%"))
             ->when($closer !== '', fn ($builder) => $builder->where('orders.closer_name', $closer))
             ->when($pickupFrom, fn ($builder) => $builder->whereDate('orders.pickup_date', '>=', $pickupFrom))
             ->when($pickupTo, fn ($builder) => $builder->whereDate('orders.pickup_date', '<=', $pickupTo))
@@ -114,6 +116,7 @@ class OrderController extends Controller
             'closers' => $closers,
             'filters' => [
                 'source' => $source,
+                'order_name' => $orderName,
                 'closer' => $closer,
                 'pickup_from' => $pickupFrom,
                 'pickup_to' => $pickupTo,
