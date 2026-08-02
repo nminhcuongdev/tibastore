@@ -260,7 +260,7 @@ class ProductController extends Controller
         });
 
         return redirect()
-            ->route('products.index')
+            ->back()
             ->with('status', 'Đã thêm sản phẩm vào kho.');
     }
 
@@ -287,15 +287,32 @@ class ProductController extends Controller
 
         $this->ensureGroupCodeChangeIsValid($product, $newCode, $data['size']);
 
+        $oldGroupImages = collect();
+
         if ($request->hasFile('image')) {
-            if ($product->image_path) {
-                $this->deleteProductImageIfUnused($product->image_path, $product->id);
-            }
+            // Đổi ảnh áp cho cả mã: gom ảnh cũ của mọi size để dọn sau khi đồng bộ.
+            $oldGroupImages = Product::where('code', $oldCode)
+                ->pluck('image_path')
+                ->filter()
+                ->unique();
 
             $data['image_path'] = $request->file('image')->store('products', 'public');
         }
 
-        DB::transaction(function () use ($data, $expectedReceipts, $product, $oldCode, $newCode) {
+        // Thông tin cấp "mã hàng" — đồng bộ cho tất cả size cùng mã.
+        // Riêng size và số lượng tồn là của từng size nên KHÔNG đồng bộ.
+        $sharedData = [
+            'name' => $data['name'],
+            'fabric' => $data['fabric'],
+            'category' => $data['category'] ?? null,
+            'rental_price' => $data['rental_price'] ?? 0,
+        ];
+
+        if (array_key_exists('image_path', $data)) {
+            $sharedData['image_path'] = $data['image_path'];
+        }
+
+        DB::transaction(function () use ($data, $sharedData, $expectedReceipts, $product, $oldCode, $newCode) {
             $lockedProduct = Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
             $previousQuantity = $lockedProduct->stock_quantity;
 
@@ -309,9 +326,8 @@ class ProductController extends Controller
                     ->update(['code' => $newCode]);
             }
 
-            // Danh mục thuộc về mã hàng: đồng bộ cho mọi size cùng mã, không chỉ size đang sửa.
-            Product::where('code', $newCode)
-                ->update(['category' => $data['category'] ?? null]);
+            // Đồng bộ toàn bộ thông tin cấp mã hàng cho mọi size cùng mã.
+            Product::where('code', $newCode)->update($sharedData);
 
             $newQuantity = (int) $lockedProduct->stock_quantity;
 
@@ -325,8 +341,17 @@ class ProductController extends Controller
             }
         });
 
+        // Dọn ảnh cũ không còn size nào dùng sau khi đã đổi ảnh cho cả mã.
+        $newImage = $data['image_path'] ?? null;
+
+        foreach ($oldGroupImages as $oldImage) {
+            if ($oldImage !== $newImage) {
+                $this->deleteProductImageIfUnused($oldImage);
+            }
+        }
+
         return redirect()
-            ->route('products.index')
+            ->back()
             ->with('status', 'Đã cập nhật sản phẩm.');
     }
 
@@ -364,18 +389,38 @@ class ProductController extends Controller
                 $this->deleteProductImageIfUnused($imagePath);
             }
         } catch (QueryException $exception) {
+            // Xóa thất bại: sản phẩm vẫn còn nên ở lại trang hiện tại.
             return redirect()
-                ->route('products.index')
-                ->with('status', 'Không thể xóa sản phẩm đang được dùng trong đơn hàng.');
+                ->back()
+                ->with('error', 'Không thể xóa sản phẩm đang được dùng trong đơn hàng.');
         }
 
         $status = $deleteScope === 'code'
             ? 'Đã xóa mã hàng và toàn bộ size khỏi kho.'
             : 'Đã xóa sản phẩm khỏi kho.';
 
-        return redirect()
-            ->route('products.index')
-            ->with('status', $status);
+        return $this->redirectAfterDestroy($product)->with('status', $status);
+    }
+
+    /**
+     * Sau khi xóa: ở lại trang trước đó; nếu trang đó là chính sản phẩm vừa xóa
+     * (chi tiết/sửa/theo dõi) thì quay về danh sách để tránh 404.
+     */
+    private function redirectAfterDestroy(Product $product): RedirectResponse
+    {
+        $previous = url()->previous();
+        $previousPath = parse_url($previous, PHP_URL_PATH) ?: '';
+        $ownPaths = [
+            parse_url(route('products.show', $product), PHP_URL_PATH),
+            parse_url(route('products.edit', $product), PHP_URL_PATH),
+            parse_url(route('products.track', $product), PHP_URL_PATH),
+        ];
+
+        if ($previous === '' || in_array($previousPath, $ownPaths, true)) {
+            return redirect()->route('products.index');
+        }
+
+        return redirect()->to($previous);
     }
 
     private function validatedData(Request $request, ?Product $product = null): array

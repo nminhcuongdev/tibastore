@@ -15,6 +15,7 @@ class OrderItem extends Model
         'size_pending',
         'quantity',
         'rental_price',
+        'note',
         'returned_quantity',
     ];
 

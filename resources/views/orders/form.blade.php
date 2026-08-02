@@ -59,8 +59,10 @@
         }
         .field.full { grid-column: 1 / -1; }
         .order-items {
+            align-items: start;
             display: grid;
             gap: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
         }
         .order-item {
             background: #fffafb;
@@ -68,6 +70,7 @@
             border-radius: 8px;
             display: grid;
             gap: 12px;
+            min-width: 0;
             padding: 14px;
             position: relative;
         }
@@ -79,10 +82,13 @@
             align-items: end;
             display: grid;
             gap: 12px;
-            grid-template-columns: 70px 220px 120px auto;
+            grid-template-columns: 70px minmax(0, 1fr) 100px auto;
         }
         .size-row .button.danger {
             align-self: end;
+        }
+        .size-note-field {
+            grid-column: 1 / -1;
         }
         .size-thumb {
             align-items: center;
@@ -297,6 +303,7 @@
         @media (max-width: 860px) {
             .topbar,
             .form-shell,
+            .order-items,
             .size-row {
                 align-items: stretch;
                 grid-template-columns: 1fr;
@@ -304,6 +311,20 @@
             .topbar { flex-direction: column; }
             .actions { justify-content: stretch; }
             .button { justify-content: center; width: 100%; }
+        }
+        .flash {
+            background: #fff;
+            border: 1px solid #f0c7d3;
+            border-left: 5px solid #2f9e6f;
+            border-radius: 8px;
+            color: #236c4f;
+            margin-bottom: 18px;
+            max-width: 1080px;
+            padding: 12px 14px;
+        }
+        .flash.is-error {
+            border-left-color: #b4233f;
+            color: #b4233f;
         }
     </style>
 </head>
@@ -319,6 +340,13 @@
             <p>Chọn nhiều sản phẩm từ kho, cập nhật lịch lấy, lịch diễn, lịch trả và trạng thái xử lý đơn.</p>
         </div>
 
+        @if (session('status'))
+            <div class="flash">{{ session('status') }}</div>
+        @endif
+        @if (session('error'))
+            <div class="flash is-error">{{ session('error') }}</div>
+        @endif
+
         @php
             $oldItems = old('items');
             $initialItems = $oldItems !== null
@@ -327,6 +355,7 @@
                     'quantity' => $item['quantity'] ?? 1,
                     'rental_price' => $item['rental_price'] ?? null,
                     'size_pending' => ! empty($item['size_pending']),
+                    'note' => $item['note'] ?? null,
                 ])->values()
                 : ($orderItems->isNotEmpty()
                     ? $orderItems->map(fn ($item) => [
@@ -334,12 +363,14 @@
                         'quantity' => $item->quantity,
                         'rental_price' => $item->rental_price,
                         'size_pending' => (bool) $item->size_pending,
+                        'note' => $item->note,
                     ])->values()
                     : collect([[
                         'product_id' => $order->product_id,
                         'quantity' => $order->quantity ?? 1,
                         'rental_price' => null,
                         'size_pending' => false,
+                        'note' => null,
                     ]])->filter(fn ($item) => ! empty($item['product_id'])));
         @endphp
 
@@ -746,6 +777,10 @@
                 if (pendingHidden) {
                     pendingHidden.name = `items[${index}][size_pending]`;
                 }
+                const noteInput = sizeRow.querySelector('[data-note]');
+                if (noteInput) {
+                    noteInput.name = `items[${index}][note]`;
+                }
                 index += 1;
             });
         }
@@ -976,12 +1011,18 @@
                     <input data-quantity type="number" min="1" step="1" value="${size.quantity || 1}" required>
                 </div>
                 <button class="button danger" data-remove-size type="button">Xóa size</button>
+                <div class="field size-note-field">
+                    <label>Ghi chú (size này)</label>
+                    <input data-note type="text" maxlength="500" placeholder="VD: khách dặn giữ nếp, kèm phụ kiện...">
+                </div>
             `;
 
             const sizeSelect = sizeRow.querySelector('[data-size]');
             const productIdInput = sizeRow.querySelector('[data-product-id]');
             const pendingInput = sizeRow.querySelector('[data-size-pending]');
             const quantityInput = sizeRow.querySelector('[data-quantity]');
+            const noteInput = sizeRow.querySelector('[data-note]');
+            noteInput.value = size.note != null ? size.note : '';
 
             sizeSelect.addEventListener('change', () => {
                 // "Chưa chốt": dùng biến thể đầu tiên của mã làm đại diện (giữ FK/nhóm mã),
@@ -1229,7 +1270,7 @@
         initialItems.forEach(item => {
             const selected = findProductById(item.product_id);
             const code = selected ? selected.group.code : null;
-            const sizeData = { product_id: item.product_id, quantity: item.quantity, rental_price: item.rental_price, size_pending: item.size_pending };
+            const sizeData = { product_id: item.product_id, quantity: item.quantity, rental_price: item.rental_price, size_pending: item.size_pending, note: item.note };
 
             if (code && codeToBlockIndex.has(code)) {
                 groupedBlocks[codeToBlockIndex.get(code)].sizes.push(sizeData);

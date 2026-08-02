@@ -73,6 +73,19 @@
             max-width: 720px;
         }
         .content { padding: 28px clamp(18px, 5vw, 56px) 56px; }
+        .status {
+            background: #fff;
+            border: 1px solid #f0c7d3;
+            border-left: 5px solid #2f9e6f;
+            border-radius: 8px;
+            color: #236c4f;
+            margin-bottom: 18px;
+            padding: 12px 14px;
+        }
+        .status.is-error {
+            border-left-color: #b4233f;
+            color: #b4233f;
+        }
         .summary {
             display: grid;
             gap: 14px;
@@ -255,6 +268,13 @@
     </section>
 
     <main class="content">
+        @if (session('status'))
+            <div class="status">{{ session('status') }}</div>
+        @endif
+        @if (session('error'))
+            <div class="status is-error">{{ session('error') }}</div>
+        @endif
+
         <div class="summary">
             <div class="metric">
                 <div class="metric-label">Tổng tồn</div>

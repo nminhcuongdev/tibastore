@@ -289,6 +289,22 @@
             color: #b4233f;
         }
 
+        .flash {
+            background: #fff;
+            border: 1px solid #f0c7d3;
+            border-left: 5px solid #2f9e6f;
+            border-radius: 8px;
+            color: #236c4f;
+            margin-bottom: 18px;
+            max-width: 980px;
+            padding: 12px 14px;
+        }
+
+        .flash.is-error {
+            border-left-color: #b4233f;
+            color: #b4233f;
+        }
+
         @media (max-width: 760px) {
             .form-shell,
             .fields,
@@ -319,6 +335,13 @@
             <h1>{{ $mode === 'create' ? 'Thêm sản phẩm mới' : 'Sửa thông tin sản phẩm' }}</h1>
             <p>Cập nhật thông tin tồn kho, chất liệu vải, size và giá nhập cho từng mẫu thời trang.</p>
         </div>
+
+        @if (session('status'))
+            <div class="flash">{{ session('status') }}</div>
+        @endif
+        @if (session('error'))
+            <div class="flash is-error">{{ session('error') }}</div>
+        @endif
 
         <form class="form-shell" method="POST" action="{{ $mode === 'create' ? route('products.store') : route('products.update', $product) }}" enctype="multipart/form-data">
             @csrf

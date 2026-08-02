@@ -279,7 +279,7 @@ class OrderController extends Controller
         });
 
         return redirect()
-            ->route('orders.index')
+            ->back()
             ->with('status', 'Đã cập nhật đơn hàng.');
     }
 
@@ -371,7 +371,7 @@ class OrderController extends Controller
         });
 
         return redirect()
-            ->route('orders.index')
+            ->back()
             ->with('status', 'Đã xóa đơn hàng.');
     }
 
@@ -393,6 +393,7 @@ class OrderController extends Controller
             'items.*.size_pending' => ['nullable', 'boolean'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.rental_price' => ['nullable', 'integer', 'min:0'],
+            'items.*.note' => ['nullable', 'string', 'max:500'],
         ], [
             'closer_name.required' => 'Vui lòng nhập người chốt.',
             'pickup_date.required' => 'Vui lòng nhập ngày lấy.',
@@ -432,6 +433,9 @@ class OrderController extends Controller
             $item['rental_price'] = array_key_exists('rental_price', $item) && $item['rental_price'] !== null && $item['rental_price'] !== ''
                 ? (int) $item['rental_price']
                 : (int) ($productRentals[$item['product_id']] ?? 0);
+            $item['note'] = isset($item['note']) && trim((string) $item['note']) !== ''
+                ? trim((string) $item['note'])
+                : null;
 
             return $item;
         })->all();

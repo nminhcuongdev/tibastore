@@ -55,12 +55,16 @@
         .status {
             background: #fff;
             border: 1px solid #f0c7d3;
-            border-left: 5px solid #c9577d;
+            border-left: 5px solid #2f9e6f;
             border-radius: 8px;
-            color: #693143;
+            color: #236c4f;
             margin: 0 auto 18px;
             max-width: 980px;
             padding: 12px 14px;
+        }
+        .status.is-error {
+            border-left-color: #b4233f;
+            color: #b4233f;
         }
         .receipt {
             background: #fff;
@@ -350,6 +354,9 @@
         @if (session('status'))
             <div class="status">{{ session('status') }}</div>
         @endif
+        @if (session('error'))
+            <div class="status is-error">{{ session('error') }}</div>
+        @endif
 
         @php
             $displayItems = $order->items->isNotEmpty()
@@ -486,6 +493,16 @@
                                                 Size {{ $size }}: {{ number_format($sizeItems->sum('quantity')) }}@if (! $loop->last), @endif
                                             @endforeach
                                         </div>
+                                        @php
+                                            $itemNotes = $items->filter(fn ($it) => isset($it->note) && trim((string) $it->note) !== '');
+                                        @endphp
+                                        @if ($itemNotes->isNotEmpty())
+                                            <div class="muted" style="margin-top: 6px;">
+                                                @foreach ($itemNotes as $it)
+                                                    <div>📝 {{ method_exists($it, 'displaySize') ? $it->displaySize() : 'N/A' }}: {{ $it->note }}</div>
+                                                @endforeach
+                                            </div>
+                                        @endif
                                     </td>
                                     <td>{{ number_format($lineRental) }} VND</td>
                                     <td>{{ number_format($lineTotal) }} VND</td>
