@@ -159,7 +159,7 @@ class OrderInventoryService
         $products = Product::whereIn('id', $productIds->all())
             ->get(['id', 'stock_quantity'])
             ->keyBy('id');
-        $expectedReceiptQuantities = $this->expectedReceiptQuantitiesForDate($productIds->all(), $start);
+        $expectedReceiptQuantities = $this->pendingExpectedReceiptQuantities($productIds->all());
         $openQuantities = $this->openStockQuantities($productIds->all());
         $reservedQuantities = $this->maxReservedQuantities(
             $productIds->all(),
@@ -229,11 +229,15 @@ class OrderInventoryService
             });
     }
 
-    private function expectedReceiptQuantitiesForDate(array $productIds, Carbon $date): array
+    /**
+     * Tổng số lượng hàng nhập dự kiến (chưa nhận) theo từng sản phẩm.
+     * Tính toàn bộ phiếu nhập dự kiến, không phụ thuộc ngày — cho phép lên đơn
+     * trong khoảng hàng nhập dự kiến sẽ về.
+     */
+    private function pendingExpectedReceiptQuantities(array $productIds): array
     {
         return ProductExpectedReceipt::query()
             ->whereIn('product_id', $productIds)
-            ->whereDate('expected_receive_date', '<=', $date)
             ->where('expected_receive_quantity', '>', 0)
             ->whereNull('received_at')
             ->selectRaw('product_id, SUM(expected_receive_quantity) as expected_quantity')

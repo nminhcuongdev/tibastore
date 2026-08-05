@@ -257,6 +257,22 @@
             font-size: 13px;
             font-weight: 700;
         }
+        .qty-warning {
+            color: #b4233f;
+            font-size: 13px;
+            font-weight: 700;
+            grid-column: 1 / -1;
+        }
+        .stock-conflict {
+            background: #fff5f5;
+            border: 1px solid #f0b7c1;
+            border-left: 5px solid #b4233f;
+            border-radius: 8px;
+            color: #b4233f;
+            font-size: 14px;
+            margin-bottom: 12px;
+            padding: 12px 14px;
+        }
         .row-error {
             display: none;
             grid-column: 1 / -1;
@@ -345,6 +361,16 @@
         @endif
         @if (session('error'))
             <div class="flash is-error">{{ session('error') }}</div>
+        @endif
+        @if ($errors->any())
+            <div class="flash is-error">
+                <strong>Chưa lưu được — vui lòng kiểm tra:</strong>
+                <ul style="margin: 6px 0 0; padding-left: 18px;">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
         @endif
 
         @php
@@ -455,6 +481,7 @@
 
             <div class="field full">
                 <label>Sản phẩm trong đơn</label>
+                <div id="stock_conflict" class="stock-conflict" style="display:none"></div>
                 <div id="order_items" class="order-items"></div>
                 <div class="items-actions">
                     <button id="add_item_button" class="button secondary" type="button">+ Thêm sản phẩm</button>
@@ -599,7 +626,7 @@
             return true;
         }
 
-        async function refreshAvailability() {
+        async function refreshAvailability(reason = 'init') {
             const requestId = ++availabilityRequestId;
 
             if (! datesReadyForAvailability()) {
@@ -641,6 +668,42 @@
                 });
                 refreshProductChoices();
                 itemsContainer.querySelectorAll('.size-row').forEach(validateSizeRow);
+
+                // Khi người dùng đổi ngày: nếu tồn dự kiến mới làm dòng nào vượt (gối đơn khác),
+                // tự điều chỉnh về tối đa và tổng hợp cảnh báo. Không đụng lúc mới mở form.
+                if (reason === 'date-change') {
+                    const conflicts = [];
+
+                    itemsContainer.querySelectorAll('.size-row').forEach(sizeRow => {
+                        if (isPendingRow(sizeRow)) {
+                            return;
+                        }
+
+                        const selected = findProductById(sizeRow.querySelector('[data-product-id]').value);
+
+                        if (! selected) {
+                            return;
+                        }
+
+                        const quantityInput = sizeRow.querySelector('[data-quantity]');
+                        const limit = stockLimit(selected.item);
+                        const value = Number(quantityInput.value || 0);
+
+                        if (value > limit) {
+                            conflicts.push(`${selected.group.code} - size ${selected.item.size}: ${value} → tối đa ${limit}`);
+                            quantityInput.value = limit;
+                            updateQuantityLimit(sizeRow);
+                        }
+                    });
+
+                    if (conflicts.length > 0) {
+                        showStockConflict(conflicts);
+                    } else {
+                        clearStockConflict();
+                    }
+
+                    updateComputedTotal();
+                }
             } catch (error) {
                 if (requestId !== availabilityRequestId) {
                     return;
@@ -721,6 +784,55 @@
             selectedInfo.textContent = message;
         }
 
+        function setRowQtyWarning(sizeRow, message) {
+            const el = sizeRow.querySelector('[data-qty-warning]');
+
+            if (! el) {
+                return;
+            }
+
+            if (message) {
+                el.textContent = message;
+                el.style.display = 'block';
+            } else {
+                el.textContent = '';
+                el.style.display = 'none';
+            }
+        }
+
+        const stockConflictBox = document.getElementById('stock_conflict');
+
+        function showStockConflict(lines) {
+            if (! stockConflictBox) {
+                return;
+            }
+
+            stockConflictBox.innerHTML = '';
+            const title = document.createElement('strong');
+            title.textContent = 'Đổi ngày làm một số mã vượt tồn dự kiến (do gối với đơn khác) — đã tự điều chỉnh về tối đa:';
+            const list = document.createElement('ul');
+            list.style.margin = '6px 0 0';
+            list.style.paddingLeft = '18px';
+
+            lines.forEach(line => {
+                const li = document.createElement('li');
+                li.textContent = line;
+                list.appendChild(li);
+            });
+
+            stockConflictBox.append(title, list);
+            stockConflictBox.style.display = 'block';
+        }
+
+        function clearStockConflict() {
+            if (! stockConflictBox) {
+                return;
+            }
+
+            stockConflictBox.style.display = 'none';
+            stockConflictBox.innerHTML = '';
+        }
+
         function updateQuantityLimit(sizeRow) {
             const quantityInput = sizeRow.querySelector('[data-quantity]');
             const productId = sizeRow.querySelector('[data-product-id]').value;
@@ -731,25 +843,33 @@
 
             // Dòng "chưa chốt" không giữ kho theo size nên không giới hạn số lượng theo tồn.
             if (isPendingRow(sizeRow)) {
+                setRowQtyWarning(sizeRow, '');
                 return true;
             }
 
             if (! selected) {
+                setRowQtyWarning(sizeRow, '');
                 return true;
             }
 
             const limit = stockLimit(selected.item);
+            const value = Number(quantityInput.value || 0);
             quantityInput.max = limit;
 
-            if (limit > 0 && Number(quantityInput.value || 0) > limit) {
-                quantityInput.value = limit;
-            }
-
-            if (Number(quantityInput.value || 0) < 1 || Number(quantityInput.value || 0) > limit) {
-                quantityInput.setCustomValidity(`Số lượng không được vượt quá tồn dự kiến (${limit}).`);
+            // Vượt tồn dự kiến: không tự cắt, mà báo rõ ngay tại dòng và chặn lưu.
+            if (value > limit) {
+                quantityInput.setCustomValidity(`Số lượng vượt tồn dự kiến (tối đa ${limit}).`);
+                setRowQtyWarning(sizeRow, `⚠ Vượt tồn dự kiến — tối đa ${limit.toLocaleString('vi-VN')}.`);
                 return false;
             }
 
+            if (value < 1) {
+                quantityInput.setCustomValidity('Số lượng phải lớn hơn 0.');
+                setRowQtyWarning(sizeRow, '');
+                return false;
+            }
+
+            setRowQtyWarning(sizeRow, '');
             return true;
         }
 
@@ -1015,6 +1135,7 @@
                     <label>Ghi chú (size này)</label>
                     <input data-note type="text" maxlength="500" placeholder="VD: khách dặn giữ nếp, kèm phụ kiện...">
                 </div>
+                <div class="qty-warning" data-qty-warning style="display:none"></div>
             `;
 
             const sizeSelect = sizeRow.querySelector('[data-size]');
@@ -1023,6 +1144,33 @@
             const quantityInput = sizeRow.querySelector('[data-quantity]');
             const noteInput = sizeRow.querySelector('[data-note]');
             noteInput.value = size.note != null ? size.note : '';
+
+            // Rời ô số lượng: nếu vượt tồn dự kiến thì tự điều chỉnh về tối đa và báo.
+            quantityInput.addEventListener('blur', () => {
+                if (isPendingRow(sizeRow)) {
+                    return;
+                }
+
+                const selected = findProductById(sizeRow.querySelector('[data-product-id]').value);
+
+                if (! selected) {
+                    return;
+                }
+
+                const limit = stockLimit(selected.item);
+                const value = Number(quantityInput.value || 0);
+
+                if (value > limit) {
+                    quantityInput.value = limit;
+                    updateQuantityLimit(sizeRow);
+                    setRowQtyWarning(sizeRow, `Đã điều chỉnh về tối đa tồn dự kiến (${limit.toLocaleString('vi-VN')}).`);
+                    updateComputedTotal();
+                } else if (value < 1) {
+                    quantityInput.value = 1;
+                    updateQuantityLimit(sizeRow);
+                    updateComputedTotal();
+                }
+            });
 
             sizeSelect.addEventListener('change', () => {
                 // "Chưa chốt": dùng biến thể đầu tiên của mã làm đại diện (giữ FK/nhóm mã),
@@ -1209,7 +1357,7 @@
         addItemButton.addEventListener('click', () => addItemBlock());
 
         [pickupDateInput, eventDateInput, returnDateInput].forEach(input => {
-            input.addEventListener('change', refreshAvailability);
+            input.addEventListener('change', () => refreshAvailability('date-change'));
         });
 
         orderForm.addEventListener('submit', event => {
