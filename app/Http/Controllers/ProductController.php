@@ -282,25 +282,30 @@ class ProductController extends Controller
         unset($data['expected_receipts']);
         unset($data['image']);
 
+        // Bật: áp dụng thông tin cấp mã hàng cho TẤT CẢ size. Tắt: chỉ sửa riêng size này.
+        $applyToAll = $request->boolean('apply_to_all_sizes');
+
         $oldCode = $product->code;
         $newCode = $data['code'];
 
-        $this->ensureGroupCodeChangeIsValid($product, $newCode, $data['size']);
+        // Đổi mã chỉ lan sang cả nhóm khi đang đồng bộ toàn mã.
+        if ($applyToAll && $newCode !== $oldCode) {
+            $this->ensureGroupCodeChangeIsValid($product, $newCode, $data['size']);
+        }
 
-        $oldGroupImages = collect();
+        // Gom ảnh cũ để dọn: toàn mã gom cả nhóm; riêng size chỉ ảnh của size này.
+        $oldImages = collect();
 
         if ($request->hasFile('image')) {
-            // Đổi ảnh áp cho cả mã: gom ảnh cũ của mọi size để dọn sau khi đồng bộ.
-            $oldGroupImages = Product::where('code', $oldCode)
-                ->pluck('image_path')
-                ->filter()
-                ->unique();
+            $oldImages = $applyToAll
+                ? Product::where('code', $oldCode)->pluck('image_path')->filter()->unique()
+                : collect([$product->image_path])->filter()->unique();
 
             $data['image_path'] = $request->file('image')->store('products', 'public');
         }
 
-        // Thông tin cấp "mã hàng" — đồng bộ cho tất cả size cùng mã.
-        // Riêng size và số lượng tồn là của từng size nên KHÔNG đồng bộ.
+        // Thông tin cấp "mã hàng" (đồng bộ khi bật "áp dụng cho cả mã").
+        // Riêng size và số lượng tồn luôn là của từng size nên KHÔNG đồng bộ.
         $sharedData = [
             'name' => $data['name'],
             'fabric' => $data['fabric'],
@@ -312,22 +317,24 @@ class ProductController extends Controller
             $sharedData['image_path'] = $data['image_path'];
         }
 
-        DB::transaction(function () use ($data, $sharedData, $expectedReceipts, $product, $oldCode, $newCode) {
+        DB::transaction(function () use ($data, $sharedData, $applyToAll, $expectedReceipts, $product, $oldCode, $newCode) {
             $lockedProduct = Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
             $previousQuantity = $lockedProduct->stock_quantity;
 
             $lockedProduct->update($data);
             $this->replacePendingExpectedReceipts($lockedProduct, $expectedReceipts);
 
-            if ($newCode !== $oldCode) {
-                Product::where('code', $oldCode)
-                    ->whereKeyNot($lockedProduct->id)
-                    ->lockForUpdate()
-                    ->update(['code' => $newCode]);
-            }
+            if ($applyToAll) {
+                if ($newCode !== $oldCode) {
+                    Product::where('code', $oldCode)
+                        ->whereKeyNot($lockedProduct->id)
+                        ->lockForUpdate()
+                        ->update(['code' => $newCode]);
+                }
 
-            // Đồng bộ toàn bộ thông tin cấp mã hàng cho mọi size cùng mã.
-            Product::where('code', $newCode)->update($sharedData);
+                // Đồng bộ toàn bộ thông tin cấp mã hàng cho mọi size cùng mã.
+                Product::where('code', $newCode)->update($sharedData);
+            }
 
             $newQuantity = (int) $lockedProduct->stock_quantity;
 
@@ -341,10 +348,10 @@ class ProductController extends Controller
             }
         });
 
-        // Dọn ảnh cũ không còn size nào dùng sau khi đã đổi ảnh cho cả mã.
+        // Dọn ảnh cũ không còn ai dùng sau khi đổi ảnh.
         $newImage = $data['image_path'] ?? null;
 
-        foreach ($oldGroupImages as $oldImage) {
+        foreach ($oldImages as $oldImage) {
             if ($oldImage !== $newImage) {
                 $this->deleteProductImageIfUnused($oldImage);
             }

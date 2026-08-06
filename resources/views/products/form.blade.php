@@ -158,6 +158,31 @@
             outline: none;
         }
 
+        .apply-scope {
+            background: #fff4f7;
+            border: 1px solid #f2d3dc;
+            border-radius: 8px;
+            gap: 6px;
+            padding: 12px 14px;
+        }
+        .apply-scope-toggle {
+            align-items: center;
+            color: #7a344c;
+            cursor: pointer;
+            display: flex;
+            font-size: 15px;
+            font-weight: 800;
+            gap: 10px;
+        }
+        .apply-scope-toggle input[type="checkbox"] {
+            flex: none;
+            height: 20px;
+            margin: 0;
+            min-height: 0;
+            padding: 0;
+            width: 20px;
+        }
+
         .error {
             color: #b4233f;
             font-size: 13px;
@@ -353,6 +378,17 @@
             @endif
 
             <div class="fields">
+                @if ($mode === 'edit')
+                    <div class="field full apply-scope">
+                        <label class="apply-scope-toggle">
+                            <input type="hidden" name="apply_to_all_sizes" value="0">
+                            <input type="checkbox" name="apply_to_all_sizes" value="1" @checked(old('apply_to_all_sizes', '1') == '1')>
+                            <span>Áp dụng thay đổi cho <u>tất cả size</u> của mã hàng này</span>
+                        </label>
+                        <div class="hint">Bỏ chọn nếu chỉ muốn sửa riêng size đang mở — tên, vải, danh mục, giá thuê, ảnh sẽ chỉ đổi cho size này. Size và số lượng tồn luôn theo từng size.</div>
+                    </div>
+                @endif
+
                 <div class="field">
                     <label for="code">Mã sản phẩm</label>
                     @if ($mode === 'create')
@@ -367,7 +403,7 @@
                         <div class="hint">Gõ vài ký tự để xem mã đã có và chọn mã mới chỉ khác ở đuôi.</div>
                     @else
                         <input id="code" name="code" type="text" value="{{ old('code', $product->code) }}" maxlength="50" required>
-                        <div class="hint">Đổi mã sẽ áp dụng cho tất cả size thuộc mã hàng này.</div>
+                        <div class="hint">Khi bật "áp dụng cho tất cả size", đổi mã sẽ áp cho cả nhóm; nếu tắt, chỉ đổi mã cho size này.</div>
                     @endif
                     @error('code') <div class="error">{{ $message }}</div> @enderror
                 </div>
@@ -387,9 +423,6 @@
                 <div class="field">
                     <label for="category">Danh mục</label>
                     <input id="category" name="category" type="text" value="{{ old('category', $product->category) }}" placeholder="Váy dạ hội, áo dài, vest...">
-                    @if ($mode === 'edit')
-                        <div class="hint">Danh mục áp dụng cho tất cả size của mã hàng này.</div>
-                    @endif
                     @error('category') <div class="error">{{ $message }}</div> @enderror
                 </div>
 
