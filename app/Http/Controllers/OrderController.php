@@ -10,7 +10,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class OrderController extends Controller
@@ -440,19 +439,8 @@ class OrderController extends Controller
             return $item;
         })->all();
 
-        // Chống trùng: chỉ áp cho các dòng đã chốt size (dòng "chưa chốt" có thể trùng mã đại diện).
-        $decidedDuplicates = collect($data['items'])
-            ->reject(fn ($item) => $item['size_pending'])
-            ->pluck('product_id')
-            ->duplicates();
-
-        if ($decidedDuplicates->isNotEmpty()) {
-            throw ValidationException::withMessages([
-                'items' => 'Mỗi mã hàng/size chỉ nên chọn một lần trong đơn.',
-            ]);
-        }
-
-        // Item "chưa chốt size" không kiểm tồn (chưa biết size cụ thể để giữ kho).
+        // Cho phép cùng mã-size xuất hiện nhiều dòng với giá khác nhau (thuê bộ / thuê lẻ),
+        // nên KHÔNG chặn trùng ở đây. Kiểm tồn sẽ cộng dồn số lượng theo từng sản phẩm.
         $this->inventory->assertItemsAvailable(
             $data['items'],
             $data['pickup_date'],

@@ -719,8 +719,10 @@
             return pendingInput && pendingInput.value === '1';
         }
 
-        function selectedProductIds(exceptSizeRow = null) {
-            return new Set(Array.from(itemsContainer.querySelectorAll('.size-row'))
+        // Chỉ chống trùng size TRONG CÙNG MỘT KHỐI. Khác khối (kể cả cùng mã) được
+        // phép trùng size — để lên đơn cùng mã với 2 giá khác nhau (thuê bộ / thuê lẻ).
+        function selectedProductIdsInBlock(block, exceptSizeRow = null) {
+            return new Set(Array.from(block.querySelectorAll('.size-row'))
                 .filter(sizeRow => sizeRow !== exceptSizeRow)
                 // Dòng "chưa chốt" dùng mã đại diện — không tính là đã chọn size.
                 .filter(sizeRow => ! isPendingRow(sizeRow))
@@ -730,7 +732,8 @@
         }
 
         function availableProductsForSizeRow(group, sizeRow, selectedProductId = null) {
-            const selectedIds = selectedProductIds(sizeRow);
+            const block = sizeRow.closest('.order-item');
+            const selectedIds = selectedProductIdsInBlock(block, sizeRow);
 
             return group.items.filter(product => {
                 const isCurrentSelection = selectedProductId && Number(product.id) === Number(selectedProductId);
@@ -739,14 +742,14 @@
             });
         }
 
-        function availableProductsForNewSize(code) {
+        function availableProductsForNewSize(block, code) {
             const group = productOptions.find(item => item.code === code);
 
             if (! group) {
                 return [];
             }
 
-            const selectedIds = selectedProductIds();
+            const selectedIds = block ? selectedProductIdsInBlock(block) : new Set();
 
             return group.items.filter(product => ! selectedIds.has(String(product.id)) && stockLimit(product) > 0);
         }
@@ -759,7 +762,7 @@
             }
 
             addSizeButton.disabled = ! block.dataset.productCode
-                || availableProductsForNewSize(block.dataset.productCode).length === 0;
+                || availableProductsForNewSize(block, block.dataset.productCode).length === 0;
         }
 
         function updateAllAddSizeButtons() {
@@ -912,7 +915,10 @@
                 const hasKeyword = group.code.toLowerCase().includes(normalizedKeyword)
                     || group.name.toLowerCase().includes(normalizedKeyword);
 
-                return hasKeyword && availableProductsForNewSize(group.code).length > 0;
+                // Cho phép chọn lại mã đã có (thêm khối cùng mã với giá khác).
+                const hasStock = group.items.some(product => stockLimit(product) > 0);
+
+                return hasKeyword && hasStock;
             }).slice(0, 20);
 
             suggestions.innerHTML = '';
@@ -935,7 +941,7 @@
                 name.className = 'product-name';
                 name.textContent = group.name;
                 meta.className = 'product-meta';
-                meta.textContent = `${availableProductsForNewSize(group.code).length}/${group.items.length} size có thể chọn`;
+                meta.textContent = `${group.items.filter(product => stockLimit(product) > 0).length}/${group.items.length} size còn tồn`;
                 button.append(code, name, meta);
                 button.addEventListener('click', () => selectProductCode(block, group.code));
                 suggestions.appendChild(button);
@@ -1094,8 +1100,8 @@
                 return;
             }
 
-            if (availableProductsForNewSize(code).length === 0) {
-                showBlockInfo(block, 'Mã hàng này không còn size khác có thể chọn.');
+            if (availableProductsForNewSize(block, code).length === 0) {
+                showBlockInfo(block, 'Mã hàng này không còn size khác để thêm vào khối này.');
                 updateAddSizeButton(block);
                 return;
             }
@@ -1188,10 +1194,10 @@
 
                 pendingInput.value = '0';
 
-                if (sizeSelect.value && selectedProductIds(sizeRow).has(String(sizeSelect.value))) {
+                if (sizeSelect.value && selectedProductIdsInBlock(block, sizeRow).has(String(sizeSelect.value))) {
                     productIdInput.value = '';
                     sizeSelect.value = '';
-                    showRowError(block, 'Mã hàng và size này đã được chọn trong đơn.');
+                    showRowError(block, 'Size này đã có trong khối. Tăng số lượng, hoặc thêm khối mới nếu cần giá khác.');
                     refreshProductChoices();
                     return;
                 }
@@ -1376,27 +1382,40 @@
                 return;
             }
 
-            const seenProductIds = new Set();
-            const duplicateRow = sizeRows.find(sizeRow => {
-                // Dòng "chưa chốt" dùng mã đại diện nên bỏ qua khi kiểm trùng size.
-                if (isPendingRow(sizeRow)) {
-                    return false;
+            // Chỉ chặn trùng size TRONG CÙNG MỘT KHỐI (khác khối cùng mã được phép).
+            let duplicateRow = null;
+
+            itemsContainer.querySelectorAll('.order-item').forEach(block => {
+                if (duplicateRow) {
+                    return;
                 }
 
-                const productId = sizeRow.querySelector('[data-product-id]').value;
+                const seen = new Set();
 
-                if (seenProductIds.has(productId)) {
-                    return true;
-                }
+                block.querySelectorAll('.size-row').forEach(sizeRow => {
+                    if (duplicateRow || isPendingRow(sizeRow)) {
+                        return;
+                    }
 
-                seenProductIds.add(productId);
-                return false;
+                    const productId = sizeRow.querySelector('[data-product-id]').value;
+
+                    if (! productId) {
+                        return;
+                    }
+
+                    if (seen.has(productId)) {
+                        duplicateRow = sizeRow;
+                        return;
+                    }
+
+                    seen.add(productId);
+                });
             });
 
             if (duplicateRow) {
                 event.preventDefault();
                 const block = duplicateRow.closest('.order-item');
-                showRowError(block, 'Mã hàng và size này đã được chọn trong đơn.');
+                showRowError(block, 'Size này bị lặp trong cùng khối. Tăng số lượng, hoặc tách sang khối mới nếu cần giá khác.');
                 duplicateRow.querySelector('[data-size]').focus();
                 return;
             }
@@ -1420,13 +1439,16 @@
             const code = selected ? selected.group.code : null;
             const sizeData = { product_id: item.product_id, quantity: item.quantity, rental_price: item.rental_price, size_pending: item.size_pending, note: item.note };
 
-            if (code && codeToBlockIndex.has(code)) {
-                groupedBlocks[codeToBlockIndex.get(code)].sizes.push(sizeData);
+            // Gộp theo MÃ + GIÁ THUÊ: cùng mã nhưng khác giá sẽ thành 2 khối riêng.
+            const groupKey = code !== null ? code + '|' + (item.rental_price != null ? item.rental_price : '') : null;
+
+            if (groupKey !== null && codeToBlockIndex.has(groupKey)) {
+                groupedBlocks[codeToBlockIndex.get(groupKey)].sizes.push(sizeData);
                 return;
             }
 
-            if (code) {
-                codeToBlockIndex.set(code, groupedBlocks.length);
+            if (groupKey !== null) {
+                codeToBlockIndex.set(groupKey, groupedBlocks.length);
             }
 
             // Giá thuê của mã lấy từ dòng đầu tiên (các size cùng mã dùng chung giá).

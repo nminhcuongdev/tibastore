@@ -112,7 +112,11 @@ class OrderInventoryService
             $returnDate,
             $excludeOrderId
         );
-        $messages = [];
+
+        // Cộng dồn số lượng theo từng sản phẩm — nhiều dòng cùng mã-size (giá khác nhau)
+        // vẫn phải kiểm theo TỔNG số lượng so với tồn dự kiến.
+        $totalByProduct = [];
+        $firstIndexByProduct = [];
 
         foreach ($items as $index => $item) {
             if (! empty($item['size_pending'])) {
@@ -120,10 +124,21 @@ class OrderInventoryService
             }
 
             $productId = (int) $item['product_id'];
+            $totalByProduct[$productId] = ($totalByProduct[$productId] ?? 0) + (int) $item['quantity'];
+
+            if (! isset($firstIndexByProduct[$productId])) {
+                $firstIndexByProduct[$productId] = $index;
+            }
+        }
+
+        $messages = [];
+
+        foreach ($totalByProduct as $productId => $totalQuantity) {
             $availableQuantity = (int) ($availability[$productId] ?? 0);
 
-            if ((int) $item['quantity'] > $availableQuantity) {
-                $messages["items.{$index}.quantity"] = "Số lượng không được vượt quá tồn dự kiến trong khoảng ngày đã chọn ({$availableQuantity}).";
+            if ($totalQuantity > $availableQuantity) {
+                $index = $firstIndexByProduct[$productId];
+                $messages["items.{$index}.quantity"] = "Tổng số lượng của mã-size này vượt tồn dự kiến trong khoảng ngày đã chọn ({$availableQuantity}).";
             }
         }
 
