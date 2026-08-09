@@ -131,6 +131,14 @@ class OrderInventoryService
             }
         }
 
+        // Lấy mã + size để ghi thông báo cụ thể.
+        $products = Product::whereIn('id', array_keys($totalByProduct))
+            ->get(['id', 'code', 'size'])
+            ->keyBy('id');
+
+        $fromLabel = $this->date($pickupDate)->format('d/m/Y');
+        $toLabel = $this->date($returnDate)->format('d/m/Y');
+
         $messages = [];
 
         foreach ($totalByProduct as $productId => $totalQuantity) {
@@ -138,7 +146,11 @@ class OrderInventoryService
 
             if ($totalQuantity > $availableQuantity) {
                 $index = $firstIndexByProduct[$productId];
-                $messages["items.{$index}.quantity"] = "Tổng số lượng của mã-size này vượt tồn dự kiến trong khoảng ngày đã chọn ({$availableQuantity}).";
+                $product = $products->get($productId);
+                $code = $product?->code ?? 'N/A';
+                $size = $product?->size ?? 'N/A';
+
+                $messages["items.{$index}.quantity"] = "Mã {$code} - size {$size}: đặt {$totalQuantity} nhưng tồn dự kiến chỉ {$availableQuantity} trong khoảng ngày lấy {$fromLabel} → trả {$toLabel}.";
             }
         }
 
