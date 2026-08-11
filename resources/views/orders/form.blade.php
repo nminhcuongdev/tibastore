@@ -419,6 +419,18 @@
             </div>
 
             <div class="field">
+                <label for="phone">Số điện thoại</label>
+                <input id="phone" name="phone" type="text" value="{{ old('phone', $order->phone) }}" placeholder="VD: 0901 234 567">
+                @error('phone') <div class="error">{{ $message }}</div> @enderror
+            </div>
+
+            <div class="field full">
+                <label for="address">Địa chỉ</label>
+                <input id="address" name="address" type="text" value="{{ old('address', $order->address) }}" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành...">
+                @error('address') <div class="error">{{ $message }}</div> @enderror
+            </div>
+
+            <div class="field">
                 <label for="pickup_date">Ngày lấy</label>
                 <input id="pickup_date" name="pickup_date" type="date" value="{{ old('pickup_date', $order->pickup_date?->format('Y-m-d')) }}" required>
                 @error('pickup_date') <div class="error">{{ $message }}</div> @enderror

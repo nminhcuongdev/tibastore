@@ -378,6 +378,8 @@ class OrderController extends Controller
     {
         $data = $request->validate([
             'closer_name' => ['required', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'address' => ['nullable', 'string', 'max:500'],
             'pickup_date' => ['required', 'date'],
             'event_date' => ['required', 'date', 'after_or_equal:pickup_date'],
             'return_date' => ['required', 'date', 'after_or_equal:event_date'],
@@ -457,6 +459,8 @@ class OrderController extends Controller
 
         return [
             'closer_name' => $data['closer_name'],
+            'phone' => $data['phone'] ?? null,
+            'address' => $data['address'] ?? null,
             'pickup_date' => $data['pickup_date'],
             'event_date' => $data['event_date'],
             'return_date' => $data['return_date'],

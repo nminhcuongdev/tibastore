@@ -393,6 +393,14 @@
                         <div class="value">{{ $order->sourceLabel() }}</div>
                     </div>
                     <div class="detail">
+                        <div class="label">Số điện thoại</div>
+                        <div class="value">{{ $order->phone ?: 'N/A' }}</div>
+                    </div>
+                    <div class="detail">
+                        <div class="label">Địa chỉ</div>
+                        <div class="value">{{ $order->address ?: 'N/A' }}</div>
+                    </div>
+                    <div class="detail">
                         <div class="label">Ngày tạo đơn</div>
                         <div class="value">{{ $order->created_at?->format('d/m/Y H:i') }}</div>
                     </div>
