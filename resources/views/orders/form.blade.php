@@ -372,6 +372,12 @@
                 </ul>
             </div>
         @endif
+        @if ($mode === 'create')
+            <div id="draft_notice" class="flash" style="display:none; align-items:center; gap:12px;">
+                <span>Đã khôi phục dữ liệu bạn nhập dở trước đó (tự lưu trong trình duyệt).</span>
+                <button type="button" id="draft_clear" class="button secondary" style="min-height:36px; padding:8px 12px;">Xoá nháp &amp; nhập mới</button>
+            </div>
+        @endif
 
         @php
             $oldItems = old('items');
@@ -1443,10 +1449,81 @@
             }
         });
 
+        // ===== Tự lưu nháp vào trình duyệt (chỉ khi TẠO đơn mới) =====
+        const DRAFT_KEY = 'tibastore_order_create_draft_v1';
+        const isCreate = @json($mode === 'create');
+        const hasOldInput = @json(! empty(old()));
+
+        function readFormDraft() {
+            const items = [];
+            itemsContainer.querySelectorAll('.order-item').forEach(block => {
+                const rentalEl = block.querySelector('[data-block-rental]');
+                const rental = rentalEl ? rentalEl.value : '';
+                block.querySelectorAll('.size-row').forEach(row => {
+                    const noteEl = row.querySelector('[data-note]');
+                    items.push({
+                        product_id: row.querySelector('[data-product-id]').value,
+                        quantity: row.querySelector('[data-quantity]').value,
+                        rental_price: rental,
+                        size_pending: isPendingRow(row) ? 1 : 0,
+                        note: noteEl ? noteEl.value : '',
+                    });
+                });
+            });
+            const val = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+            return {
+                closer_name: val('closer_name'), order_name: val('order_name'),
+                phone: val('phone'), address: val('address'),
+                pickup_date: val('pickup_date'), event_date: val('event_date'), return_date: val('return_date'),
+                status: val('status'), source: val('source'),
+                shipping_fee: val('shipping_fee'), payment_1: val('payment_1'), payment_2: val('payment_2'),
+                items, savedAt: Date.now(),
+            };
+        }
+
+        let draftSaveTimer = null;
+        function saveDraft() {
+            if (! isCreate) return;
+            clearTimeout(draftSaveTimer);
+            draftSaveTimer = setTimeout(saveDraftNow, 400);
+        }
+        function saveDraftNow() {
+            if (! isCreate) return;
+            try { localStorage.setItem(DRAFT_KEY, JSON.stringify(readFormDraft())); } catch (e) {}
+        }
+        function clearDraft() {
+            try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+        }
+
+        function restoreTopFields(d) {
+            const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
+            set('closer_name', d.closer_name); set('order_name', d.order_name);
+            set('phone', d.phone); set('address', d.address);
+            set('pickup_date', d.pickup_date); set('event_date', d.event_date); set('return_date', d.return_date);
+            set('status', d.status); set('source', d.source);
+            set('shipping_fee', d.shipping_fee); set('payment_1', d.payment_1); set('payment_2', d.payment_2);
+        }
+
+        // Dữ liệu để dựng: ưu tiên old() (khi submit lỗi), rồi tới nháp đã lưu, rồi mặc định.
+        let itemsToBuild = initialItems;
+        let restoredFromDraft = false;
+
+        if (isCreate && ! hasOldInput) {
+            let draft = null;
+            try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch (e) {}
+            if (draft && Array.isArray(draft.items)) {
+                restoreTopFields(draft);
+                if (draft.items.length > 0) {
+                    itemsToBuild = draft.items;
+                }
+                restoredFromDraft = true;
+            }
+        }
+
         const groupedBlocks = [];
         const codeToBlockIndex = new Map();
 
-        initialItems.forEach(item => {
+        itemsToBuild.forEach(item => {
             const selected = findProductById(item.product_id);
             const code = selected ? selected.group.code : null;
             const sizeData = { product_id: item.product_id, quantity: item.quantity, rental_price: item.rental_price, size_pending: item.size_pending, note: item.note };
@@ -1482,6 +1559,39 @@
         resetAvailabilityToCurrentStock();
         refreshAvailability();
         updateComputedTotal();
+
+        // ===== Kích hoạt tự lưu / khôi phục / xoá nháp =====
+        if (isCreate) {
+            orderForm.addEventListener('input', saveDraft);
+            orderForm.addEventListener('change', saveDraft);
+            new MutationObserver(saveDraft).observe(itemsContainer, { childList: true, subtree: true });
+
+            // Trang tải lại sau lỗi (có old): lưu ngay để nếu reload thủ công vẫn khôi phục được.
+            if (hasOldInput) {
+                saveDraftNow();
+            }
+
+            if (restoredFromDraft) {
+                const notice = document.getElementById('draft_notice');
+                if (notice) notice.style.display = 'flex';
+            }
+
+            const clearBtn = document.getElementById('draft_clear');
+            if (clearBtn) {
+                clearBtn.addEventListener('click', () => {
+                    clearDraft();
+                    window.location = window.location.pathname; // tải lại form trống
+                });
+            }
+
+            // Đơn thực sự được gửi (không bị chặn validate) → xoá nháp.
+            // Thành công sẽ chuyển trang; nếu lỗi validate thì old() sẽ dựng lại + lưu nháp mới.
+            orderForm.addEventListener('submit', event => {
+                if (! event.defaultPrevented) {
+                    clearDraft();
+                }
+            });
+        }
     </script>
 </body>
 </html>
