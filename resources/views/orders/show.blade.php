@@ -366,7 +366,11 @@
                     'quantity' => $order->quantity,
                 ]]);
             $totalQuantity = $displayItems->sum('quantity');
-            $groupedDisplayItems = $displayItems->groupBy(fn ($item) => $item->product?->code ?? 'N/A');
+            // Gộp theo MÃ + GIÁ THUÊ: cùng một mã nhưng khác giá thuê sẽ thành 2 dòng riêng,
+            // đúng như cách nhập ở form (mỗi khối mã hàng có giá thuê riêng).
+            $groupedDisplayItems = $displayItems->groupBy(
+                fn ($item) => ($item->product?->code ?? 'N/A') . '|' . (int) ($item->rental_price ?? 0)
+            );
         @endphp
 
         <article class="receipt">
@@ -469,10 +473,11 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($groupedDisplayItems as $code => $items)
+                            @foreach ($groupedDisplayItems as $items)
                                 @php
                                     $firstItem = $items->first();
                                     $product = $firstItem->product;
+                                    $code = $product?->code ?? 'N/A';
                                     $sizeQuantities = $items->groupBy(fn ($item) => method_exists($item, 'displaySize') ? $item->displaySize() : ($item->product?->size ?? 'N/A'));
                                     $lineRental = (int) ($firstItem->rental_price ?? 0);
                                     $lineTotal = $lineRental * $items->sum('quantity');
@@ -492,7 +497,7 @@
                                     <td class="code">{{ $code }}</td>
                                     <td>
                                         <div class="value">{{ $product?->name ?? 'Sản phẩm không còn tồn tại' }}</div>
-                                        <div class="muted">Tồn hiện tại: {{ number_format($items->sum(fn ($item) => $item->product?->stock_quantity ?? 0)) }}</div>
+                                        <div class="muted">Tồn hiện tại: {{ number_format($items->unique(fn ($item) => $item->product?->id)->sum(fn ($item) => $item->product?->stock_quantity ?? 0)) }}</div>
                                     </td>
                                     <td>{{ $product?->fabric ?? 'N/A' }}</td>
                                     <td>

@@ -704,7 +704,7 @@
                         }
 
                         const quantityInput = sizeRow.querySelector('[data-quantity]');
-                        const limit = stockLimit(selected.item);
+                        const limit = remainingStockFor(sizeRow, selected.item);
                         const value = Number(quantityInput.value || 0);
 
                         if (value > limit) {
@@ -854,6 +854,35 @@
             stockConflictBox.innerHTML = '';
         }
 
+        // Tổng số lượng của CÙNG một sản phẩm (mã-size) ở các dòng khác, tính trên mọi khối.
+        // Cùng mã-size nhưng khác giá thuê là 2 dòng riêng, kho vẫn phải trừ cộng dồn.
+        function quantityUsedElsewhere(sizeRow, productId) {
+            if (! productId) {
+                return 0;
+            }
+
+            let used = 0;
+
+            itemsContainer.querySelectorAll('.size-row').forEach(otherRow => {
+                if (otherRow === sizeRow || isPendingRow(otherRow)) {
+                    return;
+                }
+
+                if (String(otherRow.querySelector('[data-product-id]').value) !== String(productId)) {
+                    return;
+                }
+
+                used += Number(otherRow.querySelector('[data-quantity]').value || 0);
+            });
+
+            return used;
+        }
+
+        // Tồn còn dùng được cho dòng này = tồn dự kiến − số lượng cùng mã-size đã đặt ở dòng khác.
+        function remainingStockFor(sizeRow, product) {
+            return Math.max(0, stockLimit(product) - quantityUsedElsewhere(sizeRow, product.id));
+        }
+
         function updateQuantityLimit(sizeRow) {
             const quantityInput = sizeRow.querySelector('[data-quantity]');
             const productId = sizeRow.querySelector('[data-product-id]').value;
@@ -873,14 +902,18 @@
                 return true;
             }
 
-            const limit = stockLimit(selected.item);
+            const usedElsewhere = quantityUsedElsewhere(sizeRow, productId);
+            const limit = remainingStockFor(sizeRow, selected.item);
             const value = Number(quantityInput.value || 0);
             quantityInput.max = limit;
 
             // Vượt tồn dự kiến: không tự cắt, mà báo rõ ngay tại dòng và chặn lưu.
             if (value > limit) {
+                const usedNote = usedElsewhere > 0
+                    ? ` (đã trừ ${usedElsewhere.toLocaleString('vi-VN')} của cùng mã-size ở dòng khác)`
+                    : '';
                 quantityInput.setCustomValidity(`Số lượng vượt tồn dự kiến (tối đa ${limit}).`);
-                setRowQtyWarning(sizeRow, `⚠ Vượt tồn dự kiến — tối đa ${limit.toLocaleString('vi-VN')}.`);
+                setRowQtyWarning(sizeRow, `⚠ Vượt tồn dự kiến — tối đa ${limit.toLocaleString('vi-VN')}${usedNote}.`);
                 return false;
             }
 
@@ -1181,14 +1214,18 @@
                     return;
                 }
 
-                const limit = stockLimit(selected.item);
+                const limit = remainingStockFor(sizeRow, selected.item);
                 const value = Number(quantityInput.value || 0);
 
-                if (value > limit) {
+                // Hết tồn (các dòng khác cùng mã-size đã dùng hết) thì không hạ về 0 —
+                // giữ nguyên số đang nhập và để cảnh báo chặn lưu, tránh gửi số lượng 0.
+                if (value > limit && limit >= 1) {
                     quantityInput.value = limit;
                     updateQuantityLimit(sizeRow);
                     setRowQtyWarning(sizeRow, `Đã điều chỉnh về tối đa tồn dự kiến (${limit.toLocaleString('vi-VN')}).`);
                     updateComputedTotal();
+                } else if (value > limit) {
+                    updateQuantityLimit(sizeRow);
                 } else if (value < 1) {
                     quantityInput.value = 1;
                     updateQuantityLimit(sizeRow);
@@ -1552,6 +1589,9 @@
 
         itemsContainer.addEventListener('input', event => {
             if (event.target.matches('[data-quantity]')) {
+                // Đổi số lượng một dòng làm thay đổi tồn còn lại của các dòng khác
+                // cùng mã-size (ở khối giá khác), nên kiểm lại toàn bộ.
+                itemsContainer.querySelectorAll('.size-row').forEach(updateQuantityLimit);
                 updateComputedTotal();
             }
         });
