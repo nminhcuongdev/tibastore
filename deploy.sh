@@ -12,8 +12,16 @@ cd "$APP" || exit 1
 
 log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*"; }
 
-# --- Tìm PHP CLI phù hợp (>= 8.0.2) ---
-# Nếu bạn biết chắc đường dẫn PHP, đặt vào biến PHP_BIN dưới đây để bỏ qua bước dò.
+# --- 1) Kéo code mới (không cần php) ---
+git fetch origin main --quiet || { log "ERROR: git fetch thất bại"; exit 1; }
+git reset --hard origin/main --quiet
+
+# --- 2) Xoá cache config/route bằng cách xoá file (KHÔNG cần php) ---
+# Bảo đảm route/config mới có hiệu lực kể cả khi php artisan lỗi.
+rm -f bootstrap/cache/config.php bootstrap/cache/routes.php
+
+# --- 3) Tìm PHP CLI phù hợp (>= 8.0.2) ---
+# Nếu biết chắc đường dẫn PHP, đặt vào PHP_BIN dưới đây để bỏ qua bước dò.
 PHP_BIN=""
 PHP=""
 for cand in \
@@ -33,16 +41,14 @@ do
 done
 
 if [ -z "$PHP" ]; then
-    log "ERROR: không tìm thấy PHP CLI >= 8.0.2. Hãy đặt PHP_BIN trong deploy.sh."
+    # Code + cache đã cập nhật ở bước 1-2; chỉ thiếu migrate.
+    log "WARN: không tìm thấy PHP CLI >= 8.0.2. Đã kéo code + xoá cache; CHƯA chạy migrate. Hãy đặt PHP_BIN."
     exit 1
 fi
 
-# --- Kéo code mới ---
-git fetch origin main --quiet || { log "ERROR: git fetch thất bại"; exit 1; }
-git reset --hard origin/main --quiet
-
-# --- Cập nhật ứng dụng (migrate an toàn, idempotent) ---
+# --- 4) Cập nhật ứng dụng bằng artisan ---
 "$PHP" artisan migrate --force
+"$PHP" artisan route:clear
 "$PHP" artisan config:clear
 "$PHP" artisan view:clear
 "$PHP" artisan cache:clear
