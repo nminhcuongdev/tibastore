@@ -26,8 +26,8 @@ git reset --hard origin/main --quiet
 rm -f bootstrap/cache/config.php bootstrap/cache/routes.php
 
 # --- 3) Tìm PHP CLI phù hợp (>= 8.0.2) ---
-# Nếu biết chắc đường dẫn PHP, đặt vào PHP_BIN dưới đây để bỏ qua bước dò.
-PHP_BIN=""
+# Ưu tiên PHP mặc định của tài khoản (khớp bản web đang chạy); nếu < 8.0.2 sẽ tự dò tiếp.
+PHP_BIN="/usr/local/bin/php"
 PHP=""
 for cand in \
     "$PHP_BIN" \
