@@ -2,6 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="utf-8">
+    @include('partials.favicon')
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Chi tiết sản phẩm</title>
     <style>

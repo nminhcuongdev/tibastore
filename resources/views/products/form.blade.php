@@ -2,6 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="utf-8">
+    @include('partials.favicon')
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $mode === 'create' ? 'Thêm sản phẩm' : 'Sửa sản phẩm' }}</title>
     <style>
