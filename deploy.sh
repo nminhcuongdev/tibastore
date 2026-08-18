@@ -5,28 +5,35 @@
 # Bảo đảm cron tìm được git/php/flock (cron chạy với PATH tối giản)
 export PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:$PATH"
 
-# Chống 2 lần chạy chồng nhau — chỉ khi có flock, không có thì bỏ qua (không chặn deploy)
+# Chống 2 lần chạy chồng nhau — chỉ khi có flock
 if command -v flock >/dev/null 2>&1; then
     exec 9>"$HOME/deploy.lock"
     flock -n 9 || exit 0
 fi
 
-# Tự nhận thư mục app (nơi đặt deploy.sh) — không cần hardcode đường dẫn
+# Tự nhận thư mục app (nơi đặt deploy.sh)
 APP="$(cd "$(dirname "$0")" && pwd)"
 cd "$APP" || exit 1
 
 log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*"; }
 
-# --- 1) Kéo code mới (không cần php) ---
+STATE="$HOME/.tibastore_deployed_head"
+
+# --- 1) Kéo code mới ---
 git fetch origin main --quiet || { log "ERROR: git fetch thất bại (kiểm tra git/mạng)"; exit 1; }
 git reset --hard origin/main --quiet
 
-# --- 2) Xoá cache config/route bằng cách xoá file (KHÔNG cần php) ---
-# Bảo đảm route/config mới có hiệu lực kể cả khi php artisan lỗi.
+CURRENT="$(git rev-parse --short HEAD)"
+DEPLOYED="$(cat "$STATE" 2>/dev/null)"
+
+# Không có commit mới -> thoát im lặng (không ghi log, không chạy artisan)
+[ "$CURRENT" = "$DEPLOYED" ] && exit 0
+
+# --- 2) Có commit mới: xoá cache config/route bằng rm (KHÔNG cần php) ---
 rm -f bootstrap/cache/config.php bootstrap/cache/routes.php
 
 # --- 3) Tìm PHP CLI phù hợp (>= 8.0.2) ---
-# Ưu tiên PHP mặc định của tài khoản (khớp bản web đang chạy); nếu < 8.0.2 sẽ tự dò tiếp.
+# Ưu tiên PHP mặc định của tài khoản (khớp bản web); nếu < 8.0.2 sẽ tự dò tiếp.
 PHP_BIN="/usr/local/bin/php"
 PHP=""
 for cand in \
@@ -47,8 +54,8 @@ do
 done
 
 if [ -z "$PHP" ]; then
-    # Code + cache đã cập nhật ở bước 1-2; chỉ thiếu migrate.
-    log "WARN: không tìm thấy PHP CLI >= 8.0.2. Đã kéo code + xoá cache; CHƯA chạy migrate. Hãy đặt PHP_BIN."
+    # Đã kéo code + xoá cache; chỉ thiếu migrate. KHÔNG ghi STATE -> lần sau tự thử lại.
+    log "WARN: không tìm thấy PHP CLI >= 8.0.2 ($CURRENT). Đã kéo code + xoá cache; CHƯA migrate."
     exit 1
 fi
 
@@ -59,4 +66,5 @@ fi
 "$PHP" artisan view:clear
 "$PHP" artisan cache:clear
 
-log "OK $(git rev-parse --short HEAD) (php: $PHP)"
+echo "$CURRENT" > "$STATE"
+log "OK $CURRENT (php: $PHP)"
