@@ -209,6 +209,114 @@ class OrderInventoryService
         return $availability;
     }
 
+    /**
+     * Tồn khả dụng theo TỪNG NGÀY cho nhiều sản phẩm, trong khoảng [from, to].
+     * Khả dụng ngày D = (tồn hiện tại + hàng đang ở ngoài kho) + hàng nhập dự kiến về <= D
+     *                   - số lượng đơn đang thuê phủ ngày D (pickup <= D <= return).
+     * Trả về: [productId => [ 'Y-m-d' => số_khả_dụng ]]  (có thể âm nếu đặt vượt).
+     */
+    public function dailyAvailability(array $productIds, Carbon $from, Carbon $to): array
+    {
+        $productIds = collect($productIds)
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($productIds === []) {
+            return [];
+        }
+
+        $from = $this->date($from);
+        $to = $this->date($to);
+
+        if ($to->lt($from)) {
+            $to = $from->copy();
+        }
+
+        $dates = [];
+        for ($d = $from->copy(); $d->lte($to); $d->addDay()) {
+            $dates[] = $d->toDateString();
+        }
+
+        $stock = Product::whereIn('id', $productIds)
+            ->pluck('stock_quantity', 'id')
+            ->map(fn ($q) => (int) $q)
+            ->all();
+        $open = $this->openStockQuantities($productIds);
+
+        // Số lượng đơn phủ từng ngày, theo từng sản phẩm.
+        $reserved = [];
+        $bookings = OrderItem::query()
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->whereIn('order_items.product_id', $productIds)
+            ->where('order_items.size_pending', false)
+            ->whereDate('orders.pickup_date', '<=', $to->toDateString())
+            ->whereDate('orders.return_date', '>=', $from->toDateString())
+            ->get([
+                'order_items.product_id',
+                'order_items.quantity',
+                'orders.pickup_date',
+                'orders.return_date',
+            ]);
+
+        foreach ($bookings as $booking) {
+            $productId = (int) $booking->product_id;
+            $quantity = (int) $booking->quantity;
+            $start = $this->date($booking->pickup_date);
+            $end = $this->date($booking->return_date);
+
+            if ($start->lt($from)) {
+                $start = $from->copy();
+            }
+
+            if ($end->gt($to)) {
+                $end = $to->copy();
+            }
+
+            for ($d = $start->copy(); $d->lte($end); $d->addDay()) {
+                $dateKey = $d->toDateString();
+                $reserved[$productId][$dateKey] = ($reserved[$productId][$dateKey] ?? 0) + $quantity;
+            }
+        }
+
+        // Hàng nhập dự kiến (chưa nhận) theo từng sản phẩm.
+        $receiptsByProduct = [];
+        ProductExpectedReceipt::query()
+            ->whereIn('product_id', $productIds)
+            ->whereNull('received_at')
+            ->where('expected_receive_quantity', '>', 0)
+            ->get(['product_id', 'expected_receive_date', 'expected_receive_quantity'])
+            ->each(function ($receipt) use (&$receiptsByProduct) {
+                $receiptsByProduct[(int) $receipt->product_id][] = [
+                    'date' => $this->date($receipt->expected_receive_date)->toDateString(),
+                    'quantity' => (int) $receipt->expected_receive_quantity,
+                ];
+            });
+
+        $result = [];
+
+        foreach ($productIds as $productId) {
+            $owned = (int) ($stock[$productId] ?? 0) + (int) ($open[$productId] ?? 0);
+            $result[$productId] = [];
+
+            foreach ($dates as $dateKey) {
+                $received = 0;
+
+                foreach (($receiptsByProduct[$productId] ?? []) as $receipt) {
+                    if ($receipt['date'] <= $dateKey) {
+                        $received += $receipt['quantity'];
+                    }
+                }
+
+                $result[$productId][$dateKey] = $owned + $received - (int) ($reserved[$productId][$dateKey] ?? 0);
+            }
+        }
+
+        return $result;
+    }
+
     private function syncDueExpectedReceipts(Carbon $today): void
     {
         ProductExpectedReceipt::query()

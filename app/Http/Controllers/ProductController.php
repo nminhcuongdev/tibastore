@@ -223,6 +223,69 @@ class ProductController extends Controller
         ]);
     }
 
+    /**
+     * Theo dõi tồn kho khả dụng theo từng ngày cho TẤT CẢ sản phẩm (ma trận sản phẩm × ngày).
+     */
+    public function inventoryCalendar(Request $request): View
+    {
+        $this->inventory->syncDueOrders();
+
+        [$dateFrom, $dateTo] = $this->inventoryCalendarRange($request);
+        $query = trim((string) $request->query('q', ''));
+
+        $products = Product::query()
+            ->when($query !== '', function ($builder) use ($query) {
+                $builder->where(function ($search) use ($query) {
+                    $search->where('code', 'like', "%{$query}%")
+                        ->orWhere('name', 'like', "%{$query}%");
+                });
+            })
+            ->orderBy('code')
+            ->orderBy('size')
+            ->get(['id', 'code', 'name', 'size', 'stock_quantity']);
+
+        $availability = $this->inventory->dailyAvailability(
+            $products->pluck('id')->all(),
+            $dateFrom,
+            $dateTo
+        );
+
+        $dates = [];
+        for ($date = $dateFrom->copy(); $date->lte($dateTo); $date->addDay()) {
+            $dates[] = $date->copy();
+        }
+
+        return view('products.daily-stock', [
+            'products' => $products,
+            'availability' => $availability,
+            'dates' => $dates,
+            'dateFrom' => $dateFrom,
+            'dateTo' => $dateTo,
+            'query' => $query,
+        ]);
+    }
+
+    private function inventoryCalendarRange(Request $request): array
+    {
+        $from = $request->filled('from')
+            ? Carbon::parse($request->query('from'))->startOfDay()
+            : now()->startOfDay();
+        $to = $request->filled('to')
+            ? Carbon::parse($request->query('to'))->startOfDay()
+            : $from->copy()->addDays(13);
+
+        if ($to->lt($from)) {
+            $to = $from->copy();
+        }
+
+        // Giới hạn 60 ngày để bảng không quá lớn.
+        if ($from->diffInDays($to) > 60) {
+            $to = $from->copy()->addDays(60);
+        }
+
+        return [$from, $to];
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validatedStoreData($request);

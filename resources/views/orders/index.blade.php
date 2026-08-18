@@ -341,6 +341,7 @@
         <a class="brand" href="{{ route('orders.index') }}">Tiba Boutique</a>
         <div class="nav">
             <a href="{{ route('products.index') }}">Kho hàng</a>
+            <a href="{{ route('products.daily-stock') }}">Tồn kho theo ngày</a>
             <a class="active" href="{{ route('orders.index') }}">Đơn hàng</a>
             <a href="{{ route('stock-import-histories.index') }}">Lịch sử nhập</a>
             @if (auth()->user()?->isAdmin())

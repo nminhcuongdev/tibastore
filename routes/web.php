@@ -33,6 +33,7 @@ Route::middleware('auth')->group(function () {
         return redirect()->route('products.index');
     })->name('dashboard');
 
+    Route::get('/products/daily-stock', [ProductController::class, 'inventoryCalendar'])->name('products.daily-stock');
     Route::get('/products/{product}/track', [ProductController::class, 'track'])->name('products.track');
     Route::resource('products', ProductController::class);
     Route::post('/orders/availability', [OrderController::class, 'availability'])->name('orders.availability');
