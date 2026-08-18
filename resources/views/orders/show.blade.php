@@ -315,8 +315,10 @@
     </style>
 </head>
 <body>
+<div class="layout">
+@include('partials.sidebar', ['active' => 'orders'])
+<div class="page">
     <header class="topbar no-print">
-        <a class="brand" href="{{ route('orders.index') }}">Tiba Boutique</a>
         <div class="actions">
             @php
                 $checkItems = $order->items->map(fn ($item) => [
@@ -606,5 +608,7 @@
             }
         });
     </script>
+    </div>
+</div>
 </body>
 </html>

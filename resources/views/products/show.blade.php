@@ -246,21 +246,9 @@
     </style>
 </head>
 <body>
-    <header class="topbar">
-        <a class="brand" href="{{ route('products.index') }}">Tiba Boutique</a>
-        <div class="nav">
-            <a class="active" href="{{ route('products.index') }}">Kho hàng</a>
-            <a href="{{ route('orders.index') }}">Đơn hàng</a>
-            <a href="{{ route('stock-import-histories.index') }}">Lịch sử nhập</a>
-            @if (auth()->user()?->isAdmin())
-                <a href="{{ route('users.index') }}">Người dùng</a>
-            @endif
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button class="logout" type="submit">Đăng xuất</button>
-            </form>
-        </div>
-    </header>
+<div class="layout">
+@include('partials.sidebar', ['active' => 'products'])
+<div class="page">
 
     <section class="hero">
         <h1>{{ $product->code }} - {{ $product->name }}</h1>
@@ -421,5 +409,7 @@
             });
         });
     </script>
+    </div>
+</div>
 </body>
 </html>

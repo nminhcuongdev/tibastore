@@ -350,10 +350,9 @@
     </style>
 </head>
 <body>
-    <header class="topbar">
-        <a class="brand" href="{{ route('products.index') }}">Tiba Boutique</a>
-        <a class="button secondary" href="{{ route('products.index') }}">Về danh sách</a>
-    </header>
+<div class="layout">
+@include('partials.sidebar', ['active' => 'products'])
+<div class="page">
 
     <main class="content">
         <div class="heading">
@@ -857,6 +856,8 @@
             updateCodeDupHint();
         }
     </script>
+    </div>
+</div>
 </body>
 </html>
 

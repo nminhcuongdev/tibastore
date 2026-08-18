@@ -345,10 +345,9 @@
     </style>
 </head>
 <body>
-    <header class="topbar">
-        <a class="brand" href="{{ route('orders.index') }}">Tiba Boutique</a>
-        <a class="button secondary" href="{{ route('orders.index') }}">Về danh sách</a>
-    </header>
+<div class="layout">
+@include('partials.sidebar', ['active' => 'orders'])
+<div class="page">
 
     <main class="content">
         <div class="heading">
@@ -1633,5 +1632,7 @@
             });
         }
     </script>
+    </div>
+</div>
 </body>
 </html>

@@ -100,10 +100,9 @@
     </style>
 </head>
 <body>
-    <header class="topbar">
-        <a class="brand" href="{{ route('users.index') }}">Tiba Boutique</a>
-        <a class="button secondary" href="{{ route('users.index') }}">Về danh sách</a>
-    </header>
+<div class="layout">
+@include('partials.sidebar', ['active' => 'users'])
+<div class="page">
 
     <main class="content">
         <div class="heading">
@@ -159,5 +158,7 @@
             </div>
         </form>
     </main>
+    </div>
+</div>
 </body>
 </html>
