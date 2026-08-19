@@ -82,11 +82,34 @@
             grid-template-columns: 1fr;
             margin-bottom: 18px;
         }
+        .toolbar-head {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: space-between;
+        }
+        .filter-toggle {
+            align-items: center;
+            display: inline-flex;
+            gap: 8px;
+        }
+        .filter-toggle__caret { display: inline-block; transition: transform .18s ease; }
+        .filter-toggle[aria-expanded="true"] .filter-toggle__caret { transform: rotate(90deg); }
+        .filter-toggle__badge {
+            background: #be476f;
+            border-radius: 999px;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 900;
+            padding: 3px 9px;
+        }
+        /* Mac dinh dong; mo bang nut toggle hoac khi dang co bo loc. */
         .search {
-            display: grid;
+            display: none;
             gap: 12px;
             width: 100%;
         }
+        .search.is-open { display: grid; }
         .filter-grid {
             align-items: end;
             display: grid;
@@ -382,8 +405,25 @@
             <div class="status is-error">{{ session('error') }}</div>
         @endif
 
+        @php
+            // Co bo loc nao dang bat thi mo san, de khong bi loc ma khong biet vi sao.
+            $hasActiveFilters = $query !== ''
+                || $status !== ''
+                || collect($filters)->contains(fn ($value) => $value !== null && $value !== '');
+        @endphp
         <div class="toolbar">
-            <form class="search" method="GET" action="{{ route('orders.index') }}">
+            <div class="toolbar-head">
+                <button type="button" class="button secondary filter-toggle" data-filter-toggle
+                    aria-expanded="{{ $hasActiveFilters ? 'true' : 'false' }}" aria-controls="filter-panel">
+                    <span class="filter-toggle__caret" aria-hidden="true">▸</span>
+                    Bộ lọc &amp; tìm kiếm
+                    @if ($hasActiveFilters)
+                        <span class="filter-toggle__badge">đang lọc</span>
+                    @endif
+                </button>
+                <a class="button" href="{{ route('orders.create') }}">+ Tạo đơn hàng</a>
+            </div>
+            <form class="search {{ $hasActiveFilters ? 'is-open' : '' }}" id="filter-panel" method="GET" action="{{ route('orders.index') }}">
                 <div class="filter-grid">
                     <div class="filter-field wide">
                         <label for="q">Tìm theo người chốt, tên đơn, mã hàng hoặc tên hàng</label>
@@ -450,7 +490,6 @@
                 <div class="filter-actions">
                     <button type="submit" class="button">Lọc</button>
                     <a class="button secondary" href="{{ route('orders.index') }}">Xóa lọc</a>
-                    <a class="button" href="{{ route('orders.create') }}">+ Tạo đơn hàng</a>
                 </div>
             </form>
         </div>
@@ -605,6 +644,18 @@
             </nav>
         @endif
     </main>
+    <script>
+        (function () {
+            const toggle = document.querySelector('[data-filter-toggle]');
+            const panel = document.getElementById('filter-panel');
+            if (!toggle || !panel) return;
+
+            toggle.addEventListener('click', function () {
+                const open = panel.classList.toggle('is-open');
+                toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            });
+        })();
+    </script>
     @include('orders.codes-modal')
     @include('orders.status-confirm-modal')
     @include('orders.check-modal')
