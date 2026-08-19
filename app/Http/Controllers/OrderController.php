@@ -278,7 +278,7 @@ class OrderController extends Controller
         });
 
         return redirect()
-            ->back()
+            ->route('orders.index')
             ->with('status', 'Đã cập nhật đơn hàng.');
     }
 
