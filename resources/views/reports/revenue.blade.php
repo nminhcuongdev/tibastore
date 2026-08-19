@@ -120,6 +120,7 @@
         .muted { color: #8b6672; font-size: 12px; }
         .strong { color: #6f253f; font-weight: 900; }
         .zero { color: #c4a9b3; }
+        .muted-col { color: #8b6672; }
         .empty { color: #8b6672; padding: 36px; text-align: center; }
         .note {
             background: #fff;
@@ -143,7 +144,7 @@
 @include('partials.sidebar', ['active' => 'revenue'])
 <main class="content">
     <h1>Báo cáo doanh thu</h1>
-    <p class="sub">Doanh thu tách theo <strong>nguồn hàng</strong> của đơn. Doanh thu mỗi đơn = tiền hàng + tiền bồi thường + tiền ship.</p>
+    <p class="sub">Doanh thu tách theo <strong>nguồn hàng</strong> của đơn. Doanh thu mỗi đơn = tiền hàng (giá thuê &times; số lượng của mọi dòng).</p>
 
     <form class="toolbar" method="GET" action="{{ route('reports.revenue') }}">
         <div class="field">
@@ -187,16 +188,8 @@
             <div class="value">{{ number_format($grandTotal['total']) }}</div>
         </div>
         <div class="card">
-            <div class="label">Tiền hàng</div>
-            <div class="value">{{ number_format($grandTotal['goods']) }}</div>
-        </div>
-        <div class="card">
             <div class="label">Tiền bồi thường</div>
             <div class="value">{{ number_format($grandTotal['compensation']) }}</div>
-        </div>
-        <div class="card">
-            <div class="label">Tiền ship</div>
-            <div class="value">{{ number_format($grandTotal['shipping']) }}</div>
         </div>
         <div class="card">
             <div class="label">Số đơn</div>
@@ -211,11 +204,9 @@
                 <tr>
                     <th class="text">Nguồn hàng</th>
                     <th>Số đơn</th>
-                    <th>Tiền hàng</th>
-                    <th>Bồi thường</th>
-                    <th>Tiền ship</th>
                     <th>Doanh thu</th>
                     <th>Tỷ trọng</th>
+                    <th>Bồi thường</th>
                 </tr>
             </thead>
             <tbody>
@@ -223,11 +214,9 @@
                     <tr>
                         <td class="text strong">{{ $row['label'] }}</td>
                         <td>{{ number_format($row['orders']) }}</td>
-                        <td>{{ number_format($row['goods']) }}</td>
-                        <td>{{ number_format($row['compensation']) }}</td>
-                        <td>{{ number_format($row['shipping']) }}</td>
                         <td class="strong">{{ number_format($row['total']) }}</td>
                         <td>{{ $grandTotal['total'] > 0 ? number_format($row['total'] * 100 / $grandTotal['total'], 1) . '%' : '—' }}</td>
+                        <td class="muted-col">{{ number_format($row['compensation']) }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -235,11 +224,9 @@
                 <tr>
                     <td class="text">Tổng cộng</td>
                     <td>{{ number_format($grandTotal['orders']) }}</td>
-                    <td>{{ number_format($grandTotal['goods']) }}</td>
-                    <td>{{ number_format($grandTotal['compensation']) }}</td>
-                    <td>{{ number_format($grandTotal['shipping']) }}</td>
                     <td>{{ number_format($grandTotal['total']) }}</td>
                     <td>{{ $grandTotal['total'] > 0 ? '100%' : '—' }}</td>
+                    <td>{{ number_format($grandTotal['compensation']) }}</td>
                 </tr>
             </tfoot>
         </table>
@@ -295,7 +282,8 @@
     @endif
 
     <div class="note">
-        <strong>Cách tính:</strong> doanh thu mỗi đơn = tiền hàng (giá thuê &times; số lượng của mọi dòng) + tiền bồi thường + tiền ship.
+        <strong>Cách tính:</strong> doanh thu mỗi đơn = tiền hàng, tức giá thuê &times; số lượng của mọi dòng hàng trong đơn.
+        Cột <strong>Bồi thường</strong> chỉ để tham khảo, <strong>không</strong> cộng vào doanh thu. Tiền ship không đưa vào báo cáo này.
         Đơn được xếp vào kỳ theo mốc <strong>{{ $dateBases[$basis] }}</strong> &mdash; đổi mốc ở ô "Tính theo mốc" nếu bạn muốn tính theo ngày lấy/diễn/trả.
         Báo cáo đếm mọi đơn trong kỳ, không phân biệt trạng thái hay đã thu tiền hay chưa.
     </div>

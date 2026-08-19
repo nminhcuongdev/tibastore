@@ -54,7 +54,7 @@ class ReportController extends Controller
         $orders = Order::query()
             ->whereDate($basis, '>=', $dateFrom->toDateString())
             ->whereDate($basis, '<=', $dateTo->toDateString())
-            ->get(['id', 'source', 'total_amount', 'compensation_amount', 'shipping_fee', $basis]);
+            ->get(['id', 'source', 'total_amount', 'compensation_amount', $basis]);
 
         $sources = Order::sources();
         $buckets = $this->buckets($mode, $dateFrom, $dateTo);
@@ -130,20 +130,15 @@ class ReportController extends Controller
     }
 
     /**
-     * Doanh thu = tiền hàng + tiền bồi thường + tiền ship.
+     * Doanh thu = tiền hàng (giá thuê x số lượng của mọi dòng).
+     * Tiền bồi thường để riêng một cột tham khảo, KHÔNG cộng vào doanh thu.
      */
     private function totals(Collection $orders): array
     {
-        $goods = (int) $orders->sum('total_amount');
-        $compensation = (int) $orders->sum('compensation_amount');
-        $shipping = (int) $orders->sum('shipping_fee');
-
         return [
             'orders' => $orders->count(),
-            'goods' => $goods,
-            'compensation' => $compensation,
-            'shipping' => $shipping,
-            'total' => $goods + $compensation + $shipping,
+            'compensation' => (int) $orders->sum('compensation_amount'),
+            'total' => (int) $orders->sum('total_amount'),
         ];
     }
 
