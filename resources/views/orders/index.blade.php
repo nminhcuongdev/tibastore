@@ -180,7 +180,8 @@
             border: 1px solid #f0d3dc;
             border-radius: 8px;
             box-shadow: 0 18px 45px rgba(117, 44, 69, .08);
-            overflow-x: auto;
+            max-height: 74vh;
+            overflow: auto;
         }
         table {
             border-collapse: collapse;
@@ -199,6 +200,20 @@
             font-size: 13px;
             letter-spacing: .02em;
             text-transform: uppercase;
+        }
+        /* Ghim dong tieu de khi cuon trong khung bang. */
+        thead th {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+        }
+        /* border-collapse an vien duoi cua o ghim, ve lai bang box-shadow. */
+        thead th::after {
+            box-shadow: inset 0 -1px 0 #f0d3dc;
+            content: '';
+            inset: 0;
+            pointer-events: none;
+            position: absolute;
         }
         th a {
             align-items: center;
