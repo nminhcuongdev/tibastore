@@ -128,6 +128,30 @@
             flex-wrap: wrap;
             gap: 10px;
         }
+        .status-checks {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        /* Moi trang thai mot the bam duoc, to dung mau trang thai khi da chon. */
+        .status-check {
+            align-items: center;
+            background: #fff;
+            border: 1px solid #ebc5d2;
+            border-radius: 999px;
+            color: #8b2f4d;
+            cursor: pointer;
+            display: inline-flex;
+            font-size: 13px;
+            font-weight: 800;
+            gap: 7px;
+            padding: 9px 14px;
+            user-select: none;
+        }
+        .status-check:hover { border-color: #c9577d; }
+        .status-check input { accent-color: #be476f; cursor: pointer; margin: 0; }
+        .status-check:has(input:checked) { border-color: transparent; color: #fff; }
+        .status-check:has(input:focus-visible) { box-shadow: 0 0 0 3px rgba(201, 87, 125, .22); }
         select {
             background: #fff;
             border: 1px solid #ebc5d2;
@@ -305,6 +329,8 @@
         .status-da_tra_ve { background: #a85a18; color: #fff; }
         .status-thanh_cong { background: #247857; color: #fff; }
         .status-thanh_cong_thieu { background: #b4233f; color: #fff; }
+        /* Chua chon thi giu nen trang; chi to mau khi da tick. */
+        .status-check:not(:has(input:checked)) { background: #fff; color: #8b2f4d; }
         .pay-coc { background: #f3eef1; color: #6b5560; }
         .pay-thanh_toan_1 { background: #eaf2fd; color: #2f5fa6; }
         .pay-thanh_toan_2 { background: #f6ecfb; color: #7d3aa3; }
@@ -408,7 +434,7 @@
         @php
             // Co bo loc nao dang bat thi mo san, de khong bi loc ma khong biet vi sao.
             $hasActiveFilters = $query !== ''
-                || $status !== ''
+                || $selectedStatuses !== []
                 || collect($filters)->contains(fn ($value) => $value !== null && $value !== '');
         @endphp
         <div class="toolbar">
@@ -451,14 +477,17 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="filter-field">
-                        <label for="status">Trạng thái</label>
-                        <select id="status" name="status">
-                            <option value="">Tất cả trạng thái</option>
+                    <div class="filter-field wide">
+                        <label>Trạng thái <span class="muted">(chọn nhiều được; bỏ trống = tất cả)</span></label>
+                        <div class="status-checks">
                             @foreach ($statuses as $value => $label)
-                                <option value="{{ $value }}" @selected($status === $value)>{{ $label }}</option>
+                                <label class="status-check status-{{ $value }}">
+                                    <input type="checkbox" name="status[]" value="{{ $value }}"
+                                        @checked(in_array($value, $selectedStatuses, true))>
+                                    {{ $label }}
+                                </label>
                             @endforeach
-                        </select>
+                        </div>
                     </div>
                     <div class="filter-field">
                         <label for="pickup_from">Ngày lấy từ</label>

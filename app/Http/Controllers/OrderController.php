@@ -37,7 +37,13 @@ class OrderController extends Controller
         $sort = $request->query('sort', 'updated');
         $direction = $request->query('direction', 'desc');
         $query = trim((string) $request->query('q', ''));
-        $status = (string) $request->query('status', '');
+        // Loc trang thai cho phep chon nhieu; giu tuong thich voi link cu dang ?status=da_gui.
+        $selectedStatuses = collect((array) $request->query('status', []))
+            ->map(fn ($value) => (string) $value)
+            ->filter(fn ($value) => array_key_exists($value, Order::statuses()))
+            ->unique()
+            ->values()
+            ->all();
         $source = (string) $request->query('source', '');
         $orderName = trim((string) $request->query('order_name', ''));
         $closer = trim((string) $request->query('closer', ''));
@@ -56,10 +62,6 @@ class OrderController extends Controller
             $direction = 'desc';
         }
 
-        if (! array_key_exists($status, Order::statuses())) {
-            $status = '';
-        }
-
         if (! array_key_exists($source, Order::sources())) {
             $source = '';
         }
@@ -68,7 +70,7 @@ class OrderController extends Controller
             ->select('orders.*')
             ->with(['product', 'items.product'])
             ->join('products', 'products.id', '=', 'orders.product_id')
-            ->when($status !== '', fn ($builder) => $builder->where('orders.status', $status))
+            ->when($selectedStatuses !== [], fn ($builder) => $builder->whereIn('orders.status', $selectedStatuses))
             ->when($source !== '', fn ($builder) => $builder->where('orders.source', $source))
             ->when($orderName !== '', fn ($builder) => $builder->where('orders.order_name', 'like', "%{$orderName}%"))
             ->when($closer !== '', fn ($builder) => $builder->where('orders.closer_name', $closer))
@@ -106,7 +108,7 @@ class OrderController extends Controller
         return view('orders.index', [
             'orders' => $orders,
             'query' => $query,
-            'status' => $status,
+            'selectedStatuses' => $selectedStatuses,
             'sort' => $sort,
             'direction' => $direction,
             'statuses' => Order::statuses(),
