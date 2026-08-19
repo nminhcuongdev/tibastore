@@ -241,29 +241,32 @@
         }
         .status-form { margin: 0; }
         .status-select {
-            border: 1px solid #f0d3dc;
+            border: 1px solid rgba(0, 0, 0, .14);
             border-radius: 999px;
             cursor: pointer;
             font-size: 13px;
             font-weight: 900;
-            max-width: 180px;
-            min-height: 40px;
-            padding: 8px 10px;
+            min-height: 42px;
+            min-width: 215px;
+            padding: 8px 14px;
+            width: 100%;
         }
+        /* Danh sach xo xuong giu nen sang de van doc duoc tren nen dam. */
+        .status-select option { background: #fff; color: #3f2730; }
         .status-select:focus {
             border-color: #c9577d;
             box-shadow: 0 0 0 3px rgba(201, 87, 125, .16);
             outline: none;
         }
-        .status-chua_cho_size { background: #f3eef1; color: #6b5560; }
-        .status-da_in_file { background: #eaf2fd; color: #2f5fa6; }
-        .status-da_in_giay { background: #eef0fb; color: #45489c; }
-        .status-dang_soan { background: #f6ecfb; color: #7d3aa3; }
-        .status-da_soan_xong { background: #e8f6f4; color: #1f7d6e; }
-        .status-da_gui { background: #fff7d6; color: #8a5a00; }
-        .status-da_tra_ve { background: #ffeede; color: #a85a18; }
-        .status-thanh_cong { background: #e8f7ef; color: #247857; }
-        .status-thanh_cong_thieu { background: #fdecec; color: #b4233f; }
+        .status-chua_cho_size { background: #6b5560; color: #fff; }
+        .status-da_in_file { background: #2f5fa6; color: #fff; }
+        .status-da_in_giay { background: #45489c; color: #fff; }
+        .status-dang_soan { background: #7d3aa3; color: #fff; }
+        .status-da_soan_xong { background: #1f7d6e; color: #fff; }
+        .status-da_gui { background: #8a5a00; color: #fff; }
+        .status-da_tra_ve { background: #a85a18; color: #fff; }
+        .status-thanh_cong { background: #247857; color: #fff; }
+        .status-thanh_cong_thieu { background: #b4233f; color: #fff; }
         .pay-coc { background: #f3eef1; color: #6b5560; }
         .pay-thanh_toan_1 { background: #eaf2fd; color: #2f5fa6; }
         .pay-thanh_toan_2 { background: #f6ecfb; color: #7d3aa3; }
