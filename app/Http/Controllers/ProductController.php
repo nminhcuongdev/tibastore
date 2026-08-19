@@ -421,7 +421,7 @@ class ProductController extends Controller
         }
 
         return redirect()
-            ->route('products.index')
+            ->route('products.show', $product)
             ->with('status', 'Đã cập nhật sản phẩm.');
     }
 
