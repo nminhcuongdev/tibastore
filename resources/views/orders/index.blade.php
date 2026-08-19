@@ -205,7 +205,17 @@
             display: inline-flex;
             gap: 6px;
         }
-        tbody tr:hover { background: #fff9fb; }
+        tbody tr:hover td { box-shadow: inset 0 0 0 100vh rgba(63, 39, 48, .05); }
+        /* Nen dong dong bo voi mau trang thai o cot "Trang thai". */
+        .row-chua_cho_size { background: #f3eef1; }
+        .row-da_in_file { background: #eaf2fd; }
+        .row-da_in_giay { background: #eef0fb; }
+        .row-dang_soan { background: #f6ecfb; }
+        .row-da_soan_xong { background: #e8f6f4; }
+        .row-da_gui { background: #fff7d6; }
+        .row-da_tra_ve { background: #ffeede; }
+        .row-thanh_cong { background: #e8f7ef; }
+        .row-thanh_cong_thieu { background: #fdecec; }
         .code {
             color: #a13b60;
             font-weight: 800;
@@ -442,7 +452,7 @@
                 </thead>
                 <tbody>
                     @forelse ($orders as $order)
-                        <tr>
+                        <tr class="row-{{ $order->statusColorKey() }}">
                             <td class="name">{{ $order->closer_name }}</td>
                             <td>{{ $order->pickup_date?->format('d/m/Y') }}</td>
                             <td>{{ $order->event_date?->format('d/m/Y') }}</td>
