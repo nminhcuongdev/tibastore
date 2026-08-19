@@ -1,4 +1,4 @@
-{{-- Sidebar điều hướng dùng chung. Truyền $active: products | daily-stock | orders | stock | revenue | users --}}
+{{-- Sidebar điều hướng dùng chung. Truyền $active: products | daily-stock | orders | stock | revenue | change-logs | users --}}
 @php $active = $active ?? ''; @endphp
 <style>
     .layout { display: flex; align-items: stretch; min-height: 100vh; }
@@ -141,6 +141,9 @@
         </a>
         <a class="{{ $active === 'revenue' ? 'active' : '' }}" href="{{ route('reports.revenue') }}" title="Báo cáo doanh thu">
             <span class="ico">&#128202;</span><span class="txt">Báo cáo doanh thu</span>
+        </a>
+        <a class="{{ $active === 'change-logs' ? 'active' : '' }}" href="{{ route('change-logs.index') }}" title="Lịch sử thay đổi">
+            <span class="ico">&#128220;</span><span class="txt">Lịch sử thay đổi</span>
         </a>
         @if (auth()->user()?->isAdmin())
             <a class="{{ $active === 'users' ? 'active' : '' }}" href="{{ route('users.index') }}" title="Người dùng">

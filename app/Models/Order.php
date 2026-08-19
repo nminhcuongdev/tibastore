@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsChanges;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Order extends Model
 {
     use HasFactory;
+    use LogsChanges;
 
     protected $fillable = [
         'closer_name',
@@ -53,6 +55,85 @@ class Order extends Model
         'stock_decreased_at' => 'datetime',
         'stock_returned_at' => 'datetime',
     ];
+
+    public function changeLogLabels(): array
+    {
+        return [
+            'closer_name' => 'Người chốt',
+            'phone' => 'Số điện thoại',
+            'address' => 'Địa chỉ',
+            'region' => 'Miền',
+            'carrier' => 'Nhà xe',
+            'pickup_date' => 'Ngày lấy',
+            'event_date' => 'Ngày diễn',
+            'return_date' => 'Ngày trả',
+            'order_name' => 'Tên đơn',
+            'source' => 'Nguồn hàng',
+            'status' => 'Trạng thái',
+            'payment_status' => 'Trạng thái thanh toán',
+            'total_amount' => 'Tổng tiền hàng',
+            'shipping_fee' => 'Tiền ship',
+            'payment_1' => 'Thanh toán lần 1',
+            'payment_2' => 'Thanh toán lần 2',
+            'compensation_amount' => 'Tiền bồi thường',
+            'check_note' => 'Ghi chú kiểm đơn',
+            'items' => 'Danh sách hàng',
+            'stock_decreased_at' => 'Thời điểm trừ kho',
+            'stock_returned_at' => 'Thời điểm hoàn kho',
+        ];
+    }
+
+    public function changeLogIgnored(): array
+    {
+        // Hai cột product_id/quantity chỉ là bản sao của dòng hàng đầu tiên,
+        // đổi theo danh sách hàng nên ghi lại sẽ thành nhiễu trùng lặp.
+        return ['id', 'created_at', 'updated_at', 'product_id', 'quantity',
+            'pickup_reminder_dismissed', 'return_reminder_dismissed'];
+    }
+
+    public function changeLogSubject(): string
+    {
+        return '#' . $this->getKey() . ' - ' . $this->order_name;
+    }
+
+    public function formatChangeLogValue(string $field, $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if ($field === 'status') {
+            return self::statuses()[$value] ?? (string) $value;
+        }
+
+        if ($field === 'payment_status') {
+            return self::paymentStatuses()[$value] ?? (string) $value;
+        }
+
+        if ($field === 'source') {
+            return self::sources()[$value] ?? (string) $value;
+        }
+
+        if ($field === 'region') {
+            return self::regions()[$value] ?? (string) $value;
+        }
+
+        if (in_array($field, ['pickup_date', 'event_date', 'return_date'], true)) {
+            return $value instanceof \Illuminate\Support\Carbon
+                ? $value->format('d/m/Y')
+                : \Illuminate\Support\Carbon::parse($value)->format('d/m/Y');
+        }
+
+        if (in_array($field, ['total_amount', 'shipping_fee', 'payment_1', 'payment_2', 'compensation_amount'], true)) {
+            return number_format((int) $value);
+        }
+
+        if (is_bool($value)) {
+            return $value ? 'Có' : 'Không';
+        }
+
+        return (string) $value;
+    }
 
     public function product(): BelongsTo
     {

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ChangeLogController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrderReminderController;
 use App\Http\Controllers\ProductController;
@@ -48,6 +49,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/stock-import-histories', [StockImportHistoryController::class, 'index'])
         ->name('stock-import-histories.index');
     Route::get('/reports/revenue', [ReportController::class, 'revenue'])->name('reports.revenue');
+    Route::get('/change-logs', [ChangeLogController::class, 'index'])->name('change-logs.index');
 
     Route::middleware('role:admin')->group(function () {
         Route::resource('users', UserController::class)->except(['show']);

@@ -285,10 +285,25 @@ class OrderController extends Controller
 
             $this->inventory->resetAdjustment($lockedOrder);
 
+            // Dòng hàng bị xóa rồi tạo lại nên sự kiện model không bắt được;
+            // so ảnh chụp trước/sau để nhật ký vẫn thấy hàng nào đổi.
+            $itemsBefore = $this->itemsSnapshot($lockedOrder);
+
             $lockedOrder->update($orderData);
             $lockedOrder->items()->delete();
             $lockedOrder->items()->createMany($items);
             $lockedOrder->load('items');
+
+            $itemsAfter = $this->itemsSnapshot($lockedOrder);
+
+            if ($itemsBefore !== $itemsAfter) {
+                $lockedOrder->writeChangeLog('updated', [[
+                    'field' => 'items',
+                    'label' => 'Danh sách hàng',
+                    'old' => $itemsBefore === [] ? null : implode('; ', $itemsBefore),
+                    'new' => $itemsAfter === [] ? null : implode('; ', $itemsAfter),
+                ]]);
+            }
 
             $this->inventory->applyStatusAdjustment($lockedOrder);
         });
@@ -470,6 +485,24 @@ class OrderController extends Controller
         );
 
         return $data;
+    }
+
+    /**
+     * Ảnh chụp dòng hàng dạng đọc được, để so trước/sau khi sửa đơn.
+     */
+    private function itemsSnapshot(Order $order): array
+    {
+        return $order->items
+            ->map(fn ($item) => sprintf(
+                '%s - size %s x%d @%s',
+                $item->product?->code ?? 'N/A',
+                $item->displaySize(),
+                (int) $item->quantity,
+                number_format((int) $item->rental_price)
+            ))
+            ->sort()
+            ->values()
+            ->all();
     }
 
     private function orderData(array $data, array $items): array
