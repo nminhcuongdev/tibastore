@@ -408,6 +408,14 @@
                         <div class="value">{{ $order->address ?: 'N/A' }}</div>
                     </div>
                     <div class="detail">
+                        <div class="label">Miền</div>
+                        <div class="value">{{ $order->regionLabel() ?: 'N/A' }}</div>
+                    </div>
+                    <div class="detail">
+                        <div class="label">Nhà xe</div>
+                        <div class="value">{{ $order->carrier ?: 'N/A' }}</div>
+                    </div>
+                    <div class="detail">
                         <div class="label">Ngày tạo đơn</div>
                         <div class="value">{{ $order->created_at?->format('d/m/Y H:i') }}</div>
                     </div>

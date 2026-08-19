@@ -437,6 +437,23 @@
             </div>
 
             <div class="field">
+                <label for="region">Miền</label>
+                <select id="region" name="region">
+                    <option value="">Chưa xác định</option>
+                    @foreach (\App\Models\Order::regions() as $value => $label)
+                        <option value="{{ $value }}" @selected(old('region', $order->region) === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                @error('region') <div class="error">{{ $message }}</div> @enderror
+            </div>
+
+            <div class="field">
+                <label for="carrier">Nhà xe</label>
+                <input id="carrier" name="carrier" type="text" value="{{ old('carrier', $order->carrier) }}" placeholder="VD: Nhà xe Hải Vân, Phương Trang...">
+                @error('carrier') <div class="error">{{ $message }}</div> @enderror
+            </div>
+
+            <div class="field">
                 <label for="pickup_date">Ngày lấy</label>
                 <input id="pickup_date" name="pickup_date" type="date" value="{{ old('pickup_date', $order->pickup_date?->format('Y-m-d')) }}" required>
                 @error('pickup_date') <div class="error">{{ $message }}</div> @enderror
@@ -1511,6 +1528,7 @@
             return {
                 closer_name: val('closer_name'), order_name: val('order_name'),
                 phone: val('phone'), address: val('address'),
+                region: val('region'), carrier: val('carrier'),
                 pickup_date: val('pickup_date'), event_date: val('event_date'), return_date: val('return_date'),
                 status: val('status'), source: val('source'),
                 shipping_fee: val('shipping_fee'), payment_1: val('payment_1'), payment_2: val('payment_2'),
@@ -1536,6 +1554,7 @@
             const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
             set('closer_name', d.closer_name); set('order_name', d.order_name);
             set('phone', d.phone); set('address', d.address);
+            set('region', d.region); set('carrier', d.carrier);
             set('pickup_date', d.pickup_date); set('event_date', d.event_date); set('return_date', d.return_date);
             set('status', d.status); set('source', d.source);
             set('shipping_fee', d.shipping_fee); set('payment_1', d.payment_1); set('payment_2', d.payment_2);

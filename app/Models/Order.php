@@ -15,6 +15,8 @@ class Order extends Model
         'closer_name',
         'phone',
         'address',
+        'region',
+        'carrier',
         'pickup_date',
         'event_date',
         'return_date',
@@ -78,6 +80,24 @@ class Order extends Model
     public const DEFAULT_PAYMENT_STATUS = 'coc';
 
     public const DEFAULT_SOURCE = 'khm_page';
+
+    /**
+     * Miền của khách — dùng để lọc và thống kê theo khu vực giao nhận.
+     */
+    public static function regions(): array
+    {
+        return [
+            'tinh_mb' => 'Khách tỉnh MB',
+            'tinh_mt' => 'Khách tỉnh MT',
+            'tinh_mn' => 'Khách tỉnh MN',
+            'ha_noi' => 'Khách HN',
+        ];
+    }
+
+    public function regionLabel(): ?string
+    {
+        return $this->region ? (self::regions()[$this->region] ?? $this->region) : null;
+    }
 
     public static function sources(): array
     {

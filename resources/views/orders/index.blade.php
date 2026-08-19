@@ -460,6 +460,23 @@
                         <input id="order_name" name="order_name" type="search" value="{{ $filters['order_name'] }}" placeholder="Dán tên người đặt...">
                     </div>
                     <div class="filter-field">
+                        <label for="phone">Số điện thoại</label>
+                        <input id="phone" name="phone" type="search" value="{{ $filters['phone'] }}" placeholder="VD: 0901234...">
+                    </div>
+                    <div class="filter-field">
+                        <label for="carrier">Nhà xe</label>
+                        <input id="carrier" name="carrier" type="search" value="{{ $filters['carrier'] }}" placeholder="VD: Hải Vân, Phương Trang...">
+                    </div>
+                    <div class="filter-field">
+                        <label for="region">Miền</label>
+                        <select id="region" name="region">
+                            <option value="">Tất cả miền</option>
+                            @foreach ($regions as $value => $label)
+                                <option value="{{ $value }}" @selected($filters['region'] === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="filter-field">
                         <label for="closer">Người chốt</label>
                         <select id="closer" name="closer">
                             <option value="">Tất cả người chốt</option>

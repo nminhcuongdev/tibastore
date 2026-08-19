@@ -47,6 +47,9 @@ class OrderController extends Controller
         $source = (string) $request->query('source', '');
         $orderName = trim((string) $request->query('order_name', ''));
         $closer = trim((string) $request->query('closer', ''));
+        $phone = trim((string) $request->query('phone', ''));
+        $carrier = trim((string) $request->query('carrier', ''));
+        $region = (string) $request->query('region', '');
         $pickupFrom = $this->filterDate($request->query('pickup_from'));
         $pickupTo = $this->filterDate($request->query('pickup_to'));
         $eventFrom = $this->filterDate($request->query('event_from'));
@@ -66,6 +69,10 @@ class OrderController extends Controller
             $source = '';
         }
 
+        if (! array_key_exists($region, Order::regions())) {
+            $region = '';
+        }
+
         $orders = Order::query()
             ->select('orders.*')
             ->with(['product', 'items.product'])
@@ -74,6 +81,9 @@ class OrderController extends Controller
             ->when($source !== '', fn ($builder) => $builder->where('orders.source', $source))
             ->when($orderName !== '', fn ($builder) => $builder->where('orders.order_name', 'like', "%{$orderName}%"))
             ->when($closer !== '', fn ($builder) => $builder->where('orders.closer_name', $closer))
+            ->when($phone !== '', fn ($builder) => $builder->where('orders.phone', 'like', "%{$phone}%"))
+            ->when($carrier !== '', fn ($builder) => $builder->where('orders.carrier', 'like', "%{$carrier}%"))
+            ->when($region !== '', fn ($builder) => $builder->where('orders.region', $region))
             ->when($pickupFrom, fn ($builder) => $builder->whereDate('orders.pickup_date', '>=', $pickupFrom))
             ->when($pickupTo, fn ($builder) => $builder->whereDate('orders.pickup_date', '<=', $pickupTo))
             ->when($eventFrom, fn ($builder) => $builder->whereDate('orders.event_date', '>=', $eventFrom))
@@ -114,11 +124,15 @@ class OrderController extends Controller
             'statuses' => Order::statuses(),
             'paymentStatuses' => Order::paymentStatuses(),
             'sources' => Order::sources(),
+            'regions' => Order::regions(),
             'closers' => $closers,
             'filters' => [
                 'source' => $source,
                 'order_name' => $orderName,
                 'closer' => $closer,
+                'phone' => $phone,
+                'carrier' => $carrier,
+                'region' => $region,
                 'pickup_from' => $pickupFrom,
                 'pickup_to' => $pickupTo,
                 'event_from' => $eventFrom,
@@ -382,6 +396,8 @@ class OrderController extends Controller
             'closer_name' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
             'address' => ['nullable', 'string', 'max:500'],
+            'region' => ['nullable', Rule::in(array_keys(Order::regions()))],
+            'carrier' => ['nullable', 'string', 'max:255'],
             'pickup_date' => ['required', 'date'],
             'event_date' => ['required', 'date', 'after_or_equal:pickup_date'],
             'return_date' => ['required', 'date', 'after_or_equal:event_date'],
@@ -407,6 +423,7 @@ class OrderController extends Controller
             'order_name.required' => 'Vui lòng nhập tên đơn.',
             'source.required' => 'Vui lòng chọn nguồn hàng.',
             'source.in' => 'Nguồn hàng không hợp lệ.',
+            'region.in' => 'Miền không hợp lệ.',
             'status.required' => 'Vui lòng chọn trạng thái.',
             'status.in' => 'Trạng thái không hợp lệ.',
             'shipping_fee.integer' => 'Tiền ship phải là số.',
@@ -463,6 +480,8 @@ class OrderController extends Controller
             'closer_name' => $data['closer_name'],
             'phone' => $data['phone'] ?? null,
             'address' => $data['address'] ?? null,
+            'region' => $data['region'] ?? null,
+            'carrier' => isset($data['carrier']) && trim($data['carrier']) !== '' ? trim($data['carrier']) : null,
             'pickup_date' => $data['pickup_date'],
             'event_date' => $data['event_date'],
             'return_date' => $data['return_date'],
