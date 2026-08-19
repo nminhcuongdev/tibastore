@@ -50,31 +50,6 @@
             background: #be476f;
             color: #fff;
         }
-        .hero {
-            background:
-                linear-gradient(115deg, rgba(255, 255, 255, .93), rgba(255, 232, 241, .8)),
-                url("https://images.unsplash.com/photo-1487412912498-0447578fcca8?auto=format&fit=crop&w=1600&q=80");
-            background-position: center;
-            background-size: cover;
-            border-bottom: 1px solid #f5d9e2;
-            min-height: 240px;
-            padding: 48px clamp(18px, 5vw, 56px);
-        }
-        .hero h1 {
-            color: #6f253f;
-            font-family: Georgia, "Times New Roman", serif;
-            font-size: clamp(34px, 5vw, 58px);
-            line-height: 1.04;
-            margin: 0 0 14px;
-            max-width: 760px;
-        }
-        .hero p {
-            color: #704252;
-            font-size: 17px;
-            line-height: 1.6;
-            margin: 0;
-            max-width: 720px;
-        }
         .content { padding: 28px clamp(18px, 5vw, 56px) 56px; }
         .toolbar {
             align-items: end;
@@ -208,18 +183,15 @@
             .nav a, .logout, .button { justify-content: center; width: 100%; }
         }
     </style>
+    @include('partials.compact')
 </head>
 <body>
 <div class="layout">
 @include('partials.sidebar', ['active' => 'stock'])
 <div class="page">
 
-    <section class="hero">
+<main class="content">
         <h1>Lịch sử nhập kho</h1>
-        <p>Mỗi lần số lượng tồn của sản phẩm được tăng lên, hệ thống sẽ ghi lại số lượng nhập, tồn trước và tồn sau.</p>
-    </section>
-
-    <main class="content">
         <div class="toolbar">
             <form class="search" method="GET" action="{{ route('stock-import-histories.index') }}">
                 <label for="q">Tìm theo mã hàng, tên hàng hoặc size</label>

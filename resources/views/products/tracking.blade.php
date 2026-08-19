@@ -50,29 +50,6 @@
             background: #be476f;
             color: #fff;
         }
-        .hero {
-            background:
-                linear-gradient(115deg, rgba(255, 255, 255, .94), rgba(255, 235, 242, .78)),
-                url("https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1600&q=80");
-            background-position: center;
-            background-size: cover;
-            border-bottom: 1px solid #f5d9e2;
-            padding: 44px clamp(18px, 5vw, 56px);
-        }
-        .hero h1 {
-            color: #6f253f;
-            font-family: Georgia, "Times New Roman", serif;
-            font-size: clamp(34px, 5vw, 56px);
-            line-height: 1.05;
-            margin: 0 0 12px;
-        }
-        .hero p {
-            color: #704252;
-            font-size: 17px;
-            line-height: 1.6;
-            margin: 0;
-            max-width: 720px;
-        }
         .content { padding: 28px clamp(18px, 5vw, 56px) 56px; }
         .summary {
             display: grid;
@@ -397,18 +374,15 @@
             .event-change, .event-stock { text-align: left; }
         }
     </style>
+    @include('partials.compact')
 </head>
 <body>
 <div class="layout">
 @include('partials.sidebar', ['active' => 'products'])
 <div class="page">
 
-    <section class="hero">
+<main class="content">
         <h1>{{ $product->code }} - {{ $product->name }}</h1>
-        <p>Xem các đơn hàng liên quan và biến động tồn kho dự kiến theo thời gian cho từng lần lên đơn, gửi hàng và hoàn tất.</p>
-    </section>
-
-    <main class="content">
         <div class="summary">
             <div class="metric">
                 <div class="metric-label">Tồn hiện tại</div>

@@ -89,8 +89,7 @@
             border: 1px solid #f0d3dc;
             border-radius: 8px;
             box-shadow: 0 18px 45px rgba(117, 44, 69, .08);
-            max-height: 70vh;
-            overflow: auto;
+            overflow-x: auto;
         }
         table { border-collapse: separate; border-spacing: 0; width: 100%; }
         th, td {
@@ -138,6 +137,7 @@
             .table-shell { max-height: none; overflow: visible; }
         }
     </style>
+    @include('partials.compact')
 </head>
 <body>
 <div class="layout">

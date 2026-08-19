@@ -105,7 +105,7 @@ class OrderController extends Controller
             })
             ->orderBy($sortMap[$sort], $direction)
             ->orderBy('orders.id', 'desc')
-            ->paginate(20)
+            ->paginate(25)
             ->withQueryString();
 
         $closers = Order::query()

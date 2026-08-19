@@ -72,34 +72,6 @@
             color: #fff;
         }
 
-        .hero {
-            background:
-                linear-gradient(115deg, rgba(255, 255, 255, .92), rgba(255, 235, 242, .78)),
-                url("https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1600&q=80");
-            background-position: center;
-            background-size: cover;
-            border-bottom: 1px solid #f5d9e2;
-            min-height: 260px;
-            padding: 50px clamp(18px, 5vw, 56px);
-        }
-
-        .hero h1 {
-            color: #6f253f;
-            font-family: Georgia, "Times New Roman", serif;
-            font-size: clamp(34px, 5vw, 58px);
-            line-height: 1.04;
-            margin: 0 0 14px;
-            max-width: 760px;
-        }
-
-        .hero p {
-            color: #704252;
-            font-size: 17px;
-            line-height: 1.6;
-            margin: 0;
-            max-width: 680px;
-        }
-
         .content {
             padding: 28px clamp(18px, 5vw, 56px) 56px;
         }
@@ -478,18 +450,15 @@
             }
         }
     </style>
+    @include('partials.compact')
 </head>
 <body>
 <div class="layout">
 @include('partials.sidebar', ['active' => 'products'])
 <div class="page">
 
-    <section class="hero">
+<main class="content">
         <h1>Quản lí kho hàng thời trang</h1>
-        <p>Theo dõi mã sản phẩm, chất liệu vải, size, số lượng tồn và giá nhập trong một không gian mềm mại như một cửa hàng boutique.</p>
-    </section>
-
-    <main class="content">
         @if (session('status'))
             <div class="status">{{ session('status') }}</div>
         @endif
@@ -710,6 +679,4 @@
 </div>
 </body>
 </html>
-
-
 

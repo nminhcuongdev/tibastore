@@ -50,25 +50,6 @@
             background: #be476f;
             color: #fff;
         }
-        .hero {
-            background: linear-gradient(115deg, rgba(255, 255, 255, .93), rgba(255, 232, 241, .8));
-            border-bottom: 1px solid #f5d9e2;
-            padding: 40px clamp(18px, 5vw, 56px);
-        }
-        .hero h1 {
-            color: #6f253f;
-            font-family: Georgia, "Times New Roman", serif;
-            font-size: clamp(32px, 5vw, 52px);
-            line-height: 1.04;
-            margin: 0 0 12px;
-        }
-        .hero p {
-            color: #704252;
-            font-size: 17px;
-            line-height: 1.6;
-            margin: 0;
-            max-width: 720px;
-        }
         .content { padding: 28px clamp(18px, 5vw, 56px) 56px; }
         .toolbar {
             align-items: end;
@@ -199,18 +180,15 @@
             .nav a, .logout, .button { justify-content: center; width: 100%; }
         }
     </style>
+    @include('partials.compact')
 </head>
 <body>
 <div class="layout">
 @include('partials.sidebar', ['active' => 'users'])
 <div class="page">
 
-    <section class="hero">
+<main class="content">
         <h1>Quản lí người dùng</h1>
-        <p>Tạo tài khoản, phân quyền admin / cộng tác viên và quản lý truy cập hệ thống.</p>
-    </section>
-
-    <main class="content">
         @if (session('status'))
             <div class="status">{{ session('status') }}</div>
         @endif

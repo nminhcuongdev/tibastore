@@ -99,6 +99,7 @@
             .button { justify-content: center; width: 100%; }
         }
     </style>
+    @include('partials.compact')
 </head>
 <body>
 <div class="layout">

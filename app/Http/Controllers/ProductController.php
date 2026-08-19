@@ -180,7 +180,7 @@ class ProductController extends Controller
             ->with('expectedReceipts')
             ->where('code', $product->code)
             ->orderBy($sortMap[$sort], $direction)
-            ->paginate(8)
+            ->paginate(20)
             ->withQueryString();
 
         $totalQuantity = Product::where('code', $product->code)->sum('stock_quantity');
@@ -205,7 +205,7 @@ class ProductController extends Controller
             ->join('order_items', 'order_items.order_id', '=', 'orders.id')
             ->where('order_items.product_id', $product->id)
             ->latest('orders.pickup_date')
-            ->paginate(10)
+            ->paginate(20)
             ->withQueryString();
 
         [$dateFrom, $dateTo] = $this->forecastRange($request);

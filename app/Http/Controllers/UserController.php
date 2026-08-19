@@ -24,7 +24,7 @@ class UserController extends Controller
             })
             ->orderByRaw("CASE WHEN role = ? THEN 0 ELSE 1 END", [User::ROLE_ADMIN])
             ->orderBy('code')
-            ->paginate(10)
+            ->paginate(25)
             ->withQueryString();
 
         return view('users.index', [

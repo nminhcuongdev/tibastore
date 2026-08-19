@@ -24,7 +24,7 @@ class StockImportHistoryController extends Controller
                 });
             })
             ->latest('stock_import_histories.created_at')
-            ->paginate(10)
+            ->paginate(30)
             ->withQueryString();
 
         return view('stock_import_histories.index', [

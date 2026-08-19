@@ -344,6 +344,7 @@
             color: #b4233f;
         }
     </style>
+    @include('partials.compact')
 </head>
 <body>
 <div class="layout">

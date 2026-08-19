@@ -50,31 +50,6 @@
             background: #be476f;
             color: #fff;
         }
-        .hero {
-            background:
-                linear-gradient(115deg, rgba(255, 255, 255, .93), rgba(255, 232, 241, .8)),
-                url("https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=1600&q=80");
-            background-position: center;
-            background-size: cover;
-            border-bottom: 1px solid #f5d9e2;
-            min-height: 250px;
-            padding: 48px clamp(18px, 5vw, 56px);
-        }
-        .hero h1 {
-            color: #6f253f;
-            font-family: Georgia, "Times New Roman", serif;
-            font-size: clamp(34px, 5vw, 58px);
-            line-height: 1.04;
-            margin: 0 0 14px;
-            max-width: 760px;
-        }
-        .hero p {
-            color: #704252;
-            font-size: 17px;
-            line-height: 1.6;
-            margin: 0;
-            max-width: 720px;
-        }
         .content { padding: 28px clamp(18px, 5vw, 56px) 56px; }
         .toolbar {
             display: grid;
@@ -227,8 +202,7 @@
             border: 1px solid #f0d3dc;
             border-radius: 8px;
             box-shadow: 0 18px 45px rgba(117, 44, 69, .08);
-            max-height: 74vh;
-            overflow: auto;
+            overflow-x: auto;
         }
         table {
             border-collapse: collapse;
@@ -405,18 +379,15 @@
             .nav a, .logout, .button { justify-content: center; width: 100%; }
         }
     </style>
+    @include('partials.compact')
 </head>
 <body>
 <div class="layout">
 @include('partials.sidebar', ['active' => 'orders'])
 <div class="page">
 
-    <section class="hero">
+<main class="content">
         <h1>Quản lí lên đơn hàng</h1>
-        <p>Theo dõi người chốt, lịch lấy - diễn - trả và mã hàng từ kho để xử lý từng đơn thật gọn gàng.</p>
-    </section>
-
-    <main class="content">
         @if (session('status'))
             <div class="status">{{ session('status') }}</div>
         @endif
@@ -710,5 +681,4 @@
 </div>
 </body>
 </html>
-
 

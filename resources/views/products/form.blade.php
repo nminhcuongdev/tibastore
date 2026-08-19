@@ -349,6 +349,7 @@
             }
         }
     </style>
+    @include('partials.compact')
 </head>
 <body>
 <div class="layout">

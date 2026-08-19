@@ -66,8 +66,7 @@
             border: 1px solid #f0d3dc;
             border-radius: 8px;
             box-shadow: 0 18px 45px rgba(117, 44, 69, .08);
-            max-height: 78vh;
-            overflow: auto;
+            overflow-x: auto;
         }
         table { border-collapse: separate; border-spacing: 0; width: 100%; }
         th, td { border-bottom: 1px solid #f7e3e9; border-right: 1px solid #f7e3e9; padding: 8px 10px; text-align: center; white-space: nowrap; }
@@ -144,6 +143,7 @@
         }
         .empty { color: #8b6672; padding: 36px; text-align: center; }
     </style>
+    @include('partials.compact')
 </head>
 <body>
 <div class="layout">
