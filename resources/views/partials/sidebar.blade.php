@@ -1,4 +1,4 @@
-{{-- Sidebar điều hướng dùng chung. Truyền $active: products | daily-stock | orders | stock | users --}}
+{{-- Sidebar điều hướng dùng chung. Truyền $active: products | daily-stock | orders | stock | revenue | users --}}
 @php $active = $active ?? ''; @endphp
 <style>
     .layout { display: flex; align-items: stretch; min-height: 100vh; }
@@ -79,6 +79,7 @@
         <a class="{{ $active === 'daily-stock' ? 'active' : '' }}" href="{{ route('products.daily-stock') }}">Tồn kho theo ngày</a>
         <a class="{{ $active === 'orders' ? 'active' : '' }}" href="{{ route('orders.index') }}">Đơn hàng</a>
         <a class="{{ $active === 'stock' ? 'active' : '' }}" href="{{ route('stock-import-histories.index') }}">Lịch sử nhập</a>
+        <a class="{{ $active === 'revenue' ? 'active' : '' }}" href="{{ route('reports.revenue') }}">Báo cáo doanh thu</a>
         @if (auth()->user()?->isAdmin())
             <a class="{{ $active === 'users' ? 'active' : '' }}" href="{{ route('users.index') }}">Người dùng</a>
         @endif
