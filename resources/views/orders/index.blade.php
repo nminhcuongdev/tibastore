@@ -586,6 +586,9 @@
                                         // Cho modal xac nhan doi trang thai tinh truoc thay doi ton.
                                         'size_pending' => (bool) $item->size_pending,
                                         'stock' => (int) ($item->product?->stock_quantity ?? 0),
+                                        'image' => $item->product?->image_path
+                                            ? asset('storage/' . $item->product->image_path)
+                                            : null,
                                     ])->values();
                                 @endphp
                                 <form method="POST" action="{{ route('orders.status', $order) }}" class="status-form">

@@ -17,7 +17,7 @@
         border-radius: 12px;
         box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
         max-height: 88vh;
-        max-width: 560px;
+        max-width: 640px;
         overflow-y: auto;
         padding: 24px;
         width: 100%;
@@ -46,7 +46,61 @@
         justify-content: space-between;
         padding: 12px 14px;
     }
+    .check-item__main { align-items: center; display: flex; gap: 10px; min-width: 0; }
     .check-item__label { color: #3f2730; font-weight: 800; }
+    .check-thumb {
+        align-items: center;
+        background: #f9e5ec;
+        border: 1px solid #f1cbd7;
+        border-radius: 8px;
+        color: #a64465;
+        cursor: default;
+        display: flex;
+        flex: 0 0 auto;
+        font-family: inherit;
+        font-size: 9px;
+        font-weight: 800;
+        height: 52px;
+        justify-content: center;
+        overflow: hidden;
+        padding: 0;
+        position: relative;
+        text-align: center;
+        width: 52px;
+    }
+    .check-thumb.has-image { cursor: zoom-in; }
+    .check-thumb img { height: 100%; object-fit: cover; transition: transform .18s ease; width: 100%; }
+    .check-thumb.has-image:hover,
+    .check-thumb.has-image:focus {
+        border-color: #c9577d;
+        box-shadow: 0 10px 24px rgba(117, 44, 69, .18);
+        outline: none;
+        overflow: visible;
+        z-index: 20;
+    }
+    .check-thumb.has-image:hover img,
+    .check-thumb.has-image:focus img { border-radius: 8px; transform: scale(2.4); }
+    .check-lightbox {
+        align-items: center;
+        background: rgba(63, 39, 48, .82);
+        cursor: zoom-out;
+        display: none;
+        inset: 0;
+        justify-content: center;
+        padding: 24px;
+        position: fixed;
+        z-index: 1200;
+    }
+    .check-lightbox.is-open { display: flex; }
+    .check-lightbox img {
+        background: #fff;
+        border: 8px solid #fff;
+        border-radius: 8px;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
+        max-height: min(82vh, 760px);
+        max-width: min(88vw, 760px);
+        object-fit: contain;
+    }
     .check-item__qty { align-items: center; display: flex; gap: 10px; }
     .check-item__qty span { color: #8b6672; font-size: 13px; font-weight: 700; }
     .check-item__qty input {
@@ -98,6 +152,10 @@
     </div>
 </div>
 
+<div class="check-lightbox" data-check-lightbox aria-hidden="true">
+    <img data-check-lightbox-image src="" alt="">
+</div>
+
 <script>
     (function () {
         const CHECKED_STATUS = @json(Order::CHECKED_STATUS);
@@ -109,7 +167,47 @@
         const orderNameEl = modal.querySelector('[data-check-order-name]');
         const noteEl = modal.querySelector('[name="check_note"]');
         const compensationEl = modal.querySelector('[data-check-compensation]');
+        const lightbox = document.querySelector('[data-check-lightbox]');
+        const lightboxImage = document.querySelector('[data-check-lightbox-image]');
         let activeSelect = null;
+
+        function openLightbox(url, alt) {
+            lightboxImage.src = url;
+            lightboxImage.alt = alt || 'Ảnh sản phẩm';
+            lightbox.classList.add('is-open');
+            lightbox.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeLightbox() {
+            lightbox.classList.remove('is-open');
+            lightbox.setAttribute('aria-hidden', 'true');
+            lightboxImage.src = '';
+        }
+
+        // Rê chuột phóng to tại chỗ, bấm mở ảnh lớn — giống bên kho hàng.
+        function buildThumb(it) {
+            if (!it.image) {
+                const empty = document.createElement('div');
+                empty.className = 'check-thumb';
+                empty.textContent = 'CHƯA CÓ ẢNH';
+                return empty;
+            }
+
+            const alt = it.code + ' - size ' + it.size + (it.name ? ' · ' + it.name : '');
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'check-thumb has-image';
+            button.setAttribute('aria-label', 'Phóng to ảnh ' + alt);
+
+            const img = document.createElement('img');
+            img.src = it.image;
+            img.alt = alt;
+
+            button.appendChild(img);
+            button.addEventListener('click', function () { openLightbox(it.image, alt); });
+
+            return button;
+        }
 
         function openModal(select) {
             activeSelect = select;
@@ -126,9 +224,15 @@
                 const row = document.createElement('div');
                 row.className = 'check-item';
 
+                const main = document.createElement('div');
+                main.className = 'check-item__main';
+
                 const label = document.createElement('div');
                 label.className = 'check-item__label';
                 label.textContent = it.code + ' - Size ' + it.size + (it.name ? ' · ' + it.name : '');
+
+                main.appendChild(buildThumb(it));
+                main.appendChild(label);
 
                 const qty = document.createElement('div');
                 qty.className = 'check-item__qty';
@@ -163,7 +267,7 @@
 
                 qty.appendChild(info);
                 qty.appendChild(input);
-                row.appendChild(label);
+                row.appendChild(main);
                 row.appendChild(qty);
                 itemsBox.appendChild(row);
             });
@@ -175,6 +279,7 @@
         function closeModal(revert) {
             modal.classList.remove('is-open');
             modal.setAttribute('aria-hidden', 'true');
+            closeLightbox();
             if (revert && activeSelect) {
                 activeSelect.value = activeSelect.dataset.current;
             }
@@ -202,8 +307,18 @@
 
         modal.querySelector('[data-check-cancel]').addEventListener('click', function () { closeModal(true); });
         modal.addEventListener('click', function (event) { if (event.target === modal) closeModal(true); });
+        lightbox.addEventListener('click', closeLightbox);
+
         document.addEventListener('keydown', function (event) {
-            if (event.key === 'Escape' && modal.classList.contains('is-open')) closeModal(true);
+            if (event.key !== 'Escape') return;
+
+            // Đang xem ảnh lớn thì Esc chỉ đóng ảnh, giữ nguyên modal bên dưới.
+            if (lightbox.classList.contains('is-open')) {
+                closeLightbox();
+                return;
+            }
+
+            if (modal.classList.contains('is-open')) closeModal(true);
         });
     })();
 </script>
