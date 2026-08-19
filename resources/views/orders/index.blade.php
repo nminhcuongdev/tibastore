@@ -463,6 +463,9 @@
                                                 'name' => $group->first()->product?->name ?? '',
                                                 'size' => $group->first()->displaySize(),
                                                 'quantity' => (int) $group->sum('quantity'),
+                                                'image' => $group->first()->product?->image_path
+                                                    ? asset('storage/' . $group->first()->product->image_path)
+                                                    : null,
                                             ])
                                             ->values()
                                         : collect([[
@@ -470,6 +473,9 @@
                                             'name' => $order->product?->name ?? '',
                                             'size' => $order->product?->size ?? 'N/A',
                                             'quantity' => (int) $order->quantity,
+                                            'image' => $order->product?->image_path
+                                                ? asset('storage/' . $order->product->image_path)
+                                                : null,
                                         ]]);
                                 @endphp
                                 <button type="button" class="button secondary view-codes"
