@@ -97,6 +97,51 @@
         .cell-low { background: #fff7d6; color: #8a5a00; }
         .cell-out { background: #ffe1e1; color: #b4233f; }
         td.today, thead th.today { box-shadow: inset 2px 0 0 #be476f, inset -2px 0 0 #be476f; }
+        .prod-cell { align-items: center; display: flex; gap: 10px; }
+        .prod-info { min-width: 0; }
+        .thumb {
+            align-items: center;
+            background: #f9e5ec;
+            border: 1px solid #f1cbd7;
+            border-radius: 8px;
+            color: #a64465;
+            cursor: default;
+            display: flex;
+            flex: 0 0 auto;
+            font-family: inherit;
+            font-size: 10px;
+            font-weight: 800;
+            height: 52px;
+            justify-content: center;
+            overflow: hidden;
+            padding: 0;
+            text-align: center;
+            width: 52px;
+        }
+        .thumb.has-image { cursor: zoom-in; }
+        .thumb.has-image:focus { border-color: #c9577d; outline: none; box-shadow: 0 0 0 3px rgba(201, 87, 125, .16); }
+        .thumb img { height: 100%; object-fit: cover; width: 100%; }
+        .image-lightbox {
+            align-items: center;
+            background: rgba(63, 39, 48, .72);
+            cursor: zoom-out;
+            display: none;
+            inset: 0;
+            justify-content: center;
+            padding: 24px;
+            position: fixed;
+            z-index: 1000;
+        }
+        .image-lightbox.is-open { display: flex; }
+        .image-lightbox img {
+            background: #fff;
+            border: 8px solid #fff;
+            border-radius: 8px;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
+            max-height: min(82vh, 760px);
+            max-width: min(88vw, 760px);
+            object-fit: contain;
+        }
         .empty { color: #8b6672; padding: 36px; text-align: center; }
     </style>
 </head>
@@ -150,8 +195,19 @@
                 @forelse ($products as $product)
                     <tr>
                         <td class="prod">
-                            <div><span class="code">{{ $product->code }}</span> — size {{ $product->size }}</div>
-                            <div class="muted">{{ $product->name }} · tồn hiện tại: {{ number_format($product->stock_quantity) }}</div>
+                            <div class="prod-cell">
+                                @if ($product->image_path)
+                                    <button class="thumb has-image" type="button" data-full-image="{{ asset('storage/' . $product->image_path) }}" aria-label="Phóng to ảnh {{ $product->name }}">
+                                        <img src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $product->name }}">
+                                    </button>
+                                @else
+                                    <div class="thumb">CHƯA CÓ ẢNH</div>
+                                @endif
+                                <div class="prod-info">
+                                    <div><span class="code">{{ $product->code }}</span> — size {{ $product->size }}</div>
+                                    <div class="muted">{{ $product->name }} · tồn hiện tại: {{ number_format($product->stock_quantity) }}</div>
+                                </div>
+                            </div>
                         </td>
                         @foreach ($dates as $date)
                             @php
@@ -172,5 +228,35 @@
     </div>
 </main>
 </div>
+<div class="image-lightbox" data-image-lightbox aria-hidden="true">
+    <img data-lightbox-image src="" alt="">
+</div>
+<script>
+    const lightbox = document.querySelector('[data-image-lightbox]');
+    const lightboxImage = document.querySelector('[data-lightbox-image]');
+
+    document.querySelectorAll('[data-full-image]').forEach(button => {
+        button.addEventListener('click', () => {
+            lightboxImage.src = button.dataset.fullImage;
+            lightboxImage.alt = button.querySelector('img')?.alt || 'Ảnh sản phẩm';
+            lightbox.classList.add('is-open');
+            lightbox.setAttribute('aria-hidden', 'false');
+        });
+    });
+
+    function closeLightbox() {
+        lightbox.classList.remove('is-open');
+        lightbox.setAttribute('aria-hidden', 'true');
+        lightboxImage.src = '';
+    }
+
+    lightbox.addEventListener('click', closeLightbox);
+
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && lightbox.classList.contains('is-open')) {
+            closeLightbox();
+        }
+    });
+</script>
 </body>
 </html>

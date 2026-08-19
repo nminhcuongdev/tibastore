@@ -242,7 +242,7 @@ class ProductController extends Controller
             })
             ->orderBy('code')
             ->orderBy('size')
-            ->get(['id', 'code', 'name', 'size', 'stock_quantity']);
+            ->get(['id', 'code', 'name', 'size', 'stock_quantity', 'image_path']);
 
         $availability = $this->inventory->dailyAvailability(
             $products->pluck('id')->all(),
