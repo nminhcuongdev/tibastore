@@ -210,17 +210,9 @@
             color: #a13b60;
             font-weight: 800;
         }
-        .product-codes {
-            display: grid;
-            gap: 6px;
-        }
-        .product-code-line {
-            line-height: 1.45;
-        }
-        .size-qty {
-            color: #8b6672;
-            font-size: 13px;
-            font-weight: 600;
+        .view-codes {
+            min-height: 36px;
+            padding: 8px 16px;
         }
         .name {
             color: #3f2730;
@@ -460,24 +452,29 @@
                                 <div class="muted">Tạo: {{ $order->created_at?->format('d/m/Y') }}</div>
                             </td>
                             <td>
-                                <div class="product-codes">
-                                    @forelse ($order->items->groupBy(fn ($item) => $item->product?->code ?? 'N/A') as $code => $items)
-                                        <div class="product-code-line">
-                                            <span class="code">{{ $code }}</span>
-                                            <span class="size-qty">
-                                                -
-                                                @foreach ($items->groupBy(fn ($item) => $item->displaySize()) as $size => $sizeItems)
-                                                    {{ $size === 'Chưa chốt' ? $size : 'Size ' . $size }}: {{ number_format($sizeItems->sum('quantity')) }}@if (! $loop->last), @endif
-                                                @endforeach
-                                            </span>
-                                        </div>
-                                    @empty
-                                        <div class="product-code-line">
-                                            <span class="code">{{ $order->product->code }}</span>
-                                            <span class="size-qty">- Size {{ $order->product->size }}: {{ number_format($order->quantity) }}</span>
-                                        </div>
-                                    @endforelse
-                                </div>
+                                @php
+                                    // Gộp theo mã + size: cùng mã-size ở nhiều dòng giá khác nhau
+                                    // vẫn hiện một dòng với tổng số lượng.
+                                    $codeRows = $order->items->isNotEmpty()
+                                        ? $order->items
+                                            ->groupBy(fn ($item) => ($item->product?->code ?? 'N/A') . '|' . $item->displaySize())
+                                            ->map(fn ($group) => [
+                                                'code' => $group->first()->product?->code ?? 'N/A',
+                                                'name' => $group->first()->product?->name ?? '',
+                                                'size' => $group->first()->displaySize(),
+                                                'quantity' => (int) $group->sum('quantity'),
+                                            ])
+                                            ->values()
+                                        : collect([[
+                                            'code' => $order->product?->code ?? 'N/A',
+                                            'name' => $order->product?->name ?? '',
+                                            'size' => $order->product?->size ?? 'N/A',
+                                            'quantity' => (int) $order->quantity,
+                                        ]]);
+                                @endphp
+                                <button type="button" class="button secondary view-codes"
+                                    data-codes="{{ json_encode($codeRows, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}"
+                                    data-order-name="{{ $order->order_name }}">Xem</button>
                             </td>
                             <td>{{ number_format($order->items->sum('quantity') ?: $order->quantity) }}</td>
                             <td>
@@ -563,6 +560,7 @@
             </nav>
         @endif
     </main>
+    @include('orders.codes-modal')
     @include('orders.check-modal')
     @include('orders.reminders-popup')
     </div>
