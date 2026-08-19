@@ -371,6 +371,13 @@
         @if (session('status'))
             <div class="status">{{ session('status') }}</div>
         @endif
+        @if ($errors->any())
+            <div class="status is-error">
+                @foreach ($errors->all() as $message)
+                    <div>{{ $message }}</div>
+                @endforeach
+            </div>
+        @endif
         @if (session('error'))
             <div class="status is-error">{{ session('error') }}</div>
         @endif
@@ -520,6 +527,9 @@
                                         'name' => $item->product?->name ?? '',
                                         'quantity' => (int) $item->quantity,
                                         'returned' => $item->returned_quantity ?? (int) $item->quantity,
+                                        // Cho modal xac nhan doi trang thai tinh truoc thay doi ton.
+                                        'size_pending' => (bool) $item->size_pending,
+                                        'stock' => (int) ($item->product?->stock_quantity ?? 0),
                                     ])->values();
                                 @endphp
                                 <form method="POST" action="{{ route('orders.status', $order) }}" class="status-form">
@@ -527,6 +537,7 @@
                                     @method('PATCH')
                                     <select name="status" class="status-select status-{{ $order->statusColorKey() }}"
                                         data-current="{{ $order->status }}"
+                                        data-currently-out="{{ $order->stock_decreased_at && ! $order->stock_returned_at ? '1' : '0' }}"
                                         data-order-name="{{ $order->order_name }}"
                                         data-check-url="{{ route('orders.status', $order) }}"
                                         data-check-note="{{ $order->check_note }}"
@@ -595,6 +606,7 @@
         @endif
     </main>
     @include('orders.codes-modal')
+    @include('orders.status-confirm-modal')
     @include('orders.check-modal')
     @include('orders.reminders-popup')
     </div>

@@ -186,9 +186,17 @@
                 if (this.value === CHECKED_STATUS) {
                     event.preventDefault();
                     openModal(this);
-                } else {
-                    this.form.submit();
+                    return;
                 }
+
+                // Cac trang thai con lai di qua modal xac nhan (neu trang co nhung).
+                if (typeof window.openStatusConfirm === 'function') {
+                    event.preventDefault();
+                    window.openStatusConfirm(this);
+                    return;
+                }
+
+                this.form.submit();
             });
         });
 

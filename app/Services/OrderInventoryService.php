@@ -464,8 +464,9 @@ class OrderInventoryService
         $product = Product::whereKey($productId)->lockForUpdate()->firstOrFail();
 
         if ($product->stock_quantity < $quantity) {
+            // Ghi ro ma - size - con bao nhieu, de biet duong xu ly thay vi doan.
             throw ValidationException::withMessages([
-                'items' => 'Số lượng đơn hàng vượt quá tồn kho hiện tại.',
+                'items' => "Mã {$product->code} - size {$product->size}: cần {$quantity} nhưng tồn kho hiện chỉ còn {$product->stock_quantity}.",
             ]);
         }
 
