@@ -75,7 +75,9 @@ class OrderController extends Controller
 
         $orders = Order::query()
             ->select('orders.*')
-            ->with(['product', 'items.product'])
+            // Chi con can so luong dong hang de tinh tong va kiem thieu; du lieu
+            // chi tiet cua modal da chuyen sang lay rieng khi mo.
+            ->with(['items:id,order_id,quantity,returned_quantity'])
             ->join('products', 'products.id', '=', 'orders.product_id')
             ->when($selectedStatuses !== [], fn ($builder) => $builder->whereIn('orders.status', $selectedStatuses))
             ->when($source !== '', fn ($builder) => $builder->where('orders.source', $source))
@@ -236,6 +238,68 @@ class OrderController extends Controller
         return redirect()
             ->route('orders.show', $order)
             ->with('status', 'Đã tạo đơn hàng.');
+    }
+
+    /**
+     * Dữ liệu cho các modal của một đơn (danh sách mã-size, kiểm đơn, xác nhận
+     * đổi trạng thái). Trước đây nhúng sẵn vào từng dòng bảng dưới dạng JSON,
+     * làm HTML danh sách phình rất to dù phần lớn không bao giờ được mở.
+     */
+    public function modalData(Order $order): JsonResponse
+    {
+        $order->load('items.product');
+
+        $items = $order->items->map(fn ($item) => [
+            'id' => $item->id,
+            'code' => $item->product?->code ?? 'N/A',
+            'size' => $item->displaySize(),
+            'name' => $item->product?->name ?? '',
+            'quantity' => (int) $item->quantity,
+            'returned' => $item->returned_quantity ?? (int) $item->quantity,
+            'size_pending' => (bool) $item->size_pending,
+            'stock' => (int) ($item->product?->stock_quantity ?? 0),
+            'rental_price' => (int) $item->rental_price,
+            'image' => $item->product?->image_path
+                ? asset('storage/' . $item->product->image_path)
+                : null,
+        ])->values();
+
+        // Gộp theo mã + size cho modal "Xem": cùng mã-size ở nhiều mức giá
+        // vẫn hiện một dòng với tổng số lượng.
+        $codes = $order->items
+            ->groupBy(fn ($item) => ($item->product?->code ?? 'N/A') . '|' . $item->displaySize())
+            ->map(fn ($group) => [
+                'code' => $group->first()->product?->code ?? 'N/A',
+                'name' => $group->first()->product?->name ?? '',
+                'size' => $group->first()->displaySize(),
+                'quantity' => (int) $group->sum('quantity'),
+                'image' => $group->first()->product?->image_path
+                    ? asset('storage/' . $group->first()->product->image_path)
+                    : null,
+            ])
+            ->values();
+
+        // Đơn cũ chưa có dòng hàng thì lấy tạm sản phẩm gắn trực tiếp trên đơn.
+        if ($codes->isEmpty() && $order->product) {
+            $codes = collect([[
+                'code' => $order->product->code,
+                'name' => $order->product->name,
+                'size' => $order->product->size,
+                'quantity' => (int) $order->quantity,
+                'image' => $order->product->image_path
+                    ? asset('storage/' . $order->product->image_path)
+                    : null,
+            ]]);
+        }
+
+        return response()->json([
+            'order_name' => $order->order_name,
+            'check_note' => $order->check_note,
+            'compensation_amount' => (int) $order->compensation_amount,
+            'currently_out' => $order->stock_decreased_at !== null && $order->stock_returned_at === null,
+            'items' => $items,
+            'codes' => $codes,
+        ]);
     }
 
     public function show(Order $order): View

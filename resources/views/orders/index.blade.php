@@ -543,54 +543,12 @@
                                 <div class="muted">Tạo: {{ $order->created_at?->format('d/m/Y') }}</div>
                             </td>
                             <td>
-                                @php
-                                    // Gộp theo mã + size: cùng mã-size ở nhiều dòng giá khác nhau
-                                    // vẫn hiện một dòng với tổng số lượng.
-                                    $codeRows = $order->items->isNotEmpty()
-                                        ? $order->items
-                                            ->groupBy(fn ($item) => ($item->product?->code ?? 'N/A') . '|' . $item->displaySize())
-                                            ->map(fn ($group) => [
-                                                'code' => $group->first()->product?->code ?? 'N/A',
-                                                'name' => $group->first()->product?->name ?? '',
-                                                'size' => $group->first()->displaySize(),
-                                                'quantity' => (int) $group->sum('quantity'),
-                                                'image' => $group->first()->product?->image_path
-                                                    ? asset('storage/' . $group->first()->product->image_path)
-                                                    : null,
-                                            ])
-                                            ->values()
-                                        : collect([[
-                                            'code' => $order->product?->code ?? 'N/A',
-                                            'name' => $order->product?->name ?? '',
-                                            'size' => $order->product?->size ?? 'N/A',
-                                            'quantity' => (int) $order->quantity,
-                                            'image' => $order->product?->image_path
-                                                ? asset('storage/' . $order->product->image_path)
-                                                : null,
-                                        ]]);
-                                @endphp
                                 <button type="button" class="button secondary view-codes"
-                                    data-codes="{{ json_encode($codeRows, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}"
+                                    data-order-id="{{ $order->id }}"
                                     data-order-name="{{ $order->order_name }}">Xem</button>
                             </td>
                             <td>{{ number_format($order->items->sum('quantity') ?: $order->quantity) }}</td>
                             <td>
-                                @php
-                                    $checkItems = $order->items->map(fn ($item) => [
-                                        'id' => $item->id,
-                                        'code' => $item->product?->code ?? 'N/A',
-                                        'size' => $item->displaySize(),
-                                        'name' => $item->product?->name ?? '',
-                                        'quantity' => (int) $item->quantity,
-                                        'returned' => $item->returned_quantity ?? (int) $item->quantity,
-                                        // Cho modal xac nhan doi trang thai tinh truoc thay doi ton.
-                                        'size_pending' => (bool) $item->size_pending,
-                                        'stock' => (int) ($item->product?->stock_quantity ?? 0),
-                                        'image' => $item->product?->image_path
-                                            ? asset('storage/' . $item->product->image_path)
-                                            : null,
-                                    ])->values();
-                                @endphp
                                 <form method="POST" action="{{ route('orders.status', $order) }}" class="status-form">
                                     @csrf
                                     @method('PATCH')
@@ -599,9 +557,7 @@
                                         data-currently-out="{{ $order->stock_decreased_at && ! $order->stock_returned_at ? '1' : '0' }}"
                                         data-order-name="{{ $order->order_name }}"
                                         data-check-url="{{ route('orders.status', $order) }}"
-                                        data-check-note="{{ $order->check_note }}"
-                                        data-compensation="{{ $order->compensation_amount }}"
-                                        data-items="{{ json_encode($checkItems, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}"
+                                        data-order-id="{{ $order->id }}"
                                         aria-label="Cập nhật trạng thái đơn">
                                         @foreach ($statuses as $value => $label)
                                             <option value="{{ $value }}" @selected($order->status === $value)>{{ $label }}</option>
@@ -636,6 +592,15 @@
         </div>
 
         @if ($orders->hasPages())
+            {{-- Trinh duyet tai san trang ke trong luc dang doc trang hien tai,
+                 nen bam sang la hien gan nhu tuc thi. Khong doi kien truc gi. --}}
+            @if ($orders->hasMorePages())
+                <link rel="prefetch" href="{{ $orders->nextPageUrl() }}" as="document">
+            @endif
+            @if (! $orders->onFirstPage())
+                <link rel="prefetch" href="{{ $orders->previousPageUrl() }}" as="document">
+            @endif
+
             <nav class="pagination" aria-label="Phân trang">
                 <div class="muted">
                     Hiển thị {{ $orders->firstItem() }}-{{ $orders->lastItem() }} trong {{ $orders->total() }} đơn hàng
@@ -676,6 +641,7 @@
             });
         })();
     </script>
+    @include('orders.modal-data')
     @include('orders.codes-modal')
     @include('orders.status-confirm-modal')
     @include('orders.check-modal')

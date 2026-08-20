@@ -213,12 +213,24 @@
             activeSelect = select;
             form.setAttribute('action', select.dataset.checkUrl || select.form.getAttribute('action'));
             orderNameEl.textContent = select.dataset.orderName || '';
-            noteEl.value = select.dataset.checkNote || '';
-            compensationEl.value = select.dataset.compensation || '0';
+            itemsBox.innerHTML = '<div class="check-modal__hint">Đang tải danh sách hàng...</div>';
 
-            let items = [];
-            try { items = JSON.parse(select.dataset.items || '[]'); } catch (e) { items = []; }
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
 
+            window.loadOrderModalData(select.dataset.orderId)
+                .then(function (data) {
+                    if (activeSelect !== select) return;
+                    noteEl.value = data.check_note || '';
+                    compensationEl.value = String(data.compensation_amount || 0);
+                    renderItems(data.items || []);
+                })
+                .catch(function () {
+                    itemsBox.innerHTML = '<div class="check-modal__hint">Không tải được danh sách hàng. Vui lòng đóng và thử lại.</div>';
+                });
+        }
+
+        function renderItems(items) {
             itemsBox.innerHTML = '';
             items.forEach(function (it) {
                 const row = document.createElement('div');
@@ -271,9 +283,6 @@
                 row.appendChild(qty);
                 itemsBox.appendChild(row);
             });
-
-            modal.classList.add('is-open');
-            modal.setAttribute('aria-hidden', 'false');
         }
 
         function closeModal(revert) {

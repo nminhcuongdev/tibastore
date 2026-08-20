@@ -2,8 +2,6 @@
 
 namespace App\Providers;
 
-use App\Services\OrderInventoryService;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -26,6 +24,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        // Truoc day composer nay con goi syncDueOrders(), trong khi cac controller
+        // tuong ung cung da goi -> moi lan mo trang chay hai lan. Viec dong bo nay
+        // gio thuoc ve controller, composer chi con cap bien cho view.
         View::composer([
             'products.index',
             'products.show',
@@ -34,10 +35,6 @@ class AppServiceProvider extends ServiceProvider
             'orders.show',
             'stock_import_histories.index',
         ], function ($view) {
-            if (Auth::check()) {
-                app(OrderInventoryService::class)->syncDueOrders();
-            }
-
             $view->with('orderReminders', collect());
         });
     }

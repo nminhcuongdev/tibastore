@@ -156,9 +156,8 @@
         function openConfirm(select) {
             activeSelect = select;
 
-            const nextStatus = select.value;
             const currentStatus = select.dataset.current;
-            const direction = stockDirection(select, nextStatus);
+            const nextStatus = select.value;
 
             orderEl.textContent = select.dataset.orderName || '';
             fromEl.textContent = STATUS_LABELS[currentStatus] || currentStatus;
@@ -166,8 +165,27 @@
             toEl.textContent = STATUS_LABELS[nextStatus] || nextStatus;
             toEl.className = 'sconfirm__chip status-' + nextStatus;
 
-            let items = [];
-            try { items = JSON.parse(select.dataset.items || '[]'); } catch (e) { items = []; }
+            effectEl.className = 'sconfirm__effect is-none';
+            effectEl.textContent = 'Đang tính thay đổi tồn kho...';
+            tableShell.style.display = 'none';
+            bodyEl.innerHTML = '';
+            alertEl.style.display = 'none';
+            noteEl.textContent = '';
+            openModal();
+
+            window.loadOrderModalData(select.dataset.orderId)
+                .then(function (data) {
+                    if (activeSelect !== select) return;
+                    renderImpact(select, nextStatus, data.items || []);
+                })
+                .catch(function () {
+                    effectEl.className = 'sconfirm__effect is-none';
+                    effectEl.textContent = 'Không tải được dữ liệu đơn. Vui lòng đóng và thử lại.';
+                });
+        }
+
+        function renderImpact(select, nextStatus, items) {
+            const direction = stockDirection(select, nextStatus);
 
             // Dong "chua chot size" khong giu kho nen khong tinh vao thay doi ton.
             const affected = items.filter(function (it) { return !it.size_pending; });
@@ -181,7 +199,6 @@
                 effectEl.textContent = 'Tồn kho không thay đổi — chỉ đổi trạng thái đơn.';
                 tableShell.style.display = 'none';
                 noteEl.textContent = '';
-                openModal();
                 return;
             }
 
@@ -235,8 +252,6 @@
             noteEl.textContent = direction < 0
                 ? 'Số lượng trên là toàn bộ hàng của đơn. Nếu sau này đơn được kiểm thiếu, phần hoàn lại kho sẽ theo số thực nhận.'
                 : 'Toàn bộ hàng của đơn được hoàn lại kho.';
-
-            openModal();
         }
 
         function openModal() {

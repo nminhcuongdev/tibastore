@@ -3,13 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\StockImportHistory;
+use App\Services\OrderInventoryService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class StockImportHistoryController extends Controller
 {
+    public function __construct(private OrderInventoryService $inventory)
+    {
+    }
+
     public function index(Request $request): View
     {
+        // Truoc day dua vao View composer; nay moi controller tu goi mot lan.
+        $this->inventory->syncDueOrders();
+
         $query = trim((string) $request->query('q', ''));
 
         $histories = StockImportHistory::query()

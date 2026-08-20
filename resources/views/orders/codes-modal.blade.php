@@ -217,11 +217,26 @@
             return cell;
         }
 
-        function openModal(button) {
-            let rows = [];
-            try { rows = JSON.parse(button.dataset.codes || '[]'); } catch (e) { rows = []; }
+        function showLoading() {
+            body.innerHTML = '';
+            totalEl.textContent = '0';
 
-            orderNameEl.textContent = button.dataset.orderName || '';
+            const row = document.createElement('tr');
+            const cell = addCell(row, 'Đang tải...');
+            cell.colSpan = 5;
+            body.appendChild(row);
+        }
+
+        function showError(message) {
+            body.innerHTML = '';
+
+            const row = document.createElement('tr');
+            const cell = addCell(row, message);
+            cell.colSpan = 5;
+            body.appendChild(row);
+        }
+
+        function render(rows) {
             body.innerHTML = '';
 
             let total = 0;
@@ -245,8 +260,23 @@
             }
 
             totalEl.textContent = total.toLocaleString('vi-VN');
+        }
+
+        function openModal(button) {
+            orderNameEl.textContent = button.dataset.orderName || '';
+            showLoading();
             modal.classList.add('is-open');
             modal.setAttribute('aria-hidden', 'false');
+
+            // Mở modal ngay rồi mới điền dữ liệu, để bấm là thấy phản hồi liền.
+            window.loadOrderModalData(button.dataset.orderId)
+                .then(function (data) {
+                    if (!modal.classList.contains('is-open')) return;
+                    render(data.codes || []);
+                })
+                .catch(function () {
+                    showError('Không tải được danh sách mã hàng. Vui lòng thử lại.');
+                });
         }
 
         function closeModal() {

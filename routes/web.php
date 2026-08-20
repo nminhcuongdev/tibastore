@@ -39,6 +39,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/products/{product}/track', [ProductController::class, 'track'])->name('products.track');
     Route::resource('products', ProductController::class);
     Route::post('/orders/availability', [OrderController::class, 'availability'])->name('orders.availability');
+    Route::get('/orders/{order}/modal-data', [OrderController::class, 'modalData'])->name('orders.modal-data');
     Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
     Route::patch('/orders/{order}/payment-status', [OrderController::class, 'updatePaymentStatus'])->name('orders.payment-status');
     Route::resource('orders', OrderController::class);
