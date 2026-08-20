@@ -251,6 +251,7 @@ class OrderController extends Controller
 
         $items = $order->items->map(fn ($item) => [
             'id' => $item->id,
+            'product_id' => (int) $item->product_id,
             'code' => $item->product?->code ?? 'N/A',
             'size' => $item->displaySize(),
             'name' => $item->product?->name ?? '',

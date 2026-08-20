@@ -88,7 +88,10 @@ class Order extends Model
         // Hai cột product_id/quantity chỉ là bản sao của dòng hàng đầu tiên,
         // đổi theo danh sách hàng nên ghi lại sẽ thành nhiễu trùng lặp.
         return ['id', 'created_at', 'updated_at', 'product_id', 'quantity',
-            'pickup_reminder_dismissed', 'return_reminder_dismissed'];
+            'pickup_reminder_dismissed', 'return_reminder_dismissed',
+            // Hai moc nay do he thong tu dat khi doi trang thai, ghi lai se thanh
+            // mot dong log thu hai trung y nghia voi chinh dong doi trang thai.
+            'stock_decreased_at', 'stock_returned_at'];
     }
 
     public function changeLogSubject(): string

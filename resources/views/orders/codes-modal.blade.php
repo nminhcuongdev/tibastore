@@ -285,7 +285,7 @@
             closeLightbox();
         }
 
-        document.querySelectorAll('[data-codes]').forEach(function (button) {
+        document.querySelectorAll('.view-codes[data-order-id]').forEach(function (button) {
             button.addEventListener('click', function () { openModal(this); });
         });
 

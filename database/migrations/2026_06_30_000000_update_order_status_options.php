@@ -8,7 +8,12 @@ return new class extends Migration
     public function up(): void
     {
         // Trạng thái đơn không còn tự đổi theo ngày; bộ trạng thái mới do người dùng tự cập nhật.
-        DB::statement("ALTER TABLE orders ALTER COLUMN status SET DEFAULT 'chua_cho_size'");
+        // SQLite khong ho tro ALTER COLUMN ... SET DEFAULT. Production chay MySQL
+        // nen chi phat cau lenh nay o driver ho tro; phan cap nhat du lieu ben duoi
+        // van chay o moi driver, nho vay chay duoc migration tren may local.
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE orders ALTER COLUMN status SET DEFAULT 'chua_cho_size'");
+        }
 
         // Map trạng thái cũ "Lên đơn" sang bước đầu của quy trình mới.
         DB::table('orders')
@@ -18,7 +23,9 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::statement("ALTER TABLE orders ALTER COLUMN status SET DEFAULT 'len_don'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE orders ALTER COLUMN status SET DEFAULT 'len_don'");
+        }
 
         DB::table('orders')
             ->where('status', 'chua_cho_size')

@@ -216,9 +216,32 @@
 
             const blocked = [];
 
+            // Cung mot san pham co the nam o nhieu dong gia khac nhau. Kho tru mot
+            // lan theo TONG, nen phai gom lai truoc khi tinh "sau khi doi" va canh bao
+            // thieu ton — neu khong, moi dong se tinh tu cung mot muc ton ban dau.
+            const byProduct = [];
+            const indexOfProduct = new Map();
+
             affected.forEach(function (it) {
-                const quantity = Number(it.quantity || 0);
-                const stock = Number(it.stock || 0);
+                const key = String(it.product_id || (it.code + '|' + it.size));
+
+                if (indexOfProduct.has(key)) {
+                    byProduct[indexOfProduct.get(key)].quantity += Number(it.quantity || 0);
+                    return;
+                }
+
+                indexOfProduct.set(key, byProduct.length);
+                byProduct.push({
+                    code: it.code,
+                    size: it.size,
+                    stock: Number(it.stock || 0),
+                    quantity: Number(it.quantity || 0),
+                });
+            });
+
+            byProduct.forEach(function (it) {
+                const quantity = it.quantity;
+                const stock = it.stock;
                 const after = stock + direction * quantity;
                 const row = document.createElement('tr');
 
@@ -238,7 +261,7 @@
                 bodyEl.appendChild(row);
             });
 
-            if (affected.length === 0) {
+            if (byProduct.length === 0) {
                 const row = document.createElement('tr');
                 addCell(row, 'Đơn không có dòng hàng nào giữ kho.').colSpan = 5;
                 bodyEl.appendChild(row);
