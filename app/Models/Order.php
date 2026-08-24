@@ -231,16 +231,16 @@ class Order extends Model
     }
 
     /**
-     * Số tiền còn lại theo công thức:
-     * (tổng đơn - thanh toán lần 1 + thanh toán lần 2 + tiền ship).
-     * "Tổng đơn" đã bao gồm tiền bồi thường.
+     * Số tiền còn lại:
+     * tiền hàng + tiền bồi thường + tiền ship - thanh toán lần 1 - thanh toán lần 2.
+     * total_with_compensation đã gồm tiền hàng và tiền bồi thường.
      */
     public function getRemainingAttribute(): int
     {
         return $this->total_with_compensation
+            + (int) $this->shipping_fee
             - (int) $this->payment_1
-            + (int) $this->payment_2
-            + (int) $this->shipping_fee;
+            - (int) $this->payment_2;
     }
 
     /**
