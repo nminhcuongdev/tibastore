@@ -1378,9 +1378,15 @@
             sizes.forEach(size => addSizeRow(block, size));
 
             // Giá thuê mặc định: dùng giá đã lưu trên đơn nếu có, nếu không lấy giá thuê ở kho.
+            // Nhận cả giá 0 (hàng tặng kèm) — trước đây coi 0 là "chưa có giá" nên mở
+            // form sửa là dòng đó tự nhảy về giá kho, lưu lại thành tính tiền oan.
             const rentalInput = block.querySelector('[data-block-rental]');
-            if (blockData.rental != null && Number(blockData.rental) > 0) {
-                rentalInput.value = Number(blockData.rental);
+            const savedRental = blockData.rental;
+            const hasSavedRental = savedRental !== null && savedRental !== undefined
+                && savedRental !== '' && ! isNaN(Number(savedRental));
+
+            if (hasSavedRental) {
+                rentalInput.value = Number(savedRental);
             } else if (block.dataset.productCode) {
                 rentalInput.value = codeRentalPrice(block.dataset.productCode);
             }
