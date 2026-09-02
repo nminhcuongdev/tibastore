@@ -60,6 +60,24 @@
             padding: 10px 16px;
         }
         .button.secondary { background: #fff; border: 1px solid #ebc5d2; color: #8b2f4d; }
+        .basis-group { display: flex; flex-wrap: wrap; gap: 8px; }
+        .check {
+            align-items: center;
+            background: #fff;
+            border: 1px solid #ebc5d2;
+            border-radius: 999px;
+            color: #8b2f4d;
+            cursor: pointer;
+            display: inline-flex;
+            font-size: 14px;
+            font-weight: 700;
+            gap: 7px;
+            min-height: 44px;
+            padding: 8px 14px;
+            user-select: none;
+        }
+        .check.is-on { background: #fdeaf0; border-color: #c9577d; color: #8b2f4d; }
+        .check input { accent-color: #be476f; cursor: pointer; margin: 0; min-height: 0; width: auto; }
         .cards {
             display: grid;
             gap: 14px;
@@ -156,12 +174,16 @@
             </select>
         </div>
         <div class="field">
-            <label for="basis">Tính theo mốc</label>
-            <select id="basis" name="basis">
+            <label>Tính theo mốc <span class="muted">(chọn nhiều)</span></label>
+            <div class="basis-group">
                 @foreach ($dateBases as $value => $label)
-                    <option value="{{ $value }}" @selected($basis === $value)>{{ $label }}</option>
+                    <label class="check {{ in_array($value, $bases, true) ? 'is-on' : '' }}">
+                        <input type="checkbox" name="bases[]" value="{{ $value }}"
+                               @checked(in_array($value, $bases, true))>
+                        <span>{{ $label }}</span>
+                    </label>
                 @endforeach
-            </select>
+            </div>
         </div>
         @if ($mode === 'week')
             <div class="field">
@@ -284,7 +306,11 @@
     <div class="note">
         <strong>Cách tính:</strong> doanh thu mỗi đơn = tiền hàng, tức giá thuê &times; số lượng của mọi dòng hàng trong đơn.
         Cột <strong>Bồi thường</strong> chỉ để tham khảo, <strong>không</strong> cộng vào doanh thu. Tiền ship không đưa vào báo cáo này.
-        Đơn được xếp vào kỳ theo mốc <strong>{{ $dateBases[$basis] }}</strong> &mdash; đổi mốc ở ô "Tính theo mốc" nếu bạn muốn tính theo ngày lấy/diễn/trả.
+        Đang tính theo mốc: <strong>{{ implode(', ', array_map(fn ($key) => $dateBases[$key], $bases)) }}</strong>.
+        Đơn được đưa vào kỳ nếu <strong>bất kỳ</strong> mốc đã chọn rơi vào khoảng ngày, và mỗi đơn chỉ được <strong>đếm một lần</strong> dù khớp nhiều mốc.
+        @if ($mode !== 'range')
+            Ở bảng chi tiết, đơn được xếp vào dòng theo mốc <strong>sớm nhất</strong> trong các mốc đã chọn.
+        @endif
         Báo cáo đếm mọi đơn trong kỳ, không phân biệt trạng thái hay đã thu tiền hay chưa.
     </div>
 </main>

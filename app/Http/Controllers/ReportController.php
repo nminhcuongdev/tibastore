@@ -12,7 +12,8 @@ class ReportController extends Controller
 {
     /**
      * Các mốc ngày có thể dùng để xếp đơn vào kỳ báo cáo.
-     * Mặc định "ngày tạo đơn" vì đó là lúc doanh thu được chốt trên hệ thống.
+     * Chọn được NHIỀU mốc cùng lúc: đơn lọt vào kỳ nếu BẤT KỲ mốc nào đã chọn
+     * rơi vào khoảng ngày. Mỗi đơn vẫn chỉ được đếm đúng một lần.
      */
     private const DATE_BASES = [
         'created_at' => 'Ngày tạo đơn',
@@ -20,6 +21,8 @@ class ReportController extends Controller
         'event_date' => 'Ngày diễn',
         'return_date' => 'Ngày trả',
     ];
+
+    private const DEFAULT_BASES = ['created_at'];
 
     private const MODES = [
         'range' => 'Cả khoảng ngày',
@@ -35,11 +38,7 @@ class ReportController extends Controller
             $mode = 'range';
         }
 
-        $basis = (string) $request->query('basis', 'created_at');
-
-        if (! array_key_exists($basis, self::DATE_BASES)) {
-            $basis = 'created_at';
-        }
+        $bases = $this->parseBases($request);
 
         // Chế độ "tuần" lấy khoảng ngày từ tháng được chọn, các chế độ khác lấy from/to.
         $month = $this->parseMonth($request->query('month'));
@@ -51,10 +50,20 @@ class ReportController extends Controller
             [$dateFrom, $dateTo] = $this->parseRange($request);
         }
 
+        // Đơn lọt vào kỳ nếu BẤT KỲ mốc nào đã chọn nằm trong khoảng ngày.
         $orders = Order::query()
-            ->whereDate($basis, '>=', $dateFrom->toDateString())
-            ->whereDate($basis, '<=', $dateTo->toDateString())
-            ->get(['id', 'source', 'total_amount', 'compensation_amount', $basis]);
+            ->where(function ($query) use ($bases, $dateFrom, $dateTo) {
+                foreach ($bases as $basis) {
+                    $query->orWhere(function ($sub) use ($basis, $dateFrom, $dateTo) {
+                        $sub->whereDate($basis, '>=', $dateFrom->toDateString())
+                            ->whereDate($basis, '<=', $dateTo->toDateString());
+                    });
+                }
+            })
+            ->get(array_merge(
+                ['id', 'source', 'total_amount', 'compensation_amount'],
+                array_keys(self::DATE_BASES)
+            ));
 
         $sources = Order::sources();
         $buckets = $this->buckets($mode, $dateFrom, $dateTo);
@@ -62,14 +71,14 @@ class ReportController extends Controller
         return view('reports.revenue', [
             'mode' => $mode,
             'modes' => self::MODES,
-            'basis' => $basis,
+            'bases' => $bases,
             'dateBases' => self::DATE_BASES,
             'month' => $month,
             'dateFrom' => $dateFrom,
             'dateTo' => $dateTo,
             'sources' => $sources,
             'summary' => $this->summaryBySource($orders, $sources),
-            'rows' => $this->rowsByBucket($orders, $buckets, $sources, $basis),
+            'rows' => $this->rowsByBucket($orders, $buckets, $sources, $bases, $dateFrom, $dateTo),
             'grandTotal' => $this->totals($orders),
         ]);
     }
@@ -99,13 +108,19 @@ class ReportController extends Controller
     /**
      * Mỗi kỳ con (ngày hoặc tuần) một dòng, trong đó tách doanh thu theo nguồn.
      */
-    private function rowsByBucket(Collection $orders, array $buckets, array $sources, string $basis): array
-    {
+    private function rowsByBucket(
+        Collection $orders,
+        array $buckets,
+        array $sources,
+        array $bases,
+        Carbon $dateFrom,
+        Carbon $dateTo
+    ): array {
         $rows = [];
 
         foreach ($buckets as $bucket) {
-            $inBucket = $orders->filter(function ($order) use ($bucket, $basis) {
-                $date = $this->dateOf($order, $basis);
+            $inBucket = $orders->filter(function ($order) use ($bucket, $bases, $dateFrom, $dateTo) {
+                $date = $this->bucketDateOf($order, $bases, $dateFrom, $dateTo);
 
                 return $date !== null
                     && $date->gte($bucket['from'])
@@ -200,6 +215,30 @@ class ReportController extends Controller
         return $buckets;
     }
 
+    /**
+     * Ngày dùng để xếp đơn vào dòng ngày/tuần: mốc SỚM NHẤT trong các mốc đã chọn
+     * mà còn nằm trong kỳ báo cáo. Nhờ vậy mỗi đơn chỉ rơi vào đúng một dòng,
+     * tổng các dòng luôn khớp với tổng của cả kỳ.
+     */
+    private function bucketDateOf($order, array $bases, Carbon $dateFrom, Carbon $dateTo): ?Carbon
+    {
+        $earliest = null;
+
+        foreach ($bases as $basis) {
+            $date = $this->dateOf($order, $basis);
+
+            if ($date === null || $date->lt($dateFrom) || $date->gt($dateTo)) {
+                continue;
+            }
+
+            if ($earliest === null || $date->lt($earliest)) {
+                $earliest = $date;
+            }
+        }
+
+        return $earliest;
+    }
+
     private function dateOf($order, string $basis): ?Carbon
     {
         $value = $order->{$basis};
@@ -211,6 +250,26 @@ class ReportController extends Controller
         return $value instanceof Carbon
             ? $value->copy()->startOfDay()
             : Carbon::parse($value)->startOfDay();
+    }
+
+    /**
+     * Danh sách mốc ngày được chọn. Bỏ mốc lạ, giữ đúng thứ tự khai báo,
+     * và luôn còn ít nhất một mốc để báo cáo không rỗng vô nghĩa.
+     */
+    private function parseBases(Request $request): array
+    {
+        $selected = $request->query('bases', self::DEFAULT_BASES);
+
+        if (! is_array($selected)) {
+            $selected = [$selected];
+        }
+
+        $bases = array_values(array_filter(
+            array_keys(self::DATE_BASES),
+            fn ($key) => in_array($key, $selected, true)
+        ));
+
+        return $bases !== [] ? $bases : self::DEFAULT_BASES;
     }
 
     private function weekdayLabel(Carbon $date): string
