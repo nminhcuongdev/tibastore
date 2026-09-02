@@ -373,12 +373,12 @@
                 </ul>
             </div>
         @endif
-        @if ($mode === 'create')
-            <div id="draft_notice" class="flash" style="display:none; align-items:center; gap:12px;">
-                <span>Đã khôi phục dữ liệu bạn nhập dở trước đó (tự lưu trong trình duyệt).</span>
-                <button type="button" id="draft_clear" class="button secondary" style="min-height:36px; padding:8px 12px;">Xoá nháp &amp; nhập mới</button>
-            </div>
-        @endif
+        <div id="draft_notice" class="flash" style="display:none; align-items:center; gap:12px;">
+            <span>Đã khôi phục dữ liệu bạn nhập dở trước đó (tự lưu trong trình duyệt).</span>
+            <button type="button" id="draft_clear" class="button secondary" style="min-height:36px; padding:8px 12px;">
+                {{ $mode === 'create' ? 'Xoá nháp & nhập mới' : 'Bỏ nháp & lấy lại dữ liệu đã lưu' }}
+            </button>
+        </div>
 
         @php
             $oldItems = old('items');
@@ -1510,9 +1510,18 @@
             }
         });
 
-        // ===== Tự lưu nháp vào trình duyệt (chỉ khi TẠO đơn mới) =====
-        const DRAFT_KEY = 'tibastore_order_create_draft_v1';
+        // ===== Tự lưu nháp vào trình duyệt (cả khi TẠO MỚI và khi SỬA đơn) =====
+        // Khi sửa, mỗi đơn có một khoá riêng để nháp của đơn này không đè lên đơn khác.
+        const EDIT_DRAFT_PREFIX = 'tibastore_order_edit_draft_v1_';
         const isCreate = @json($mode === 'create');
+        const DRAFT_KEY = @json(
+            $mode === 'create'
+                ? 'tibastore_order_create_draft_v1'
+                : 'tibastore_order_edit_draft_v1_' . $order->id
+        );
+        // Thời điểm đơn được lưu lần gần nhất trên server (ms). Nháp cũ hơn mốc này
+        // là nháp lỗi thời (đơn đã được lưu ở nơi khác) nên sẽ bị bỏ, không khôi phục.
+        const orderSavedAt = @json($mode === 'create' ? 0 : (($order->updated_at?->getTimestamp() ?? 0) * 1000));
         const hasOldInput = @json(! empty(old()));
 
         function readFormDraft() {
@@ -1545,17 +1554,30 @@
 
         let draftSaveTimer = null;
         function saveDraft() {
-            if (! isCreate) return;
             clearTimeout(draftSaveTimer);
             draftSaveTimer = setTimeout(saveDraftNow, 400);
         }
         function saveDraftNow() {
-            if (! isCreate) return;
             try { localStorage.setItem(DRAFT_KEY, JSON.stringify(readFormDraft())); } catch (e) {}
         }
         function clearDraft() {
             try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
         }
+
+        // Dọn nháp sửa đơn bỏ quên quá 7 ngày để localStorage không phình mãi.
+        function pruneOldEditDrafts() {
+            const limit = Date.now() - 7 * 24 * 60 * 60 * 1000;
+            try {
+                Object.keys(localStorage)
+                    .filter(key => key.startsWith(EDIT_DRAFT_PREFIX) && key !== DRAFT_KEY)
+                    .forEach(key => {
+                        let saved = 0;
+                        try { saved = (JSON.parse(localStorage.getItem(key) || '{}').savedAt) || 0; } catch (e) {}
+                        if (saved < limit) localStorage.removeItem(key);
+                    });
+            } catch (e) {}
+        }
+        pruneOldEditDrafts();
 
         function restoreTopFields(d) {
             const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
@@ -1571,9 +1593,18 @@
         let itemsToBuild = initialItems;
         let restoredFromDraft = false;
 
-        if (isCreate && ! hasOldInput) {
+        if (! hasOldInput) {
             let draft = null;
             try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch (e) {}
+
+            // Khi SỬA đơn: chỉ khôi phục nháp mới hơn lần lưu gần nhất của đơn.
+            // Nếu đơn đã được lưu sau khi nháp được tạo, dữ liệu trên server mới hơn
+            // nên phải tôn trọng nó thay vì đè bằng nháp cũ.
+            if (draft && ! isCreate && ! ((draft.savedAt || 0) > orderSavedAt)) {
+                clearDraft();
+                draft = null;
+            }
+
             if (draft && Array.isArray(draft.items)) {
                 restoreTopFields(draft);
                 if (draft.items.length > 0) {
@@ -1627,37 +1658,36 @@
         updateComputedTotal();
 
         // ===== Kích hoạt tự lưu / khôi phục / xoá nháp =====
-        if (isCreate) {
-            orderForm.addEventListener('input', saveDraft);
-            orderForm.addEventListener('change', saveDraft);
-            new MutationObserver(saveDraft).observe(itemsContainer, { childList: true, subtree: true });
+        orderForm.addEventListener('input', saveDraft);
+        orderForm.addEventListener('change', saveDraft);
+        new MutationObserver(saveDraft).observe(itemsContainer, { childList: true, subtree: true });
 
-            // Trang tải lại sau lỗi (có old): lưu ngay để nếu reload thủ công vẫn khôi phục được.
-            if (hasOldInput) {
-                saveDraftNow();
-            }
+        // Trang tải lại sau lỗi (có old): lưu ngay để nếu reload thủ công vẫn khôi phục được.
+        if (hasOldInput) {
+            saveDraftNow();
+        }
 
-            if (restoredFromDraft) {
-                const notice = document.getElementById('draft_notice');
-                if (notice) notice.style.display = 'flex';
-            }
+        if (restoredFromDraft) {
+            const notice = document.getElementById('draft_notice');
+            if (notice) notice.style.display = 'flex';
+        }
 
-            const clearBtn = document.getElementById('draft_clear');
-            if (clearBtn) {
-                clearBtn.addEventListener('click', () => {
-                    clearDraft();
-                    window.location = window.location.pathname; // tải lại form trống
-                });
-            }
-
-            // Đơn thực sự được gửi (không bị chặn validate) → xoá nháp.
-            // Thành công sẽ chuyển trang; nếu lỗi validate thì old() sẽ dựng lại + lưu nháp mới.
-            orderForm.addEventListener('submit', event => {
-                if (! event.defaultPrevented) {
-                    clearDraft();
-                }
+        const clearBtn = document.getElementById('draft_clear');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                clearDraft();
+                // Tạo mới: về form trống. Sửa đơn: nạp lại dữ liệu gốc từ server.
+                window.location = window.location.pathname;
             });
         }
+
+        // Đơn thực sự được gửi (không bị chặn validate) → xoá nháp.
+        // Thành công sẽ chuyển trang; nếu lỗi validate thì old() sẽ dựng lại + lưu nháp mới.
+        orderForm.addEventListener('submit', event => {
+            if (! event.defaultPrevented) {
+                clearDraft();
+            }
+        });
     </script>
     </div>
 </div>
