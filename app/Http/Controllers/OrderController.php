@@ -484,7 +484,8 @@ class OrderController extends Controller
             'order_name' => ['required', 'string', 'max:255'],
             'source' => ['required', Rule::in(array_keys(Order::sources()))],
             'status' => ['required', Rule::in(array_keys(Order::statuses()))],
-            'shipping_fee' => ['nullable', 'integer', 'min:0'],
+            // Tien ship cho phep am: shop co the bu/giam tien ship cho khach.
+            'shipping_fee' => ['nullable', 'integer'],
             'payment_1' => ['nullable', 'integer', 'min:0'],
             'payment_2' => ['nullable', 'integer', 'min:0'],
             'items' => ['required', 'array', 'min:1'],
@@ -507,7 +508,6 @@ class OrderController extends Controller
             'status.required' => 'Vui lòng chọn trạng thái.',
             'status.in' => 'Trạng thái không hợp lệ.',
             'shipping_fee.integer' => 'Tiền ship phải là số.',
-            'shipping_fee.min' => 'Tiền ship không được nhỏ hơn 0.',
             'payment_1.integer' => 'Thanh toán lần 1 phải là số.',
             'payment_1.min' => 'Thanh toán lần 1 không được nhỏ hơn 0.',
             'payment_2.integer' => 'Thanh toán lần 2 phải là số.',

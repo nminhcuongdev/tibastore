@@ -499,7 +499,8 @@
 
             <div class="field">
                 <label for="shipping_fee">Tiền ship</label>
-                <input id="shipping_fee" name="shipping_fee" type="number" min="0" step="1" value="{{ old('shipping_fee', $order->shipping_fee ?? 0) }}">
+                <input id="shipping_fee" name="shipping_fee" type="number" step="1" value="{{ old('shipping_fee', $order->shipping_fee ?? 0) }}">
+                <div class="muted">Nhập số âm nếu shop bù/giảm tiền ship cho khách.</div>
                 @error('shipping_fee') <div class="error">{{ $message }}</div> @enderror
             </div>
 
