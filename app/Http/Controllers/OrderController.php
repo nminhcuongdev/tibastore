@@ -340,7 +340,7 @@ class OrderController extends Controller
 
         $data = $this->validatedData($request, $order);
         $items = $data['items'];
-        $orderData = $this->orderData($data, $items);
+        $orderData = $this->orderData($data, $items, $order);
 
         DB::transaction(function () use ($items, $orderData, $order) {
             $lockedOrder = Order::whereKey($order->id)
@@ -570,9 +570,25 @@ class OrderController extends Controller
             ->all();
     }
 
-    private function orderData(array $data, array $items): array
+    private function orderData(array $data, array $items, ?Order $order = null): array
     {
-        $firstItem = $items[0];
+        // product_id/quantity tren bang orders chi la ban sao cua mot dong hang,
+        // dung cho join va sap xep o danh sach don. Neu lay theo dong dau tien thi
+        // chi can keo tha doi cho the ma hang la hai cot nay doi theo, trong khi
+        // keo tha von chi de nhin. Vi vay khi sua don, giu nguyen san pham cu neu
+        // no van con trong don.
+        $mirrorProductId = $items[0]['product_id'];
+        $mirrorQuantity = $items[0]['quantity'];
+
+        if ($order && $order->product_id) {
+            foreach ($items as $item) {
+                if ((int) $item['product_id'] === (int) $order->product_id) {
+                    $mirrorProductId = $order->product_id;
+                    $mirrorQuantity = $item['quantity'];
+                    break;
+                }
+            }
+        }
 
         return [
             'closer_name' => $data['closer_name'],
@@ -590,8 +606,8 @@ class OrderController extends Controller
             'shipping_fee' => $data['shipping_fee'] ?? 0,
             'payment_1' => $data['payment_1'] ?? 0,
             'payment_2' => $data['payment_2'] ?? 0,
-            'product_id' => $firstItem['product_id'],
-            'quantity' => $firstItem['quantity'],
+            'product_id' => $mirrorProductId,
+            'quantity' => $mirrorQuantity,
         ];
     }
 

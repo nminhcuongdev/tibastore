@@ -143,6 +143,18 @@
         }
         .section { padding: 24px; }
         .section + .section { border-top: 1px solid #f7e3e9; }
+        /* Keo tha dong de xep lai bang cho de nhin truoc khi chup man hinh. */
+        tbody tr[draggable="true"] { cursor: grab; }
+        tbody tr.is-dragging { opacity: .4; }
+        tbody tr.is-drop-target td { box-shadow: inset 0 3px 0 -1px #be476f; }
+        .table-hint {
+            color: #8b6672;
+            font-size: 12px;
+            margin: 0 0 8px;
+        }
+        @media print {
+            .table-hint { display: none; }
+        }
         /* Cot sap xep duoc: bam vao tieu de de doi thu tu. */
         th.sortable {
             cursor: pointer;
@@ -490,6 +502,7 @@
 
             <section class="section">
                 <h2 class="section-title">Sản phẩm trong đơn</h2>
+                <p class="table-hint">Bấm tiêu đề cột để sắp xếp, hoặc kéo thả từng dòng để tự xếp thứ tự trước khi chụp màn hình.</p>
                 <div class="table-shell">
                     <table data-sortable>
                         <thead>
@@ -566,6 +579,7 @@
             @if ($order->status === \App\Models\Order::CHECKED_STATUS && $order->items->isNotEmpty())
                 <section class="section">
                     <h2 class="section-title">Kết quả kiểm đơn</h2>
+                    <p class="table-hint">Bấm tiêu đề cột để sắp xếp, hoặc kéo thả từng dòng để tự xếp thứ tự.</p>
                     <div class="table-shell">
                         <table data-sortable>
                             <thead>
@@ -694,6 +708,72 @@
         }
 
         document.querySelectorAll('table[data-sortable]').forEach(initSortableTable);
+
+        // ===== Keo tha dong de tu xep thu tu =====
+        // Thuan hien thi: khong luu lai, khong doi du lieu don hang. Muc dich la
+        // xep cho de nhin roi chup man hinh gui khach.
+        function initDraggableRows(table) {
+            const body = table.tBodies[0];
+            if (! body) return;
+
+            let dragging = null;
+
+            const clearMarks = () => Array.from(body.rows).forEach(r => r.classList.remove('is-drop-target'));
+
+            Array.from(body.rows).forEach(row => { row.draggable = true; });
+
+            body.addEventListener('dragstart', event => {
+                const row = event.target.closest('tr');
+                if (! row) return;
+
+                dragging = row;
+                row.classList.add('is-dragging');
+                event.dataTransfer.effectAllowed = 'move';
+                // Firefox chi bat dau keo khi da set du lieu.
+                event.dataTransfer.setData('text/plain', '');
+            });
+
+            body.addEventListener('dragover', event => {
+                if (! dragging) return;
+
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'move';
+
+                const row = event.target.closest('tr');
+                if (! row || row === dragging) return;
+
+                clearMarks();
+                row.classList.add('is-drop-target');
+            });
+
+            body.addEventListener('drop', event => {
+                if (! dragging) return;
+
+                event.preventDefault();
+
+                const row = event.target.closest('tr');
+
+                if (row && row !== dragging) {
+                    const rows = Array.from(body.rows);
+                    const keoTruoc = rows.indexOf(dragging) < rows.indexOf(row);
+
+                    body.insertBefore(dragging, keoTruoc ? row.nextSibling : row);
+                }
+
+                clearMarks();
+            });
+
+            body.addEventListener('dragend', () => {
+                if (dragging) {
+                    dragging.classList.remove('is-dragging');
+                    dragging = null;
+                }
+
+                clearMarks();
+            });
+        }
+
+        document.querySelectorAll('table[data-sortable]').forEach(initDraggableRows);
 
         document.addEventListener('keydown', event => {
             if (event.key === 'Escape' && lightbox.classList.contains('is-open')) {

@@ -75,6 +75,25 @@
             padding: 14px;
             position: relative;
         }
+        /* Keo tha de sap xep lai thu tu cac the ma hang cho de nhin. */
+        .drag-handle {
+            align-items: center;
+            border-radius: 6px;
+            color: #b98ba0;
+            cursor: grab;
+            display: inline-flex;
+            font-size: 15px;
+            gap: 6px;
+            justify-self: start;
+            line-height: 1;
+            padding: 4px 8px;
+            user-select: none;
+        }
+        .drag-handle:hover { background: #fff0f4; color: #8b2f4d; }
+        .drag-handle:active { cursor: grabbing; }
+        .drag-handle .hint { font-size: 11px; font-weight: 700; }
+        .order-item.is-dragging { opacity: .45; }
+        .order-item.is-drop-target { box-shadow: 0 -3px 0 0 #be476f; }
         .size-rows {
             display: grid;
             gap: 10px;
@@ -1312,6 +1331,9 @@
             block.dataset.index = itemIndex;
             const searchId = `product_search_${itemIndex}`;
             block.innerHTML = `
+                <div class="drag-handle" data-drag-handle title="Kéo để đổi vị trí thẻ mã hàng">
+                    &#8942;&#8942;<span class="hint">Kéo để sắp xếp</span>
+                </div>
                 <div class="field product-picker-cell">
                     <label for="${searchId}">Mã hàng</label>
                     <input id="${searchId}" data-search type="search" autocomplete="off" placeholder="Nhập mã hàng hoặc tên hàng..." required>
@@ -1438,6 +1460,83 @@
             if (event.key === 'Escape' && lightbox.classList.contains('is-open')) {
                 closeLightbox();
             }
+        });
+
+        // ===== Keo tha de doi vi tri the ma hang =====
+        // Chi de nhin cho de; khong doi gia, so luong hay ton kho cua bat ky dong nao.
+        // Thu tu moi duoc luu theo don vi renumberRows() danh lai chi so theo DOM.
+        let draggingBlock = null;
+
+        function clearDropMarks() {
+            itemsContainer.querySelectorAll('.order-item').forEach(b => b.classList.remove('is-drop-target'));
+        }
+
+        // HTML5 drag yeu cau draggable tren chinh khoi, nhung neu bat san thi
+        // khong con boi den trong o nhap duoc. Vi vay chi bat khi cam vao tay keo.
+        itemsContainer.addEventListener('mousedown', event => {
+            const handle = event.target.closest('[data-drag-handle]');
+            const block = event.target.closest('.order-item');
+
+            if (handle && block) {
+                block.draggable = true;
+            }
+        });
+
+        itemsContainer.addEventListener('mouseup', () => {
+            itemsContainer.querySelectorAll('.order-item').forEach(b => { b.draggable = false; });
+        });
+
+        itemsContainer.addEventListener('dragstart', event => {
+            const block = event.target.closest('.order-item');
+            if (! block || ! block.draggable) return;
+
+            draggingBlock = block;
+            block.classList.add('is-dragging');
+            event.dataTransfer.effectAllowed = 'move';
+            // Firefox chi khoi dong keo khi co du lieu duoc set.
+            event.dataTransfer.setData('text/plain', '');
+        });
+
+        itemsContainer.addEventListener('dragover', event => {
+            if (! draggingBlock) return;
+
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+
+            const target = event.target.closest('.order-item');
+            if (! target || target === draggingBlock) return;
+
+            clearDropMarks();
+            target.classList.add('is-drop-target');
+        });
+
+        itemsContainer.addEventListener('drop', event => {
+            if (! draggingBlock) return;
+
+            event.preventDefault();
+
+            const target = event.target.closest('.order-item');
+
+            if (target && target !== draggingBlock) {
+                const blocks = Array.from(itemsContainer.querySelectorAll('.order-item'));
+                const keoTruoc = blocks.indexOf(draggingBlock) < blocks.indexOf(target);
+
+                target.parentNode.insertBefore(draggingBlock, keoTruoc ? target.nextSibling : target);
+                // Chi so items[i] bam theo thu tu DOM nen phai danh lai sau khi doi cho.
+                renumberRows();
+            }
+
+            clearDropMarks();
+        });
+
+        itemsContainer.addEventListener('dragend', () => {
+            if (draggingBlock) {
+                draggingBlock.classList.remove('is-dragging');
+                draggingBlock.draggable = false;
+                draggingBlock = null;
+            }
+
+            clearDropMarks();
         });
 
         addItemButton.addEventListener('click', () => addItemBlock());
