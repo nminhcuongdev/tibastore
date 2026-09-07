@@ -266,6 +266,18 @@
             object-fit: contain;
         }
 
+        /* Hang da ve kho nhung chua kiem: da cong vao ton, chi nhac kiem. */
+        .pending-check {
+            background: #fff7d6;
+            border-radius: 999px;
+            color: #8a5a00;
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 800;
+            margin-top: 4px;
+            padding: 2px 8px;
+            white-space: nowrap;
+        }
         .code {
             color: #a13b60;
             font-weight: 800;
@@ -548,7 +560,14 @@
                                         </div>
                                         <div class="muted">Cập nhật: {{ $product->updated_at?->format('d/m/Y') }}</div>
                                     </td>
-                                    <td>{{ number_format($product->total_stock_quantity) }}</td>
+                                    <td>
+                                        {{ number_format($product->total_stock_quantity) }}
+                                        @if (! empty($pendingInspection[$product->code]))
+                                            <div class="pending-check" title="Đã về kho, chưa kiểm">
+                                                {{ number_format($pendingInspection[$product->code]) }} chờ kiểm
+                                            </div>
+                                        @endif
+                                    </td>
                                     <td>{{ $product->fabric }}</td>
                                     <td>{{ $product->expected_receive_date ? \Illuminate\Support\Carbon::parse($product->expected_receive_date)->format('d/m/Y') : 'N/A' }}</td>
                                     <td>{{ number_format($product->total_expected_receive_quantity ?? 0) }}</td>

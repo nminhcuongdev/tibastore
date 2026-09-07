@@ -150,13 +150,21 @@ class Order extends Model
 
     /**
      * Các trạng thái khiến hàng đang ở ngoài kho (đã trừ kho, chưa cộng lại).
+     *
+     * "Đã trả về" nghĩa là hàng đã nằm lại trong kho nên KHÔNG còn ở đây: cho thuê
+     * tiếp được ngay, không phải chờ kiểm xong. Việc kiểm sau đó chỉ trừ phần thiếu.
      */
-    public const STOCK_OUT_STATUSES = ['da_gui', 'da_tra_ve'];
+    public const STOCK_OUT_STATUSES = ['da_gui'];
 
     /**
      * Trạng thái "đã kiểm": khi chuyển sang, người dùng nhập số lượng thực nhận lại
      * vào kho cho từng dòng sản phẩm; phần thiếu coi như mất/hỏng, không hoàn kho.
      */
+    /**
+     * Trạng thái "hàng đã về kho nhưng chưa kiểm".
+     */
+    public const RETURNED_STATUS = 'da_tra_ve';
+
     public const CHECKED_STATUS = 'thanh_cong';
 
     public const DEFAULT_STATUS = 'chua_cho_size';

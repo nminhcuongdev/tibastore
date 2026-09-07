@@ -8,7 +8,6 @@ use App\Models\Product;
 use App\Models\ProductExpectedReceipt;
 use App\Models\StockImportHistory;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -44,35 +43,40 @@ class OrderInventoryService
      * - Các trạng thái còn lại (kể cả "đã kiểm"): hàng nằm trong kho (cộng lại nếu đang nợ).
      * Idempotent nhờ hai mốc stock_decreased_at / stock_returned_at.
      */
+    /**
+     * Đưa kho về đúng trạng thái của đơn.
+     *
+     * Mỗi dòng hàng lưu sẵn stock_held = số đang thực bị trừ khỏi kho, nên ở đây
+     * chỉ cần tính số ĐÁNG LẼ phải giữ rồi cộng/trừ đúng phần chênh. Nhờ vậy chạy
+     * lại bao nhiêu lần cũng không lệch, và không phải suy ngược xem trước đó đã
+     * trừ bao nhiêu.
+     */
     public function applyStatusAdjustment(Order $order): void
     {
         $order->loadMissing('items');
 
-        $shouldBeOut = $order->requiresStockOut();
-        $currentlyOut = $order->stock_decreased_at !== null && $order->stock_returned_at === null;
+        $isOut = $order->requiresStockOut();
 
-        if ($shouldBeOut && ! $currentlyOut) {
-            // Chỉ trừ đúng số hàng đang thực nằm trong kho của đơn.
-            // Nếu đơn từng được kiểm (hoàn lại một phần) thì chỉ còn lại phần đã nhận.
-            $this->decreaseStocks($this->inStockItems($order));
+        if ($isOut) {
+            // Rời trạng thái "đã kiểm" để gửi lại: bỏ số nhận lại cũ, tránh dùng nhầm.
             $this->clearInspectionData($order);
+        }
 
+        foreach ($order->items as $item) {
+            $this->setHeldQuantity($item, $this->targetHeldQuantity($item, $isOut));
+        }
+
+        if ($isOut) {
             $order->forceFill([
-                'stock_decreased_at' => now(),
+                'stock_decreased_at' => $order->stock_decreased_at ?? now(),
                 'stock_returned_at' => null,
             ])->save();
 
             return;
         }
 
-        if (! $shouldBeOut && $currentlyOut) {
-            // Trạng thái "đã kiểm": chỉ hoàn số lượng thực nhận lại (đã set trước khi gọi).
-            // Các trạng thái khác: hoàn đủ toàn bộ số lượng đơn.
-            $this->increaseStocks($this->inStockItems($order));
-
-            $order->forceFill([
-                'stock_returned_at' => now(),
-            ])->save();
+        if ($order->stock_decreased_at !== null && $order->stock_returned_at === null) {
+            $order->forceFill(['stock_returned_at' => now()])->save();
         }
     }
 
@@ -80,14 +84,57 @@ class OrderInventoryService
     {
         $order->loadMissing('items');
 
-        if ($order->stock_decreased_at !== null && $order->stock_returned_at === null) {
-            $this->increaseStocks($this->itemsForStock($order));
+        // Trả lại đúng số đang giữ của từng dòng, không suy ngược từ số lượng đơn.
+        foreach ($order->items as $item) {
+            $this->setHeldQuantity($item, 0);
         }
 
         $order->forceFill([
             'stock_decreased_at' => null,
             'stock_returned_at' => null,
         ])->save();
+    }
+
+    /**
+     * Số lượng của một dòng đáng lẽ phải đang bị trừ khỏi kho:
+     * - Đang cho thuê (đơn ở trạng thái giữ kho): cả dòng.
+     * - Hàng đã về, chưa kiểm: 0 — nằm trong kho, cho thuê tiếp được ngay.
+     * - Đã kiểm: phần thiếu (mất/hỏng), vì phần đó không bao giờ về lại kho.
+     */
+    private function targetHeldQuantity(OrderItem $item, bool $isOut): int
+    {
+        // Dòng "chưa chốt size" không gắn với size cụ thể nên không giữ kho.
+        if ($item->size_pending) {
+            return 0;
+        }
+
+        if ($isOut) {
+            return (int) $item->quantity;
+        }
+
+        if ($item->returned_quantity === null) {
+            return 0;
+        }
+
+        return max(0, (int) $item->quantity - (int) $item->returned_quantity);
+    }
+
+    private function setHeldQuantity(OrderItem $item, int $target): void
+    {
+        $current = (int) $item->stock_held;
+        $delta = $target - $current;
+
+        if ($delta === 0) {
+            return;
+        }
+
+        if ($delta > 0) {
+            $this->decreaseStock((int) $item->product_id, $delta);
+        } else {
+            $this->increaseStock((int) $item->product_id, -$delta);
+        }
+
+        $item->forceFill(['stock_held' => $target])->save();
     }
 
     public function assertItemsAvailable(
@@ -382,17 +429,63 @@ class OrderInventoryService
             ->all();
     }
 
+    /**
+     * Hàng đang cho thuê: đã trừ khỏi kho nhưng sẽ quay về.
+     *
+     * Cộng lại phần này để ra tổng hàng shop thực sự sở hữu. Chỉ tính đơn đang ở
+     * trạng thái giữ kho — phần bị trừ do kiểm thiếu cũng nằm ở stock_held nhưng
+     * là hàng đã mất, không bao giờ về nên không được tính là đang sở hữu.
+     */
     private function openStockQuantities(array $productIds): array
     {
         return OrderItem::query()
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->whereIn('order_items.product_id', $productIds)
-            ->where('order_items.size_pending', false)
-            ->whereNotNull('orders.stock_decreased_at')
-            ->whereNull('orders.stock_returned_at')
-            ->selectRaw('order_items.product_id, SUM(order_items.quantity) as open_quantity')
+            ->whereIn('orders.status', Order::STOCK_OUT_STATUSES)
+            ->selectRaw('order_items.product_id, SUM(order_items.stock_held) as open_quantity')
             ->groupBy('order_items.product_id')
             ->pluck('open_quantity', 'order_items.product_id')
+            ->map(fn ($quantity) => (int) $quantity)
+            ->all();
+    }
+
+    /**
+     * Hàng đã về kho nhưng chưa kiểm: đã cộng vào tồn, cho thuê tiếp được ngay,
+     * nhưng chưa ai xác nhận còn đủ và còn lành. Dùng để hiển thị cảnh báo mềm.
+     *
+     * @return array<int,int> product_id => số lượng
+     */
+    public function pendingInspectionQuantities(array $productIds = []): array
+    {
+        return OrderItem::query()
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->when($productIds !== [], fn ($query) => $query->whereIn('order_items.product_id', $productIds))
+            ->where('orders.status', Order::RETURNED_STATUS)
+            ->where('order_items.size_pending', false)
+            ->whereNull('order_items.returned_quantity')
+            ->selectRaw('order_items.product_id, SUM(order_items.quantity) as pending_quantity')
+            ->groupBy('order_items.product_id')
+            ->pluck('pending_quantity', 'order_items.product_id')
+            ->map(fn ($quantity) => (int) $quantity)
+            ->all();
+    }
+
+    /**
+     * Như trên nhưng gộp theo mã hàng, cho màn kho vốn hiển thị theo mã.
+     *
+     * @return array<string,int> code => số lượng
+     */
+    public function pendingInspectionQuantitiesByCode(): array
+    {
+        return OrderItem::query()
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->join('products', 'products.id', '=', 'order_items.product_id')
+            ->where('orders.status', Order::RETURNED_STATUS)
+            ->where('order_items.size_pending', false)
+            ->whereNull('order_items.returned_quantity')
+            ->selectRaw('products.code, SUM(order_items.quantity) as pending_quantity')
+            ->groupBy('products.code')
+            ->pluck('pending_quantity', 'products.code')
             ->map(fn ($quantity) => (int) $quantity)
             ->all();
     }
@@ -479,72 +572,10 @@ class OrderInventoryService
             ->increment('stock_quantity', $quantity);
     }
 
-    private function decreaseStocks(array $items): void
-    {
-        foreach ($this->stockTotals($items) as $productId => $quantity) {
-            $this->decreaseStock((int) $productId, (int) $quantity);
-        }
-    }
 
-    private function increaseStocks(array $items): void
-    {
-        foreach ($this->stockTotals($items) as $productId => $quantity) {
-            $this->increaseStock((int) $productId, (int) $quantity);
-        }
-    }
 
-    private function stockTotals(array $items): array
-    {
-        return collect($items)
-            ->groupBy('product_id')
-            ->map(fn (Collection $productItems) => $productItems->sum('quantity'))
-            ->all();
-    }
 
-    private function itemsForStock(Order $order): array
-    {
-        if ($order->items->isNotEmpty()) {
-            return $order->items
-                ->reject(fn (OrderItem $item) => $item->size_pending)
-                ->map(fn (OrderItem $item) => [
-                    'product_id' => $item->product_id,
-                    'quantity' => $item->quantity,
-                ])
-                ->values()
-                ->all();
-        }
 
-        return [[
-            'product_id' => $order->product_id,
-            'quantity' => $order->quantity,
-        ]];
-    }
-
-    /**
-     * Số lượng của đơn đang thực nằm trong kho theo từng sản phẩm:
-     * - Nếu đơn đã được kiểm (có số lượng nhận lại): dùng số đã nhận lại.
-     * - Ngược lại: dùng đủ số lượng đơn.
-     */
-    private function inStockItems(Order $order): array
-    {
-        $order->loadMissing('items');
-
-        $hasReturned = $order->items->isNotEmpty()
-            && $order->items->contains(fn (OrderItem $item) => $item->returned_quantity !== null);
-
-        if ($hasReturned) {
-            return $order->items
-                ->reject(fn (OrderItem $item) => $item->size_pending)
-                ->map(fn (OrderItem $item) => [
-                    'product_id' => $item->product_id,
-                    'quantity' => (int) ($item->returned_quantity ?? 0),
-                ])
-                ->values()
-                ->all();
-        }
-
-        return $this->itemsForStock($order);
-    }
 
     /**
      * Xóa dữ liệu kiểm đơn (số nhận lại + ghi chú) khi đơn rời trạng thái đã kiểm

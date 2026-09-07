@@ -17,12 +17,14 @@ class OrderItem extends Model
         'rental_price',
         'note',
         'returned_quantity',
+        'stock_held',
     ];
 
     protected $casts = [
         'quantity' => 'integer',
         'rental_price' => 'integer',
         'returned_quantity' => 'integer',
+        'stock_held' => 'integer',
         'size_pending' => 'boolean',
     ];
 

@@ -68,6 +68,9 @@ class ProductController extends Controller
             ->orderBy('id', 'desc')
             ->get();
 
+        // Hàng đã về kho nhưng chưa kiểm — đã nằm trong tồn, chỉ cần nhắc để kiểm.
+        $pendingInspection = $this->inventory->pendingInspectionQuantitiesByCode();
+
         $products->each(function ($product) {
             $expectedReceipts = ProductExpectedReceipt::query()
                 ->join('products', 'products.id', '=', 'product_expected_receipts.product_id')
@@ -98,6 +101,7 @@ class ProductController extends Controller
         return view('products.index', [
             'productGroups' => $productGroups,
             'totalProducts' => $products->count(),
+            'pendingInspection' => $pendingInspection,
             'query' => $query,
             'sort' => $sort,
             'direction' => $direction,
@@ -187,6 +191,7 @@ class ProductController extends Controller
 
         return view('products.show', [
             'product' => $product,
+            'pendingInspection' => $this->inventory->pendingInspectionQuantities($variants->pluck('id')->all()),
             'variants' => $variants,
             'totalQuantity' => $totalQuantity,
             'sort' => $sort,
@@ -257,6 +262,7 @@ class ProductController extends Controller
 
         return view('products.daily-stock', [
             'products' => $products,
+            'pendingInspection' => $this->inventory->pendingInspectionQuantities($products->pluck('id')->all()),
             'availability' => $availability,
             'dates' => $dates,
             'dateFrom' => $dateFrom,

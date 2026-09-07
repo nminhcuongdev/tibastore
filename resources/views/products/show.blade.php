@@ -136,6 +136,18 @@
             object-fit: cover;
             width: 100%;
         }
+        /* Hang da ve kho nhung chua kiem: da cong vao ton, chi nhac kiem. */
+        .pending-check {
+            background: #fff7d6;
+            border-radius: 999px;
+            color: #8a5a00;
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 800;
+            margin-top: 4px;
+            padding: 2px 8px;
+            white-space: nowrap;
+        }
         .code {
             color: #a13b60;
             font-weight: 900;
@@ -304,7 +316,14 @@
                                 <div class="name">{{ $variant->name }}</div>
                                 <div class="muted">Cập nhật: {{ $variant->updated_at?->format('d/m/Y') }}</div>
                             </td>
-                            <td>{{ number_format($variant->stock_quantity) }}</td>
+                            <td>
+                                {{ number_format($variant->stock_quantity) }}
+                                @if (! empty($pendingInspection[$variant->id]))
+                                    <div class="pending-check" title="Đã về kho, chưa kiểm">
+                                        {{ number_format($pendingInspection[$variant->id]) }} chờ kiểm
+                                    </div>
+                                @endif
+                            </td>
                             <td>{{ $variant->fabric }}</td>
                             <td>{{ $variant->category ?: 'N/A' }}</td>
                             <td>

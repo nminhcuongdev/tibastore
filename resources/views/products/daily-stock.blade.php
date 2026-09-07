@@ -88,6 +88,18 @@
             z-index: 1;
         }
         thead th.prod { z-index: 3; background: #fff0f4; }
+        /* Hang da ve kho nhung chua kiem: da cong vao ton, chi nhac kiem. */
+        .pending-check {
+            background: #fff7d6;
+            border-radius: 999px;
+            color: #8a5a00;
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 800;
+            margin-top: 4px;
+            padding: 2px 8px;
+            white-space: nowrap;
+        }
         .code { color: #a13b60; font-weight: 800; }
         .muted { color: #8b6672; font-size: 12px; }
         .dow { color: #a06; font-size: 11px; font-weight: 700; }
@@ -206,6 +218,11 @@
                                 <div class="prod-info">
                                     <div><span class="code">{{ $product->code }}</span> — size {{ $product->size }}</div>
                                     <div class="muted">{{ $product->name }} · tồn hiện tại: {{ number_format($product->stock_quantity) }}</div>
+                                    @if (! empty($pendingInspection[$product->id]))
+                                        <div class="pending-check" title="Đã về kho, chưa kiểm">
+                                            {{ number_format($pendingInspection[$product->id]) }} chờ kiểm
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </td>
