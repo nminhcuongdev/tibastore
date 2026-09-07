@@ -143,6 +143,25 @@
         }
         .section { padding: 24px; }
         .section + .section { border-top: 1px solid #f7e3e9; }
+        /* Cot sap xep duoc: bam vao tieu de de doi thu tu. */
+        th.sortable {
+            cursor: pointer;
+            padding-right: 22px !important;
+            position: relative;
+            user-select: none;
+            white-space: nowrap;
+        }
+        th.sortable:hover { color: #be476f; }
+        th.sortable::after {
+            color: #c9a3b2;
+            content: '95';
+            font-size: 11px;
+            position: absolute;
+            right: 7px;
+        }
+        th.sortable[aria-sort="ascending"]::after { color: #be476f; content: '91'; }
+        th.sortable[aria-sort="descending"]::after { color: #be476f; content: '93'; }
+        th.sortable:focus-visible { outline: 2px solid #c9577d; outline-offset: -2px; }
         .section-title {
             color: #7a344c;
             font-size: 16px;
@@ -472,16 +491,16 @@
             <section class="section">
                 <h2 class="section-title">Sản phẩm trong đơn</h2>
                 <div class="table-shell">
-                    <table>
+                    <table data-sortable>
                         <thead>
                             <tr>
                                 <th>Hình ảnh</th>
-                                <th>Mã hàng</th>
-                                <th>Tên hàng</th>
-                                <th>Vải</th>
-                                <th>Size - Số lượng</th>
-                                <th>Giá thuê</th>
-                                <th>Thành tiền</th>
+                                <th class="sortable" data-sort="text" tabindex="0">Mã hàng</th>
+                                <th class="sortable" data-sort="text" tabindex="0">Tên hàng</th>
+                                <th class="sortable" data-sort="text" tabindex="0">Vải</th>
+                                <th class="sortable" data-sort="number" tabindex="0">Size - Số lượng</th>
+                                <th class="sortable" data-sort="number" tabindex="0">Giá thuê</th>
+                                <th class="sortable" data-sort="number" tabindex="0">Thành tiền</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -507,12 +526,12 @@
                                         @endif
                                     </td>
                                     <td class="code">{{ $code }}</td>
-                                    <td>
+                                    <td data-sort-value="{{ $product?->name ?? '' }}">
                                         <div class="value">{{ $product?->name ?? 'Sản phẩm không còn tồn tại' }}</div>
                                         <div class="muted">Tồn hiện tại: {{ number_format($items->unique(fn ($item) => $item->product?->id)->sum(fn ($item) => $item->product?->stock_quantity ?? 0)) }}</div>
                                     </td>
                                     <td>{{ $product?->fabric ?? 'N/A' }}</td>
-                                    <td>
+                                    <td data-sort-value="{{ $items->sum('quantity') }}">
                                         <div class="size-qty-list">
                                             @foreach ($sizeQuantities as $size => $sizeItems)
                                                 Size {{ $size }}: {{ number_format($sizeItems->sum('quantity')) }}@if (! $loop->last), @endif
@@ -529,8 +548,8 @@
                                             </div>
                                         @endif
                                     </td>
-                                    <td>{{ number_format($lineRental) }} VND</td>
-                                    <td>{{ number_format($lineTotal) }} VND</td>
+                                    <td data-sort-value="{{ $lineRental }}">{{ number_format($lineRental) }} VND</td>
+                                    <td data-sort-value="{{ $lineTotal }}">{{ number_format($lineTotal) }} VND</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -548,14 +567,14 @@
                 <section class="section">
                     <h2 class="section-title">Kết quả kiểm đơn</h2>
                     <div class="table-shell">
-                        <table>
+                        <table data-sortable>
                             <thead>
                                 <tr>
-                                    <th>Mã hàng</th>
-                                    <th>Size</th>
-                                    <th>SL đơn</th>
-                                    <th>Nhận lại kho</th>
-                                    <th>Thiếu (mất/hỏng)</th>
+                                    <th class="sortable" data-sort="text" tabindex="0">Mã hàng</th>
+                                    <th class="sortable" data-sort="text" tabindex="0">Size</th>
+                                    <th class="sortable" data-sort="number" tabindex="0">SL đơn</th>
+                                    <th class="sortable" data-sort="number" tabindex="0">Nhận lại kho</th>
+                                    <th class="sortable" data-sort="number" tabindex="0">Thiếu (mất/hỏng)</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -569,7 +588,7 @@
                                         <td>{{ $item->displaySize() }}</td>
                                         <td>{{ number_format($item->quantity) }}</td>
                                         <td>{{ number_format($returned) }}</td>
-                                        <td>{{ $missing > 0 ? number_format($missing) : '—' }}</td>
+                                        <td data-sort-value="{{ $missing }}">{{ $missing > 0 ? number_format($missing) : '—' }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -611,6 +630,70 @@
         }
 
         lightbox.addEventListener('click', closeLightbox);
+
+        // ===== Sap xep bang bang cach bam vao tieu de cot =====
+        // Lam o phia trinh duyet: bang chi vai dong nen doi thu tu la tuc thi,
+        // khong phai tai lai trang va khong mat cac phan khac dang xem.
+        function cellSortValue(row, index, type) {
+            const cell = row.cells[index];
+
+            if (! cell) {
+                return type === 'number' ? 0 : '';
+            }
+
+            // Uu tien data-sort-value: chu hien thi co the la "1,100,000 VND"
+            // hoac dau gach ngang, khong sap xep dung duoc.
+            const raw = cell.dataset.sortValue !== undefined ? cell.dataset.sortValue : cell.innerText;
+
+            if (type === 'number') {
+                const num = Number(String(raw).replace(/[^0-9.-]/g, ''));
+
+                return isNaN(num) ? 0 : num;
+            }
+
+            return String(raw).trim();
+        }
+
+        function initSortableTable(table) {
+            const body = table.tBodies[0];
+            if (! body) return;
+
+            table.querySelectorAll('th.sortable').forEach(header => {
+                const index = header.cellIndex;
+                const type = header.dataset.sort === 'number' ? 'number' : 'text';
+
+                function sort() {
+                    const dir = header.getAttribute('aria-sort') === 'ascending' ? -1 : 1;
+
+                    table.querySelectorAll('th.sortable').forEach(other => other.removeAttribute('aria-sort'));
+                    header.setAttribute('aria-sort', dir === 1 ? 'ascending' : 'descending');
+
+                    Array.from(body.rows)
+                        .sort((a, b) => {
+                            const va = cellSortValue(a, index, type);
+                            const vb = cellSortValue(b, index, type);
+
+                            if (type === 'number') {
+                                return (va - vb) * dir;
+                            }
+
+                            // So sanh theo tieng Viet de N10 dung truoc N2 va co dau dung thu tu.
+                            return va.localeCompare(vb, 'vi', { numeric: true, sensitivity: 'base' }) * dir;
+                        })
+                        .forEach(row => body.appendChild(row));
+                }
+
+                header.addEventListener('click', sort);
+                header.addEventListener('keydown', event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        sort();
+                    }
+                });
+            });
+        }
+
+        document.querySelectorAll('table[data-sortable]').forEach(initSortableTable);
 
         document.addEventListener('keydown', event => {
             if (event.key === 'Escape' && lightbox.classList.contains('is-open')) {
