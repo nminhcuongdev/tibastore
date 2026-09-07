@@ -266,6 +266,34 @@
             object-fit: contain;
         }
 
+        /* Thanh ton: mot mach nhin ra ma nao dang cang hang. */
+        .stock-cell { min-width: 150px; }
+        .stock-figure {
+            align-items: baseline;
+            display: flex;
+            gap: 4px;
+            font-weight: 900;
+        }
+        .stock-figure .now { color: #3f2730; font-size: 15px; }
+        .stock-figure .owned { color: #8b6672; font-size: 12px; font-weight: 700; }
+        .stock-bar {
+            background: #f3e7ec;
+            border-radius: 999px;
+            display: flex;
+            height: 7px;
+            margin: 5px 0 4px;
+            overflow: hidden;
+            width: 100%;
+        }
+        .stock-bar span { display: block; height: 100%; }
+        .stock-bar .seg-ready { background: #2f9e6f; }
+        .stock-bar .seg-check { background: #e5b73c; }
+        .stock-bar .seg-rented { background: #c9577d; }
+        .stock-legend { color: #8b6672; font-size: 11px; line-height: 1.5; }
+        .stock-legend b { font-weight: 800; }
+        .stock-legend .ready { color: #1f7d55; }
+        .stock-legend .check { color: #8a5a00; }
+        .stock-legend .rented { color: #a13b60; }
         /* Hang da ve kho nhung chua kiem: da cong vao ton, chi nhac kiem. */
         .pending-check {
             background: #fff7d6;
@@ -560,13 +588,45 @@
                                         </div>
                                         <div class="muted">Cập nhật: {{ $product->updated_at?->format('d/m/Y') }}</div>
                                     </td>
-                                    <td>
-                                        {{ number_format($product->total_stock_quantity) }}
-                                        @if (! empty($pendingInspection[$product->code]))
-                                            <div class="pending-check" title="Đã về kho, chưa kiểm">
-                                                {{ number_format($pendingInspection[$product->code]) }} chờ kiểm
+                                    @php
+                                        // Trong kho da bao gom ca hang vua ve chua kiem.
+                                        $trongKho = (int) $product->total_stock_quantity;
+                                        $choKiem = min($trongKho, (int) ($pendingInspection[$product->code] ?? 0));
+                                        $dangThue = (int) ($rentedOut[$product->code] ?? 0);
+                                        $sanSang = max(0, $trongKho - $choKiem);
+                                        // Tong so huu = dang co trong kho + dang o cho khach.
+                                        // Hang mat khi kiem khong tinh vao day vi khong bao gio ve nua.
+                                        $tongSoHuu = $trongKho + $dangThue;
+                                        $ty = fn ($phan) => $tongSoHuu > 0 ? round($phan * 100 / $tongSoHuu, 2) : 0;
+                                    @endphp
+                                    <td class="stock-cell">
+                                        <div class="stock-figure">
+                                            <span class="now">{{ number_format($trongKho) }}</span>
+                                            <span class="owned">/ {{ number_format($tongSoHuu) }} sở hữu</span>
+                                        </div>
+                                        @if ($tongSoHuu > 0)
+                                            <div class="stock-bar" role="img"
+                                                aria-label="Sẵn sàng {{ $sanSang }}, chờ kiểm {{ $choKiem }}, đang cho thuê {{ $dangThue }}">
+                                                @if ($sanSang > 0)
+                                                    <span class="seg-ready" style="width: {{ $ty($sanSang) }}%"></span>
+                                                @endif
+                                                @if ($choKiem > 0)
+                                                    <span class="seg-check" style="width: {{ $ty($choKiem) }}%"></span>
+                                                @endif
+                                                @if ($dangThue > 0)
+                                                    <span class="seg-rented" style="width: {{ $ty($dangThue) }}%"></span>
+                                                @endif
                                             </div>
                                         @endif
+                                        <div class="stock-legend">
+                                            <span class="ready">Sẵn sàng <b>{{ number_format($sanSang) }}</b></span>
+                                            @if ($choKiem > 0)
+                                                · <span class="check">chờ kiểm <b>{{ number_format($choKiem) }}</b></span>
+                                            @endif
+                                            @if ($dangThue > 0)
+                                                · <span class="rented">đang thuê <b>{{ number_format($dangThue) }}</b></span>
+                                            @endif
+                                        </div>
                                     </td>
                                     <td>{{ $product->fabric }}</td>
                                     <td>{{ $product->expected_receive_date ? \Illuminate\Support\Carbon::parse($product->expected_receive_date)->format('d/m/Y') : 'N/A' }}</td>

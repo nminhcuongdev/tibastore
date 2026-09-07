@@ -70,6 +70,8 @@ class ProductController extends Controller
 
         // Hàng đã về kho nhưng chưa kiểm — đã nằm trong tồn, chỉ cần nhắc để kiểm.
         $pendingInspection = $this->inventory->pendingInspectionQuantitiesByCode();
+        // Hàng đang ở chỗ khách, sẽ quay về — để dựng thanh tồn theo mã.
+        $rentedOut = $this->inventory->rentedOutQuantitiesByCode();
 
         $products->each(function ($product) {
             $expectedReceipts = ProductExpectedReceipt::query()
@@ -102,6 +104,7 @@ class ProductController extends Controller
             'productGroups' => $productGroups,
             'totalProducts' => $products->count(),
             'pendingInspection' => $pendingInspection,
+            'rentedOut' => $rentedOut,
             'query' => $query,
             'sort' => $sort,
             'direction' => $direction,

@@ -490,6 +490,27 @@ class OrderInventoryService
             ->all();
     }
 
+    /**
+     * Hàng đang cho thuê theo mã: đã trừ khỏi kho và sẽ quay về.
+     *
+     * Lấy theo stock_held nên phản ánh đúng số đang thực bị trừ, không phải
+     * số lượng ghi trên đơn.
+     *
+     * @return array<string,int> code => số lượng
+     */
+    public function rentedOutQuantitiesByCode(): array
+    {
+        return OrderItem::query()
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->join('products', 'products.id', '=', 'order_items.product_id')
+            ->whereIn('orders.status', Order::STOCK_OUT_STATUSES)
+            ->selectRaw('products.code, SUM(order_items.stock_held) as rented_quantity')
+            ->groupBy('products.code')
+            ->pluck('rented_quantity', 'products.code')
+            ->map(fn ($quantity) => (int) $quantity)
+            ->all();
+    }
+
     private function maxReservedQuantities(
         array $productIds,
         Carbon $start,
