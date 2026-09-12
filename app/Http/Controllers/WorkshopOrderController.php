@@ -134,11 +134,21 @@ class WorkshopOrderController extends Controller
     private function productCodes(): array
     {
         return Product::query()
-            ->select('code', 'name')
+            ->select('code', 'name', 'image_path')
             ->orderBy('code')
             ->get()
-            ->unique('code')
-            ->map(fn ($product) => ['code' => $product->code, 'name' => $product->name])
+            ->groupBy('code')
+            ->map(function ($group) {
+                // Ảnh là thuộc tính của mã, nhưng phòng trường hợp chỉ một size
+                // có ảnh thì lấy ảnh đầu tiên tìm được trong cả mã.
+                $withImage = $group->first(fn ($product) => filled($product->image_path));
+
+                return [
+                    'code' => $group->first()->code,
+                    'name' => $group->first()->name,
+                    'image' => $withImage ? asset('storage/' . $withImage->image_path) : null,
+                ];
+            })
             ->values()
             ->all();
     }

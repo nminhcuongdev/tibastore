@@ -58,26 +58,116 @@
             outline: none;
         }
         .error { color: #b4233f; font-size: 13px; font-weight: 700; }
+
+        /* ===== Ô chọn mã hàng kèm ảnh ===== */
+        .picker { min-width: 0; position: relative; }
+        .suggestions {
+            background: #fff;
+            border: 1px solid #f0d3dc;
+            border-radius: 8px;
+            box-shadow: 0 14px 36px rgba(117, 44, 69, .14);
+            display: none;
+            left: 0;
+            margin-top: 6px;
+            max-height: 320px;
+            overflow-y: auto;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            z-index: 30;
+        }
+        .suggestion {
+            align-items: center;
+            background: transparent;
+            border: 0;
+            border-bottom: 1px solid #f7e3e9;
+            cursor: pointer;
+            display: flex;
+            gap: 12px;
+            padding: 9px 11px;
+            text-align: left;
+            width: 100%;
+        }
+        .suggestion:hover, .suggestion.is-active { background: #fff4f7; }
+        .suggestion .s-thumb {
+            align-items: center;
+            background: #f9e5ec;
+            border: 1px solid #f1cbd7;
+            border-radius: 6px;
+            color: #a64465;
+            display: flex;
+            flex: 0 0 auto;
+            font-size: 9px;
+            font-weight: 800;
+            height: 52px;
+            justify-content: center;
+            overflow: hidden;
+            text-align: center;
+            width: 52px;
+        }
+        .suggestion .s-thumb img { height: 100%; object-fit: cover; width: 100%; }
+        .suggestion .s-code { color: #a13b60; font-weight: 900; }
+        .suggestion .s-name { color: #8b6672; font-size: 13px; }
+        .no-match { color: #8b6672; font-size: 13px; padding: 14px; }
+
+        /* ===== Preview mã đã chọn ===== */
         .preview {
             align-items: center;
             background: #fff4f7;
             border: 1px solid #f2d3dc;
             border-radius: 8px;
             color: #704252;
-            display: flex;
-            font-size: 13px;
-            gap: 12px;
+            display: none;
+            gap: 14px;
             grid-column: 1 / -1;
-            padding: 12px;
+            padding: 14px;
         }
-        .preview img {
+        .preview.is-on { display: flex; }
+        .preview .p-thumb {
+            align-items: center;
+            background: #f9e5ec;
             border: 1px solid #f1cbd7;
             border-radius: 8px;
-            height: 72px;
-            object-fit: cover;
-            width: 72px;
+            color: #a64465;
+            cursor: zoom-in;
+            display: flex;
+            flex: 0 0 auto;
+            font-size: 10px;
+            font-weight: 800;
+            height: 104px;
+            justify-content: center;
+            overflow: hidden;
+            padding: 0;
+            text-align: center;
+            width: 104px;
         }
-        .preview .code { color: #a13b60; font-weight: 900; }
+        .preview .p-thumb img { height: 100%; object-fit: cover; width: 100%; }
+        .preview .p-code { color: #a13b60; font-size: 17px; font-weight: 900; }
+        .preview .p-name { font-weight: 700; }
+        .preview .p-warn { color: #b4233f; font-weight: 800; }
+
+        .image-lightbox {
+            align-items: center;
+            background: rgba(63, 39, 48, .72);
+            cursor: zoom-out;
+            display: none;
+            inset: 0;
+            justify-content: center;
+            padding: 24px;
+            position: fixed;
+            z-index: 1000;
+        }
+        .image-lightbox.is-open { display: flex; }
+        .image-lightbox img {
+            background: #fff;
+            border: 8px solid #fff;
+            border-radius: 8px;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
+            max-height: min(82vh, 760px);
+            max-width: min(88vw, 760px);
+            object-fit: contain;
+        }
+
         .actions {
             display: flex;
             flex-wrap: wrap;
@@ -145,14 +235,13 @@
 
         <div class="field">
             <label for="product_code">Mã hàng</label>
-            <input id="product_code" name="product_code" list="product_codes" autocomplete="off" required
-                value="{{ old('product_code', $workshopOrder->product_code) }}" placeholder="Gõ hoặc chọn mã trong kho">
-            <datalist id="product_codes">
-                @foreach ($productCodes as $item)
-                    <option value="{{ $item['code'] }}">{{ $item['name'] }}</option>
-                @endforeach
-            </datalist>
-            <span class="hint">Chỉ nhận mã đã có trong kho.</span>
+            <div class="picker">
+                <input id="product_code" name="product_code" type="text" autocomplete="off" required
+                    value="{{ old('product_code', $workshopOrder->product_code) }}"
+                    placeholder="Gõ để tìm mã trong kho..." data-code-input>
+                <div class="suggestions" data-suggestions></div>
+            </div>
+            <span class="hint">Gõ mã hoặc tên, danh sách gợi ý có sẵn ảnh để bạn chọn cho đúng.</span>
             @error('product_code') <div class="error">{{ $message }}</div> @enderror
         </div>
 
@@ -162,6 +251,18 @@
                 value="{{ old('size_note', $workshopOrder->size_note) }}" placeholder="VD: 5s 5m 2L 3xl">
             <span class="hint">Ghi tự do số lượng theo từng size.</span>
             @error('size_note') <div class="error">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="preview" data-preview>
+            <button class="p-thumb" type="button" data-preview-thumb title="Bấm để xem ảnh lớn">
+                <img src="" alt="" data-preview-image>
+                <span data-preview-noimage style="display: none;">CHƯA CÓ ẢNH</span>
+            </button>
+            <div>
+                <div class="p-code" data-preview-code></div>
+                <div class="p-name" data-preview-name></div>
+                <div class="p-warn" data-preview-warn style="display: none;">Mã này chưa có trong kho.</div>
+            </div>
         </div>
 
         <div class="field">
@@ -216,18 +317,6 @@
             @error('buyer_note') <div class="error">{{ $message }}</div> @enderror
         </div>
 
-        @if ($mode === 'edit' && $workshopOrder->product)
-            <div class="preview">
-                @if ($workshopOrder->product->image_path)
-                    <img src="{{ asset('storage/' . $workshopOrder->product->image_path) }}" alt="{{ $workshopOrder->product_code }}">
-                @endif
-                <div>
-                    <div class="code">{{ $workshopOrder->product_code }}</div>
-                    <div>{{ $workshopOrder->product->name }}</div>
-                </div>
-            </div>
-        @endif
-
         <div class="actions">
             <a class="button secondary" href="{{ route('workshop-orders.index') }}">Hủy</a>
             <button class="button" type="submit">{{ $mode === 'create' ? 'Thêm dòng' : 'Lưu thay đổi' }}</button>
@@ -235,5 +324,188 @@
     </form>
 </main>
 </div>
+
+<div class="image-lightbox" data-lightbox>
+    <img src="" alt="Ảnh sản phẩm" data-lightbox-image>
+</div>
+
+<script>
+    (function () {
+        const PRODUCTS = @json($productCodes);
+
+        const input = document.querySelector('[data-code-input]');
+        const box = document.querySelector('[data-suggestions]');
+        const preview = document.querySelector('[data-preview]');
+        const pThumb = preview.querySelector('[data-preview-thumb]');
+        const pImage = preview.querySelector('[data-preview-image]');
+        const pNoImage = preview.querySelector('[data-preview-noimage]');
+        const pCode = preview.querySelector('[data-preview-code]');
+        const pName = preview.querySelector('[data-preview-name]');
+        const pWarn = preview.querySelector('[data-preview-warn]');
+        const lightbox = document.querySelector('[data-lightbox]');
+        const lightboxImage = lightbox.querySelector('[data-lightbox-image]');
+
+        let activeIndex = -1;
+
+        function findByCode(code) {
+            const wanted = (code || '').trim().toLowerCase();
+            return PRODUCTS.find(item => item.code.toLowerCase() === wanted) || null;
+        }
+
+        // Preview đổi theo mã đang gõ, kể cả khi gõ tay thay vì bấm gợi ý.
+        function renderPreview() {
+            const typed = input.value.trim();
+
+            if (typed === '') {
+                preview.classList.remove('is-on');
+                return;
+            }
+
+            const found = findByCode(typed);
+            preview.classList.add('is-on');
+
+            if (!found) {
+                pCode.textContent = typed;
+                pName.textContent = '';
+                pWarn.style.display = 'block';
+                pImage.style.display = 'none';
+                pNoImage.style.display = 'block';
+                pNoImage.textContent = 'KHÔNG RÕ';
+                pThumb.style.cursor = 'default';
+                return;
+            }
+
+            pCode.textContent = found.code;
+            pName.textContent = found.name || '';
+            pWarn.style.display = 'none';
+
+            if (found.image) {
+                pImage.src = found.image;
+                pImage.alt = found.code;
+                pImage.style.display = 'block';
+                pNoImage.style.display = 'none';
+                pThumb.style.cursor = 'zoom-in';
+            } else {
+                pImage.style.display = 'none';
+                pNoImage.style.display = 'block';
+                pNoImage.textContent = 'CHƯA CÓ ẢNH';
+                pThumb.style.cursor = 'default';
+            }
+        }
+
+        function closeSuggestions() {
+            box.style.display = 'none';
+            activeIndex = -1;
+        }
+
+        function choose(code) {
+            input.value = code;
+            closeSuggestions();
+            renderPreview();
+        }
+
+        function renderSuggestions() {
+            const keyword = input.value.trim().toLowerCase();
+            const matches = PRODUCTS.filter(item =>
+                item.code.toLowerCase().includes(keyword)
+                || (item.name || '').toLowerCase().includes(keyword)
+            ).slice(0, 30);
+
+            box.innerHTML = '';
+            activeIndex = -1;
+
+            if (matches.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'no-match';
+                empty.textContent = 'Không tìm thấy mã nào trong kho.';
+                box.appendChild(empty);
+                box.style.display = 'block';
+                return;
+            }
+
+            matches.forEach(item => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'suggestion';
+
+                const thumb = document.createElement('span');
+                thumb.className = 's-thumb';
+                if (item.image) {
+                    const img = document.createElement('img');
+                    img.src = item.image;
+                    img.alt = item.code;
+                    img.loading = 'lazy';
+                    thumb.appendChild(img);
+                } else {
+                    thumb.textContent = 'CHƯA CÓ ẢNH';
+                }
+
+                const texts = document.createElement('span');
+                const code = document.createElement('span');
+                const name = document.createElement('span');
+                code.className = 's-code';
+                code.textContent = item.code;
+                name.className = 's-name';
+                name.textContent = item.name || '';
+                texts.append(code, document.createElement('br'), name);
+
+                button.append(thumb, texts);
+                // mousedown chạy trước blur của ô nhập nên gợi ý không bị đóng mất.
+                button.addEventListener('mousedown', event => {
+                    event.preventDefault();
+                    choose(item.code);
+                });
+                box.appendChild(button);
+            });
+
+            box.style.display = 'block';
+        }
+
+        function moveActive(step) {
+            const buttons = [...box.querySelectorAll('.suggestion')];
+            if (buttons.length === 0) return;
+
+            buttons.forEach(button => button.classList.remove('is-active'));
+            activeIndex = (activeIndex + step + buttons.length) % buttons.length;
+            buttons[activeIndex].classList.add('is-active');
+            buttons[activeIndex].scrollIntoView({ block: 'nearest' });
+        }
+
+        input.addEventListener('input', () => { renderSuggestions(); renderPreview(); });
+        input.addEventListener('focus', renderSuggestions);
+        input.addEventListener('blur', () => setTimeout(closeSuggestions, 120));
+
+        input.addEventListener('keydown', event => {
+            if (box.style.display !== 'block') return;
+
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                event.preventDefault();
+                moveActive(event.key === 'ArrowDown' ? 1 : -1);
+                return;
+            }
+            if (event.key === 'Enter' && activeIndex >= 0) {
+                event.preventDefault();
+                box.querySelectorAll('.suggestion')[activeIndex].dispatchEvent(new Event('mousedown'));
+                return;
+            }
+            if (event.key === 'Escape') {
+                closeSuggestions();
+            }
+        });
+
+        pThumb.addEventListener('click', () => {
+            if (pImage.style.display === 'none' || !pImage.src) return;
+            lightboxImage.src = pImage.src;
+            lightbox.classList.add('is-open');
+        });
+        lightbox.addEventListener('click', () => lightbox.classList.remove('is-open'));
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') lightbox.classList.remove('is-open');
+        });
+
+        // Mở form sửa (hoặc quay lại sau lỗi) thì hiện luôn ảnh của mã đang có.
+        renderPreview();
+    })();
+</script>
 </body>
 </html>
