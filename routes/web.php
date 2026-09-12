@@ -8,6 +8,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StockImportHistoryController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WorkshopOrderController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -51,6 +52,9 @@ Route::middleware('auth')->group(function () {
         ->name('stock-import-histories.index');
     Route::get('/reports/revenue', [ReportController::class, 'revenue'])->name('reports.revenue');
     Route::get('/change-logs', [ChangeLogController::class, 'index'])->name('change-logs.index');
+    Route::patch('/workshop-orders/{workshopOrder}/status', [WorkshopOrderController::class, 'updateStatus'])
+        ->name('workshop-orders.status');
+    Route::resource('workshop-orders', WorkshopOrderController::class)->except(['show']);
 
     Route::middleware('role:admin')->group(function () {
         Route::resource('users', UserController::class)->except(['show']);
