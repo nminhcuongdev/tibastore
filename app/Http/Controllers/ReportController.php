@@ -22,7 +22,7 @@ class ReportController extends Controller
         'return_date' => 'Ngày trả',
     ];
 
-    private const DEFAULT_BASES = ['created_at'];
+    private const DEFAULT_BASES = ['pickup_date'];
 
     private const MODES = [
         'range' => 'Cả khoảng ngày',
