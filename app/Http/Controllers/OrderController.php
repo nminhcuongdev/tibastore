@@ -31,10 +31,11 @@ class OrderController extends Controller
             'product_code' => 'products.code',
             'quantity' => 'orders.quantity',
             'status' => 'orders.status',
+            'created' => 'orders.created_at',
             'updated' => 'orders.updated_at',
         ];
 
-        $sort = $request->query('sort', 'updated');
+        $sort = $request->query('sort', 'created');
         $direction = $request->query('direction', 'desc');
         $query = trim((string) $request->query('q', ''));
         // Loc trang thai cho phep chon nhieu; giu tuong thich voi link cu dang ?status=da_gui.
@@ -58,7 +59,7 @@ class OrderController extends Controller
         $returnTo = $this->filterDate($request->query('return_to'));
 
         if (! array_key_exists($sort, $sortMap)) {
-            $sort = 'updated';
+            $sort = 'created';
         }
 
         if (! in_array($direction, ['asc', 'desc'], true)) {
