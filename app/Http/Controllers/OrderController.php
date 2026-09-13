@@ -51,6 +51,8 @@ class OrderController extends Controller
         $phone = trim((string) $request->query('phone', ''));
         $carrier = trim((string) $request->query('carrier', ''));
         $region = (string) $request->query('region', '');
+        // Loc theo so tien con lai: '' = tat ca, 'nonzero' = khac 0, 'zero' = bang 0.
+        $remaining = (string) $request->query('remaining', '');
         $pickupFrom = $this->filterDate($request->query('pickup_from'));
         $pickupTo = $this->filterDate($request->query('pickup_to'));
         $eventFrom = $this->filterDate($request->query('event_from'));
@@ -74,6 +76,10 @@ class OrderController extends Controller
             $region = '';
         }
 
+        if (! in_array($remaining, ['nonzero', 'zero'], true)) {
+            $remaining = '';
+        }
+
         $orders = Order::query()
             ->select('orders.*')
             // Chi con can so luong dong hang de tinh tong va kiem thieu; du lieu
@@ -87,6 +93,15 @@ class OrderController extends Controller
             ->when($phone !== '', fn ($builder) => $builder->where('orders.phone', 'like', "%{$phone}%"))
             ->when($carrier !== '', fn ($builder) => $builder->where('orders.carrier', 'like', "%{$carrier}%"))
             ->when($region !== '', fn ($builder) => $builder->where('orders.region', $region))
+            ->when($remaining !== '', function ($builder) use ($remaining) {
+                // Cung cong thuc voi Order::getRemainingAttribute(); COALESCE vi cot tien
+                // de trong la NULL, ma NULL tham gia phep tinh se lam ca bieu thuc thanh NULL.
+                $builder->whereRaw(
+                    '(COALESCE(orders.total_amount, 0) + COALESCE(orders.compensation_amount, 0)'
+                    . ' + COALESCE(orders.shipping_fee, 0) - COALESCE(orders.payment_1, 0)'
+                    . ' - COALESCE(orders.payment_2, 0)) ' . ($remaining === 'zero' ? '= 0' : '<> 0')
+                );
+            })
             ->when($pickupFrom, fn ($builder) => $builder->whereDate('orders.pickup_date', '>=', $pickupFrom))
             ->when($pickupTo, fn ($builder) => $builder->whereDate('orders.pickup_date', '<=', $pickupTo))
             ->when($eventFrom, fn ($builder) => $builder->whereDate('orders.event_date', '>=', $eventFrom))
@@ -136,6 +151,7 @@ class OrderController extends Controller
                 'phone' => $phone,
                 'carrier' => $carrier,
                 'region' => $region,
+                'remaining' => $remaining,
                 'pickup_from' => $pickupFrom,
                 'pickup_to' => $pickupTo,
                 'event_from' => $eventFrom,

@@ -465,6 +465,14 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="filter-field">
+                        <label for="remaining">Còn lại</label>
+                        <select id="remaining" name="remaining">
+                            <option value="">Tất cả</option>
+                            <option value="nonzero" @selected($filters['remaining'] === 'nonzero')>Khác 0 (chưa tất toán)</option>
+                            <option value="zero" @selected($filters['remaining'] === 'zero')>Bằng 0 (đã tất toán)</option>
+                        </select>
+                    </div>
                     <div class="filter-field wide">
                         <label>Trạng thái <span class="muted">(chọn nhiều được; bỏ trống = tất cả)</span></label>
                         <div class="status-checks">
