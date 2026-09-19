@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 class Order extends Model
 {
@@ -146,6 +147,43 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    /**
+     * Danh sách mã hàng của đơn để hiển thị: gộp theo mã + size, cộng số lượng
+     * (cùng một mã-size ở nhiều mức giá chỉ hiện một dòng).
+     *
+     * @return \Illuminate\Support\Collection<int, array{code: string, name: string, size: string, quantity: int, image: ?string}>
+     */
+    public function codeSummary(): Collection
+    {
+        $codes = $this->items
+            ->groupBy(fn ($item) => ($item->product?->code ?? 'N/A') . '|' . $item->displaySize())
+            ->map(fn ($group) => [
+                'code' => $group->first()->product?->code ?? 'N/A',
+                'name' => $group->first()->product?->name ?? '',
+                'size' => $group->first()->displaySize(),
+                'quantity' => (int) $group->sum('quantity'),
+                'image' => $group->first()->product?->image_path
+                    ? asset('storage/' . $group->first()->product->image_path)
+                    : null,
+            ])
+            ->values();
+
+        // Đơn cũ chưa có dòng hàng thì lấy tạm sản phẩm gắn trực tiếp trên đơn.
+        if ($codes->isEmpty() && $this->product) {
+            $codes = collect([[
+                'code' => $this->product->code,
+                'name' => $this->product->name,
+                'size' => $this->product->size,
+                'quantity' => (int) $this->quantity,
+                'image' => $this->product->image_path
+                    ? asset('storage/' . $this->product->image_path)
+                    : null,
+            ]]);
+        }
+
+        return $codes;
     }
 
     /**

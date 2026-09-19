@@ -82,9 +82,12 @@ class OrderController extends Controller
 
         $orders = Order::query()
             ->select('orders.*')
-            // Chi con can so luong dong hang de tinh tong va kiem thieu; du lieu
-            // chi tiet cua modal da chuyen sang lay rieng khi mo.
-            ->with(['items:id,order_id,quantity,returned_quantity'])
+            // Danh sach ma hang duoc so ngay tren bang nen can ca san pham cua
+            // tung dong; hai truy van eager-load van re hon moi dong mot request.
+            ->with([
+                'items:id,order_id,product_id,quantity,returned_quantity,size_pending',
+                'items.product:id,code,name,size,image_path',
+            ])
             ->join('products', 'products.id', '=', 'orders.product_id')
             ->when($selectedStatuses !== [], fn ($builder) => $builder->whereIn('orders.status', $selectedStatuses))
             ->when($source !== '', fn ($builder) => $builder->where('orders.source', $source))
@@ -282,33 +285,8 @@ class OrderController extends Controller
                 : null,
         ])->values();
 
-        // Gộp theo mã + size cho modal "Xem": cùng mã-size ở nhiều mức giá
-        // vẫn hiện một dòng với tổng số lượng.
-        $codes = $order->items
-            ->groupBy(fn ($item) => ($item->product?->code ?? 'N/A') . '|' . $item->displaySize())
-            ->map(fn ($group) => [
-                'code' => $group->first()->product?->code ?? 'N/A',
-                'name' => $group->first()->product?->name ?? '',
-                'size' => $group->first()->displaySize(),
-                'quantity' => (int) $group->sum('quantity'),
-                'image' => $group->first()->product?->image_path
-                    ? asset('storage/' . $group->first()->product->image_path)
-                    : null,
-            ])
-            ->values();
-
-        // Đơn cũ chưa có dòng hàng thì lấy tạm sản phẩm gắn trực tiếp trên đơn.
-        if ($codes->isEmpty() && $order->product) {
-            $codes = collect([[
-                'code' => $order->product->code,
-                'name' => $order->product->name,
-                'size' => $order->product->size,
-                'quantity' => (int) $order->quantity,
-                'image' => $order->product->image_path
-                    ? asset('storage/' . $order->product->image_path)
-                    : null,
-            ]]);
-        }
+        // Gộp theo mã + size: cùng mã-size ở nhiều mức giá vẫn hiện một dòng.
+        $codes = $order->codeSummary();
 
         return response()->json([
             'order_name' => $order->order_name,

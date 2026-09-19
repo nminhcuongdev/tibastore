@@ -257,8 +257,132 @@
             font-weight: 800;
         }
         .view-codes {
-            min-height: 36px;
-            padding: 8px 16px;
+            min-height: 32px;
+            padding: 5px 11px;
+            white-space: nowrap;
+        }
+        .codes-caret {
+            display: inline-block;
+            transition: transform .15s ease;
+        }
+        [aria-expanded="true"] > .codes-caret { transform: rotate(90deg); }
+        /* Xem nhanh vai ma ngay tren cot, khoi phai so ra moi biet don co gi. */
+        .code-peek {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-bottom: 5px;
+        }
+        .code-chip {
+            background: rgba(255, 255, 255, .75);
+            border: 1px solid #ebc5d2;
+            border-radius: 999px;
+            color: #a13b60;
+            display: inline-flex;
+            font-size: 11px;
+            font-weight: 900;
+            gap: 4px;
+            padding: 2px 7px;
+        }
+        .code-chip__size { color: #8b6672; font-weight: 700; }
+        .code-chip.is-more { color: #8b6672; }
+        .codes-row > td { padding: 0 13px 12px; }
+        .codes-panel {
+            background: rgba(255, 255, 255, .78);
+            border: 1px solid #f0d3dc;
+            border-radius: 8px;
+            padding: 10px 12px;
+        }
+        .codes-panel__head {
+            align-items: baseline;
+            border-bottom: 1px dashed #f0d3dc;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 9px;
+            padding-bottom: 7px;
+        }
+        .codes-panel__title { color: #6f253f; font-weight: 900; }
+        .codes-grid {
+            display: grid;
+            gap: 8px;
+            grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+        }
+        .code-card {
+            align-items: center;
+            background: #fff;
+            border: 1px solid #f2d3dc;
+            border-radius: 8px;
+            display: flex;
+            gap: 8px;
+            padding: 6px;
+        }
+        .code-thumb {
+            align-items: center;
+            background: #f9e5ec;
+            border: 1px solid #f1cbd7;
+            border-radius: 6px;
+            color: #a64465;
+            display: flex;
+            flex: 0 0 auto;
+            font-family: inherit;
+            font-size: 8px;
+            font-weight: 800;
+            height: 48px;
+            justify-content: center;
+            overflow: hidden;
+            padding: 0;
+            text-align: center;
+            width: 48px;
+        }
+        .code-thumb.has-image { cursor: zoom-in; }
+        .code-thumb img { height: 100%; object-fit: cover; transition: transform .18s ease; width: 100%; }
+        /* Hover phong to tai cho, bam mo anh lon - giong ben kho hang. */
+        .code-thumb.has-image:hover,
+        .code-thumb.has-image:focus {
+            border-color: #c9577d;
+            box-shadow: 0 10px 24px rgba(117, 44, 69, .18);
+            outline: none;
+            overflow: visible;
+            z-index: 20;
+        }
+        .code-thumb.has-image:hover img,
+        .code-thumb.has-image:focus img {
+            border-radius: 6px;
+            transform: scale(2.6);
+        }
+        .code-card__info { min-width: 0; }
+        .code-card__code { color: #a13b60; font-weight: 900; }
+        .code-card__name {
+            color: #704252;
+            font-size: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .code-card__meta { display: flex; font-size: 12px; gap: 8px; }
+        .code-card__size { color: #8b6672; font-weight: 700; }
+        .code-card__qty { color: #3f2730; font-weight: 900; }
+        .codes-zoom {
+            align-items: center;
+            background: rgba(63, 39, 48, .82);
+            cursor: zoom-out;
+            display: none;
+            inset: 0;
+            justify-content: center;
+            padding: 24px;
+            position: fixed;
+            z-index: 1200;
+        }
+        .codes-zoom.is-open { display: flex; }
+        .codes-zoom img {
+            background: #fff;
+            border: 8px solid #fff;
+            border-radius: 8px;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
+            max-height: min(86vh, 820px);
+            max-width: min(90vw, 820px);
+            object-fit: contain;
         }
         .name {
             color: #3f2730;
@@ -418,6 +542,11 @@
                         <span class="filter-toggle__badge">đang lọc</span>
                     @endif
                 </button>
+                <button type="button" class="button secondary codes-toggle-all" data-codes-toggle-all
+                    aria-expanded="false">
+                    <span class="codes-caret" aria-hidden="true">▸</span>
+                    <span data-codes-toggle-all-label>Sổ tất cả mã hàng</span>
+                </button>
                 <a class="button" href="{{ route('orders.create') }}">+ Tạo đơn hàng</a>
             </div>
             <form class="search {{ $hasActiveFilters ? 'is-open' : '' }}" id="filter-panel" method="GET" action="{{ route('orders.index') }}">
@@ -541,7 +670,11 @@
                 </thead>
                 <tbody>
                     @forelse ($orders as $order)
-                        <tr class="row-{{ $order->statusColorKey() }}">
+                        @php
+                            $codeSummary = $order->codeSummary();
+                            $codeTotal = $codeSummary->sum('quantity');
+                        @endphp
+                        <tr class="row-{{ $order->statusColorKey() }}" data-order-row="{{ $order->id }}">
                             <td class="name">{{ $order->closer_name }}</td>
                             <td>{{ $order->pickup_date?->format('d/m/Y') }}</td>
                             <td>{{ $order->event_date?->format('d/m/Y') }}</td>
@@ -551,9 +684,24 @@
                                 <div class="muted">Tạo: {{ $order->created_at?->format('d/m/Y') }}</div>
                             </td>
                             <td>
-                                <button type="button" class="button secondary view-codes"
-                                    data-order-id="{{ $order->id }}"
-                                    data-order-name="{{ $order->order_name }}">Xem</button>
+                                @if ($codeSummary->isEmpty())
+                                    <span class="muted">—</span>
+                                @else
+                                    {{-- Xem nhanh ngay trong cot; bam de so het ma + anh o hang duoi. --}}
+                                    <div class="code-peek">
+                                        @foreach ($codeSummary->take(2) as $code)
+                                            <span class="code-chip">{{ $code['code'] }}<span class="code-chip__size">{{ $code['size'] }}</span></span>
+                                        @endforeach
+                                        @if ($codeSummary->count() > 2)
+                                            <span class="code-chip is-more">+{{ $codeSummary->count() - 2 }}</span>
+                                        @endif
+                                    </div>
+                                    <button type="button" class="button secondary view-codes" data-codes-toggle="{{ $order->id }}"
+                                        aria-expanded="false" aria-controls="codes-panel-{{ $order->id }}">
+                                        <span class="codes-caret" aria-hidden="true">▸</span>
+                                        Sổ {{ $codeSummary->count() }} mã
+                                    </button>
+                                @endif
                             </td>
                             <td>{{ number_format($order->items->sum('quantity') ?: $order->quantity) }}</td>
                             <td>
@@ -590,6 +738,45 @@
                                 </div>
                             </td>
                         </tr>
+                        @if ($codeSummary->isNotEmpty())
+                            {{-- Hang so ma hang: an mac dinh, mo bang nut "So N ma"
+                                 hoac nut "So tat ca ma hang" tren thanh cong cu. --}}
+                            <tr class="codes-row row-{{ $order->statusColorKey() }}" id="codes-panel-{{ $order->id }}"
+                                data-codes-panel="{{ $order->id }}" hidden>
+                                <td colspan="14">
+                                    <div class="codes-panel">
+                                        <div class="codes-panel__head">
+                                            <span class="codes-panel__title">{{ $order->order_name }}</span>
+                                            <span class="muted">{{ $codeSummary->count() }} mã · tổng {{ number_format($codeTotal) }} cái</span>
+                                        </div>
+                                        <div class="codes-grid">
+                                            @foreach ($codeSummary as $code)
+                                                <div class="code-card">
+                                                    @if ($code['image'])
+                                                        <button type="button" class="code-thumb has-image"
+                                                            data-zoom-src="{{ $code['image'] }}"
+                                                            data-zoom-alt="{{ $code['code'] }} - {{ $code['name'] }}"
+                                                            aria-label="Phóng to ảnh {{ $code['code'] }}">
+                                                            <img src="{{ $code['image'] }}" alt="{{ $code['code'] }}" loading="lazy">
+                                                        </button>
+                                                    @else
+                                                        <div class="code-thumb">CHƯA CÓ ẢNH</div>
+                                                    @endif
+                                                    <div class="code-card__info">
+                                                        <div class="code-card__code">{{ $code['code'] }}</div>
+                                                        <div class="code-card__name">{{ $code['name'] ?: '—' }}</div>
+                                                        <div class="code-card__meta">
+                                                            <span class="code-card__size">{{ $code['size'] }}</span>
+                                                            <span class="code-card__qty">×{{ number_format($code['quantity']) }}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endif
                     @empty
                         <tr>
                             <td class="empty" colspan="14">Chưa có đơn hàng phù hợp.</td>
@@ -650,7 +837,7 @@
         })();
     </script>
     @include('orders.modal-data')
-    @include('orders.codes-modal')
+    @include('orders.codes-panel')
     @include('orders.status-confirm-modal')
     @include('orders.check-modal')
     @include('orders.reminders-popup')
