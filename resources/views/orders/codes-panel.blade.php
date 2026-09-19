@@ -38,7 +38,7 @@
 
             toggleAll.setAttribute('aria-expanded', allOpen ? 'true' : 'false');
             if (toggleAllLabel) {
-                toggleAllLabel.textContent = allOpen ? 'Thu tất cả mã hàng' : 'Sổ tất cả mã hàng';
+                toggleAllLabel.textContent = allOpen ? 'Gom hết tất cả' : 'Sổ hết tất cả';
             }
         }
 

@@ -256,6 +256,8 @@
             color: #a13b60;
             font-weight: 800;
         }
+        .code-buttons { display: flex; flex-wrap: wrap; gap: 5px; }
+        .codes-toggle,
         .view-codes {
             min-height: 32px;
             padding: 5px 11px;
@@ -545,7 +547,7 @@
                 <button type="button" class="button secondary codes-toggle-all" data-codes-toggle-all
                     aria-expanded="false">
                     <span class="codes-caret" aria-hidden="true">▸</span>
-                    <span data-codes-toggle-all-label>Sổ tất cả mã hàng</span>
+                    <span data-codes-toggle-all-label>Sổ hết tất cả</span>
                 </button>
                 <a class="button" href="{{ route('orders.create') }}">+ Tạo đơn hàng</a>
             </div>
@@ -696,11 +698,17 @@
                                             <span class="code-chip is-more">+{{ $codeSummary->count() - 2 }}</span>
                                         @endif
                                     </div>
-                                    <button type="button" class="button secondary view-codes" data-codes-toggle="{{ $order->id }}"
-                                        aria-expanded="false" aria-controls="codes-panel-{{ $order->id }}">
-                                        <span class="codes-caret" aria-hidden="true">▸</span>
-                                        Sổ {{ $codeSummary->count() }} mã
-                                    </button>
+                                    <div class="code-buttons">
+                                        {{-- So ra tai cho (giong ben quan ly kho) hoac mo modal rieng. --}}
+                                        <button type="button" class="button secondary codes-toggle" data-codes-toggle="{{ $order->id }}"
+                                            aria-expanded="false" aria-controls="codes-panel-{{ $order->id }}">
+                                            <span class="codes-caret" aria-hidden="true">▸</span>
+                                            Sổ {{ $codeSummary->count() }} mã
+                                        </button>
+                                        <button type="button" class="button secondary view-codes"
+                                            data-order-id="{{ $order->id }}"
+                                            data-order-name="{{ $order->order_name }}">Xem</button>
+                                    </div>
                                 @endif
                             </td>
                             <td>{{ number_format($order->items->sum('quantity') ?: $order->quantity) }}</td>
@@ -838,6 +846,7 @@
     </script>
     @include('orders.modal-data')
     @include('orders.codes-panel')
+    @include('orders.codes-modal')
     @include('orders.status-confirm-modal')
     @include('orders.check-modal')
     @include('orders.reminders-popup')
