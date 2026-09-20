@@ -314,6 +314,17 @@
             });
         });
 
+        form.addEventListener('submit', function (event) {
+            // Danh sach don cap nhat tai cho; trang nao khong co thi de form gui nhu cu.
+            if (typeof window.submitOrderStatus !== 'function') return;
+
+            event.preventDefault();
+
+            const orderId = activeSelect ? activeSelect.dataset.orderId : null;
+            closeModal(false);
+            window.submitOrderStatus(form, orderId);
+        });
+
         modal.querySelector('[data-check-cancel]').addEventListener('click', function () { closeModal(true); });
         modal.addEventListener('click', function (event) { if (event.target === modal) closeModal(true); });
         lightbox.addEventListener('click', closeLightbox);

@@ -368,6 +368,7 @@
                 @method('PATCH')
                 <select name="status" class="status-select status-{{ $order->statusColorKey() }}"
                     data-current="{{ $order->status }}"
+                    data-order-id="{{ $order->id }}"
                     data-order-name="{{ $order->order_name }}"
                     data-check-url="{{ route('orders.status', $order) }}"
                     data-check-note="{{ $order->check_note }}"
@@ -622,6 +623,7 @@
     <div class="image-lightbox" data-image-lightbox aria-hidden="true">
         <img data-lightbox-image src="" alt="">
     </div>
+    @include('orders.modal-data')
     @include('orders.check-modal')
     @include('orders.reminders-popup')
     <script>

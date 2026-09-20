@@ -527,6 +527,8 @@
         @if (session('error'))
             <div class="status is-error">{{ session('error') }}</div>
         @endif
+        {{-- Cho thong bao cua lan doi trang thai bang AJAX. --}}
+        <div data-flash-area></div>
 
         @php
             // Co bo loc nao dang bat thi mo san, de khong bi loc ma khong biet vi sao.
@@ -729,11 +731,11 @@
                                     </select>
                                 </form>
                             </td>
-                            <td>{{ number_format($order->total_with_compensation) }}</td>
+                            <td data-cell="total">{{ number_format($order->total_with_compensation) }}</td>
                             <td>{{ number_format($order->shipping_fee) }}</td>
                             <td>{{ number_format($order->payment_1) }}</td>
                             <td>{{ number_format($order->payment_2) }}</td>
-                            <td>{{ number_format($order->remaining) }}</td>
+                            <td data-cell="remaining">{{ number_format($order->remaining) }}</td>
                             <td>
                                 <div class="row-actions">
                                     <a class="link-action" href="{{ route('orders.show', $order) }}">Xem</a>
@@ -845,6 +847,7 @@
         })();
     </script>
     @include('orders.modal-data')
+    @include('orders.status-ajax')
     @include('orders.codes-panel')
     @include('orders.codes-modal')
     @include('orders.status-confirm-modal')

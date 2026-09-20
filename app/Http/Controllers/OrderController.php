@@ -373,7 +373,7 @@ class OrderController extends Controller
             ->with('status', 'Đã cập nhật đơn hàng.');
     }
 
-    public function updateStatus(Request $request, Order $order): RedirectResponse
+    public function updateStatus(Request $request, Order $order): RedirectResponse|JsonResponse
     {
         $isChecking = $request->input('status') === Order::CHECKED_STATUS;
 
@@ -428,6 +428,25 @@ class OrderController extends Controller
 
             $this->inventory->applyStatusAdjustment($lockedOrder);
         });
+
+        // Danh sách đơn đổi trạng thái bằng AJAX nên cần lại đúng những ô đã
+        // đổi để vẽ tại chỗ, khỏi tải lại cả trang.
+        if ($request->wantsJson()) {
+            $order->refresh()->load('items');
+
+            return response()->json([
+                'message' => 'Đã cập nhật trạng thái đơn hàng.',
+                'order' => [
+                    'id' => $order->id,
+                    'status' => $order->status,
+                    'status_label' => $order->statusLabel(),
+                    'color_key' => $order->statusColorKey(),
+                    'currently_out' => $order->stock_decreased_at !== null && $order->stock_returned_at === null,
+                    'total_with_compensation' => number_format($order->total_with_compensation),
+                    'remaining' => number_format($order->remaining),
+                ],
+            ]);
+        }
 
         return back()->with('status', 'Đã cập nhật trạng thái đơn hàng.');
     }

@@ -300,8 +300,16 @@
             if (!activeSelect) return;
 
             const form = activeSelect.form;
+            const orderId = activeSelect.dataset.orderId;
             activeSelect = null;
             closeModal(false);
+
+            // Danh sach don doi tai cho; trang nao khong co thi submit nhu cu.
+            if (typeof window.submitOrderStatus === 'function') {
+                window.submitOrderStatus(form, orderId);
+                return;
+            }
+
             form.submit();
         });
 
