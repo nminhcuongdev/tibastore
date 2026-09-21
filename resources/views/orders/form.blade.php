@@ -245,7 +245,8 @@
             font-weight: 800;
         }
         input,
-        select {
+        select,
+        textarea {
             background: #fff;
             border: 1px solid #ebc5d2;
             border-radius: 8px;
@@ -266,8 +267,14 @@
             min-height: 44px;
             padding: 10px 13px;
         }
+        textarea {
+            font-family: inherit;
+            line-height: 1.5;
+            resize: vertical;
+        }
         input:focus,
-        select:focus {
+        select:focus,
+        textarea:focus {
             border-color: #c9577d;
             box-shadow: 0 0 0 3px rgba(201, 87, 125, .16);
             outline: none;
@@ -448,6 +455,13 @@
                 <label for="phone">Số điện thoại</label>
                 <input id="phone" name="phone" type="text" value="{{ old('phone', $order->phone) }}" placeholder="VD: 0901 234 567">
                 @error('phone') <div class="error">{{ $message }}</div> @enderror
+            </div>
+
+            <div class="field full">
+                <label for="note">Ghi chú đơn</label>
+                <textarea id="note" name="note" rows="2" maxlength="2000" data-order-note
+                    placeholder="Dặn dò chung của đơn, VD: khách hẹn lấy sau 17h, gửi kèm hóa đơn...">{{ old('note', $order->note) }}</textarea>
+                @error('note') <div class="error">{{ $message }}</div> @enderror
             </div>
 
             <div class="field full">
@@ -1643,6 +1657,7 @@
             const val = id => { const el = document.getElementById(id); return el ? el.value : ''; };
             return {
                 closer_name: val('closer_name'), order_name: val('order_name'),
+                note: val('note'),
                 phone: val('phone'), address: val('address'),
                 region: val('region'), carrier: val('carrier'),
                 pickup_date: val('pickup_date'), event_date: val('event_date'), return_date: val('return_date'),
@@ -1682,6 +1697,7 @@
         function restoreTopFields(d) {
             const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
             set('closer_name', d.closer_name); set('order_name', d.order_name);
+            set('note', d.note);
             set('phone', d.phone); set('address', d.address);
             set('region', d.region); set('carrier', d.carrier);
             set('pickup_date', d.pickup_date); set('event_date', d.event_date); set('return_date', d.return_date);

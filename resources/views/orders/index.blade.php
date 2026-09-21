@@ -207,7 +207,7 @@
         table {
             border-collapse: collapse;
             /* Them cot Mien va Nha xe nen noi rong de chu khong bi bop lai. */
-            min-width: 1720px;
+            min-width: 1900px;
             width: 100%;
         }
         th, td {
@@ -384,33 +384,18 @@
             white-space: nowrap;
         }
         .code-card__meta { display: flex; font-size: 12px; gap: 8px; }
-        .code-card__note {
-            color: #8a5a00;
-            font-size: 11px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        /* Ghi chu dai thi cat bot, re chuot vao xem day du. */
-        .note-cell { max-width: 240px; }
-        .note-line {
+        /* Ghi chu / dia chi dai thi cat con hai dong, re chuot vao xem day du. */
+        .note-cell, .address-cell {
             color: #704252;
             display: -webkit-box;
             font-size: 12px;
             line-height: 1.45;
+            max-width: 240px;
             overflow: hidden;
             -webkit-box-orient: vertical;
             -webkit-line-clamp: 2;
         }
-        .note-line + .note-line { margin-top: 3px; }
-        .note-tag {
-            background: #fff0f4;
-            border-radius: 4px;
-            color: #a13b60;
-            font-weight: 900;
-            padding: 1px 5px;
-        }
-        .note-tag.is-check { background: #fdf0da; color: #8a5a00; }
+        .address-cell { max-width: 260px; }
         .code-card__size { color: #8b6672; font-weight: 700; }
         .code-card__qty { color: #3f2730; font-weight: 900; }
         .codes-zoom {
@@ -709,8 +694,6 @@
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'event_date', 'direction' => $sort === 'event_date' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Ngày diễn {{ $sort === 'event_date' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'return_date', 'direction' => $sort === 'return_date' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Ngày trả {{ $sort === 'return_date' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'order_name', 'direction' => $sort === 'order_name' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Tên đơn {{ $sort === 'order_name' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
-                        <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'region', 'direction' => $sort === 'region' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Miền {{ $sort === 'region' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
-                        <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'carrier', 'direction' => $sort === 'carrier' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Nhà xe {{ $sort === 'carrier' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'product_code', 'direction' => $sort === 'product_code' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Mã hàng {{ $sort === 'product_code' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'quantity', 'direction' => $sort === 'quantity' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Số lượng {{ $sort === 'quantity' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'status', 'direction' => $sort === 'status' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Trạng thái {{ $sort === 'status' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
@@ -720,6 +703,9 @@
                         <th>Thanh toán lần 2</th>
                         <th>Còn lại</th>
                         <th>Ghi chú</th>
+                        <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'region', 'direction' => $sort === 'region' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Miền {{ $sort === 'region' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
+                        <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'carrier', 'direction' => $sort === 'carrier' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Nhà xe {{ $sort === 'carrier' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
+                        <th>Địa chỉ</th>
                         <th>Thao tác</th>
                     </tr>
                 </thead>
@@ -737,25 +723,6 @@
                             <td>
                                 <div class="name">{{ $order->order_name }}</div>
                                 <div class="muted">Tạo: {{ $order->created_at?->format('d/m/Y') }}</div>
-                            </td>
-                            <td>
-                                @if ($order->region)
-                                    {{-- Bam vao la loc luon theo mien nay, giu nguyen cac loc khac. --}}
-                                    <a class="region-badge region-{{ $order->region }}"
-                                       href="{{ route('orders.index', array_merge(request()->except('page'), ['region' => $order->region])) }}"
-                                       title="Lọc các đơn {{ $order->regionLabel() }}">{{ $order->regionLabel() }}</a>
-                                @else
-                                    <span class="muted">—</span>
-                                @endif
-                            </td>
-                            <td>
-                                @if ($order->carrier)
-                                    <a class="carrier"
-                                       href="{{ route('orders.index', array_merge(request()->except('page'), ['carrier' => $order->carrier])) }}"
-                                       title="Lọc các đơn đi nhà xe {{ $order->carrier }}">{{ $order->carrier }}</a>
-                                @else
-                                    <span class="muted">—</span>
-                                @endif
                             </td>
                             <td>
                                 @if ($codeSummary->isEmpty())
@@ -807,34 +774,37 @@
                             <td>{{ number_format($order->payment_2) }}</td>
                             <td data-cell="remaining">{{ number_format($order->remaining) }}</td>
                             <td>
-                                @php
-                                    // Ghi chu tung ma hang (nhap luc len don) va ghi chu kiem don.
-                                    $itemNotes = $codeSummary
-                                        ->filter(fn ($code) => $code['note'] !== '')
-                                        ->map(fn ($code) => $code['code'] . ' ' . $code['size'] . ': ' . $code['note']);
-                                    $checkNote = trim((string) $order->check_note);
-                                    $noteTitle = $itemNotes->push($checkNote ? 'Kiểm đơn: ' . $checkNote : null)
-                                        ->filter()
-                                        ->implode("
-");
-                                @endphp
-                                @if ($noteTitle === '')
+                                @if (trim((string) $order->note) === '')
                                     <span class="muted">—</span>
                                 @else
-                                    <div class="note-cell" title="{{ $noteTitle }}">
-                                        @foreach ($codeSummary->filter(fn ($code) => $code['note'] !== '') as $code)
-                                            <div class="note-line">
-                                                <span class="note-tag">{{ $code['code'] }} {{ $code['size'] }}</span>
-                                                {{ $code['note'] }}
-                                            </div>
-                                        @endforeach
-                                        @if ($checkNote !== '')
-                                            <div class="note-line">
-                                                <span class="note-tag is-check">Kiểm đơn</span>
-                                                {{ $checkNote }}
-                                            </div>
-                                        @endif
-                                    </div>
+                                    {{-- Ghi chu dai cat con hai dong, re chuot vao xem day du. --}}
+                                    <div class="note-cell" title="{{ $order->note }}">{{ $order->note }}</div>
+                                @endif
+                            </td>
+                            <td>
+                                @if ($order->region)
+                                    {{-- Bam vao la loc luon theo mien nay, giu nguyen cac loc khac. --}}
+                                    <a class="region-badge region-{{ $order->region }}"
+                                       href="{{ route('orders.index', array_merge(request()->except('page'), ['region' => $order->region])) }}"
+                                       title="Lọc các đơn {{ $order->regionLabel() }}">{{ $order->regionLabel() }}</a>
+                                @else
+                                    <span class="muted">—</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if ($order->carrier)
+                                    <a class="carrier"
+                                       href="{{ route('orders.index', array_merge(request()->except('page'), ['carrier' => $order->carrier])) }}"
+                                       title="Lọc các đơn đi nhà xe {{ $order->carrier }}">{{ $order->carrier }}</a>
+                                @else
+                                    <span class="muted">—</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if (trim((string) $order->address) === '')
+                                    <span class="muted">—</span>
+                                @else
+                                    <div class="address-cell" title="{{ $order->address }}">{{ $order->address }}</div>
                                 @endif
                             </td>
                             <td>
@@ -854,7 +824,7 @@
                                  hoac nut "So tat ca ma hang" tren thanh cong cu. --}}
                             <tr class="codes-row row-{{ $order->statusColorKey() }}" id="codes-panel-{{ $order->id }}"
                                 data-codes-panel="{{ $order->id }}" hidden>
-                                <td colspan="17">
+                                <td colspan="18">
                                     <div class="codes-panel">
                                         <div class="codes-panel__head">
                                             <span class="codes-panel__title">{{ $order->order_name }}</span>
@@ -880,9 +850,6 @@
                                                             <span class="code-card__size">{{ $code['size'] }}</span>
                                                             <span class="code-card__qty">×{{ number_format($code['quantity']) }}</span>
                                                         </div>
-                                                        @if ($code['note'] !== '')
-                                                            <div class="code-card__note" title="{{ $code['note'] }}">📝 {{ $code['note'] }}</div>
-                                                        @endif
                                                     </div>
                                                 </div>
                                             @endforeach
@@ -893,7 +860,7 @@
                         @endif
                     @empty
                         <tr>
-                            <td class="empty" colspan="17">Chưa có đơn hàng phù hợp.</td>
+                            <td class="empty" colspan="18">Chưa có đơn hàng phù hợp.</td>
                         </tr>
                     @endforelse
                 </tbody>

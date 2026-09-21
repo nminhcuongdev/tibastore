@@ -87,7 +87,7 @@ class OrderController extends Controller
             // Danh sach ma hang duoc so ngay tren bang nen can ca san pham cua
             // tung dong; hai truy van eager-load van re hon moi dong mot request.
             ->with([
-                'items:id,order_id,product_id,quantity,returned_quantity,size_pending,note',
+                'items:id,order_id,product_id,quantity,returned_quantity,size_pending',
                 'items.product:id,code,name,size,image_path',
             ])
             ->join('products', 'products.id', '=', 'orders.product_id')
@@ -498,6 +498,7 @@ class OrderController extends Controller
             'event_date' => ['required', 'date', 'after_or_equal:pickup_date'],
             'return_date' => ['required', 'date', 'after_or_equal:event_date'],
             'order_name' => ['required', 'string', 'max:255'],
+            'note' => ['nullable', 'string', 'max:2000'],
             'source' => ['required', Rule::in(array_keys(Order::sources()))],
             'status' => ['required', Rule::in(array_keys(Order::statuses()))],
             // Tien ship cho phep am: shop co the bu/giam tien ship cho khach.
@@ -616,6 +617,7 @@ class OrderController extends Controller
             'event_date' => $data['event_date'],
             'return_date' => $data['return_date'],
             'order_name' => $data['order_name'],
+            'note' => isset($data['note']) && trim($data['note']) !== '' ? trim($data['note']) : null,
             'source' => $data['source'],
             'status' => $data['status'],
             'total_amount' => $this->calculateItemsTotal($items),

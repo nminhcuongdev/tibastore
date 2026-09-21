@@ -24,6 +24,7 @@ class Order extends Model
         'event_date',
         'return_date',
         'order_name',
+        'note',
         'source',
         'product_id',
         'quantity',
@@ -69,6 +70,7 @@ class Order extends Model
             'event_date' => 'Ngày diễn',
             'return_date' => 'Ngày trả',
             'order_name' => 'Tên đơn',
+            'note' => 'Ghi chú',
             'source' => 'Nguồn hàng',
             'status' => 'Trạng thái',
             'payment_status' => 'Trạng thái thanh toán',
@@ -153,7 +155,7 @@ class Order extends Model
      * Danh sách mã hàng của đơn để hiển thị: gộp theo mã + size, cộng số lượng
      * (cùng một mã-size ở nhiều mức giá chỉ hiện một dòng).
      *
-     * @return \Illuminate\Support\Collection<int, array{code: string, name: string, size: string, quantity: int, note: string, image: ?string}>
+     * @return \Illuminate\Support\Collection<int, array{code: string, name: string, size: string, quantity: int, image: ?string}>
      */
     public function codeSummary(): Collection
     {
@@ -164,12 +166,6 @@ class Order extends Model
                 'name' => $group->first()->product?->name ?? '',
                 'size' => $group->first()->displaySize(),
                 'quantity' => (int) $group->sum('quantity'),
-                // Cung mot ma-size o nhieu dong gia co the ghi chu khac nhau.
-                'note' => $group->pluck('note')
-                    ->map(fn ($note) => trim((string) $note))
-                    ->filter()
-                    ->unique()
-                    ->implode(' · '),
                 'image' => $group->first()->product?->image_path
                     ? asset('storage/' . $group->first()->product->image_path)
                     : null,
@@ -183,7 +179,6 @@ class Order extends Model
                 'name' => $this->product->name,
                 'size' => $this->product->size,
                 'quantity' => (int) $this->quantity,
-                'note' => '',
                 'image' => $this->product->image_path
                     ? asset('storage/' . $this->product->image_path)
                     : null,

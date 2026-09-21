@@ -441,6 +441,10 @@
                         <div class="value">{{ $order->address ?: 'N/A' }}</div>
                     </div>
                     <div class="detail">
+                        <div class="label">Ghi chú đơn</div>
+                        <div class="value">{{ $order->note ?: 'N/A' }}</div>
+                    </div>
+                    <div class="detail">
                         <div class="label">Miền</div>
                         <div class="value">{{ $order->regionLabel() ?: 'N/A' }}</div>
                     </div>
