@@ -52,7 +52,13 @@ class OrderController extends Controller
         $closer = trim((string) $request->query('closer', ''));
         $phone = trim((string) $request->query('phone', ''));
         $carrier = trim((string) $request->query('carrier', ''));
-        $region = (string) $request->query('region', '');
+        // Loc mien cho phep chon nhieu; van nhan link cu dang ?region=tinh_mb.
+        $selectedRegions = collect((array) $request->query('region', []))
+            ->map(fn ($value) => (string) $value)
+            ->filter(fn ($value) => array_key_exists($value, Order::regions()))
+            ->unique()
+            ->values()
+            ->all();
         // Loc theo so tien con lai: '' = tat ca, 'nonzero' = khac 0, 'zero' = bang 0.
         $remaining = (string) $request->query('remaining', '');
         $pickupFrom = $this->filterDate($request->query('pickup_from'));
@@ -74,10 +80,6 @@ class OrderController extends Controller
             $source = '';
         }
 
-        if (! array_key_exists($region, Order::regions())) {
-            $region = '';
-        }
-
         if (! in_array($remaining, ['nonzero', 'zero'], true)) {
             $remaining = '';
         }
@@ -97,7 +99,7 @@ class OrderController extends Controller
             ->when($closer !== '', fn ($builder) => $builder->where('orders.closer_name', $closer))
             ->when($phone !== '', fn ($builder) => $builder->where('orders.phone', 'like', "%{$phone}%"))
             ->when($carrier !== '', fn ($builder) => $builder->where('orders.carrier', 'like', "%{$carrier}%"))
-            ->when($region !== '', fn ($builder) => $builder->where('orders.region', $region))
+            ->when($selectedRegions !== [], fn ($builder) => $builder->whereIn('orders.region', $selectedRegions))
             ->when($remaining !== '', function ($builder) use ($remaining) {
                 // Cung cong thuc voi Order::getRemainingAttribute(); COALESCE vi cot tien
                 // de trong la NULL, ma NULL tham gia phep tinh se lam ca bieu thuc thanh NULL.
@@ -142,6 +144,7 @@ class OrderController extends Controller
             'orders' => $orders,
             'query' => $query,
             'selectedStatuses' => $selectedStatuses,
+            'selectedRegions' => $selectedRegions,
             'sort' => $sort,
             'direction' => $direction,
             'statuses' => Order::statuses(),
@@ -155,7 +158,6 @@ class OrderController extends Controller
                 'closer' => $closer,
                 'phone' => $phone,
                 'carrier' => $carrier,
-                'region' => $region,
                 'remaining' => $remaining,
                 'pickup_from' => $pickupFrom,
                 'pickup_to' => $pickupTo,

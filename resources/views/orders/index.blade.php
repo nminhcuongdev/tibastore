@@ -266,6 +266,13 @@
             padding: 3px 9px;
             white-space: nowrap;
         }
+        /* The loc mien: chua chon thi vien nhat, chon roi to dung mau mien. */
+        .region-check { background: #fff; color: #8b2f4d; }
+        .region-check:has(input:checked) { border-color: transparent; font-weight: 900; }
+        .region-check.region-tinh_mb:has(input:checked) { background: #2f5fa6; color: #fff; }
+        .region-check.region-tinh_mt:has(input:checked) { background: #8a5a00; color: #fff; }
+        .region-check.region-tinh_mn:has(input:checked) { background: #247857; color: #fff; }
+        .region-check.region-ha_noi:has(input:checked) { background: #7d3aa3; color: #fff; }
         .region-tinh_mb { background: #e4eefc; color: #2f5fa6; }
         .region-tinh_mt { background: #fdf0da; color: #8a5a00; }
         .region-tinh_mn { background: #e6f6ee; color: #247857; }
@@ -567,6 +574,7 @@
             // Co bo loc nao dang bat thi mo san, de khong bi loc ma khong biet vi sao.
             $hasActiveFilters = $query !== ''
                 || $selectedStatuses !== []
+                || $selectedRegions !== []
                 || collect($filters)->contains(fn ($value) => $value !== null && $value !== '');
         @endphp
         <div class="toolbar">
@@ -604,14 +612,17 @@
                         <label for="carrier">Nhà xe</label>
                         <input id="carrier" name="carrier" type="search" value="{{ $filters['carrier'] }}" placeholder="VD: Hải Vân, Phương Trang...">
                     </div>
-                    <div class="filter-field">
-                        <label for="region">Miền</label>
-                        <select id="region" name="region">
-                            <option value="">Tất cả miền</option>
+                    <div class="filter-field wide">
+                        <label>Miền <span class="muted">(chọn nhiều được; bỏ trống = tất cả)</span></label>
+                        <div class="status-checks">
                             @foreach ($regions as $value => $label)
-                                <option value="{{ $value }}" @selected($filters['region'] === $value)>{{ $label }}</option>
+                                <label class="status-check region-check region-{{ $value }}">
+                                    <input type="checkbox" name="region[]" value="{{ $value }}"
+                                        @checked(in_array($value, $selectedRegions, true))>
+                                    {{ $label }}
+                                </label>
                             @endforeach
-                        </select>
+                        </div>
                     </div>
                     <div class="filter-field">
                         <label for="closer">Người chốt</label>
