@@ -270,7 +270,13 @@
         .region-tinh_mt { background: #fdf0da; color: #8a5a00; }
         .region-tinh_mn { background: #e6f6ee; color: #247857; }
         .region-ha_noi { background: #f6e8fb; color: #7d3aa3; }
-        .carrier { font-weight: 700; }
+        .region-badge:hover, .carrier:hover { box-shadow: 0 0 0 2px rgba(201, 87, 125, .35); }
+        .carrier {
+            border-radius: 5px;
+            display: inline-block;
+            font-weight: 700;
+            padding: 2px 4px;
+        }
         .code-buttons { display: flex; flex-wrap: wrap; gap: 5px; }
         .codes-toggle,
         .view-codes {
@@ -706,14 +712,19 @@
                             </td>
                             <td>
                                 @if ($order->region)
-                                    <span class="region-badge region-{{ $order->region }}">{{ $order->regionLabel() }}</span>
+                                    {{-- Bam vao la loc luon theo mien nay, giu nguyen cac loc khac. --}}
+                                    <a class="region-badge region-{{ $order->region }}"
+                                       href="{{ route('orders.index', array_merge(request()->except('page'), ['region' => $order->region])) }}"
+                                       title="Lọc các đơn {{ $order->regionLabel() }}">{{ $order->regionLabel() }}</a>
                                 @else
                                     <span class="muted">—</span>
                                 @endif
                             </td>
                             <td>
                                 @if ($order->carrier)
-                                    <span class="carrier">{{ $order->carrier }}</span>
+                                    <a class="carrier"
+                                       href="{{ route('orders.index', array_merge(request()->except('page'), ['carrier' => $order->carrier])) }}"
+                                       title="Lọc các đơn đi nhà xe {{ $order->carrier }}">{{ $order->carrier }}</a>
                                 @else
                                     <span class="muted">—</span>
                                 @endif
