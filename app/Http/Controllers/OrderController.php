@@ -28,6 +28,8 @@ class OrderController extends Controller
             'event_date' => 'orders.event_date',
             'return_date' => 'orders.return_date',
             'order_name' => 'orders.order_name',
+            'region' => 'orders.region',
+            'carrier' => 'orders.carrier',
             'product_code' => 'products.code',
             'quantity' => 'orders.quantity',
             'status' => 'orders.status',

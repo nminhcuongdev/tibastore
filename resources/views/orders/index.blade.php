@@ -206,7 +206,8 @@
         }
         table {
             border-collapse: collapse;
-            min-width: 1440px;
+            /* Them cot Mien va Nha xe nen noi rong de chu khong bi bop lai. */
+            min-width: 1600px;
             width: 100%;
         }
         th, td {
@@ -256,6 +257,20 @@
             color: #a13b60;
             font-weight: 800;
         }
+        /* Moi mien mot mau nhat de liec la phan biet duoc vung khach. */
+        .region-badge {
+            border-radius: 999px;
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 900;
+            padding: 3px 9px;
+            white-space: nowrap;
+        }
+        .region-tinh_mb { background: #e4eefc; color: #2f5fa6; }
+        .region-tinh_mt { background: #fdf0da; color: #8a5a00; }
+        .region-tinh_mn { background: #e6f6ee; color: #247857; }
+        .region-ha_noi { background: #f6e8fb; color: #7d3aa3; }
+        .carrier { font-weight: 700; }
         .code-buttons { display: flex; flex-wrap: wrap; gap: 5px; }
         .codes-toggle,
         .view-codes {
@@ -661,6 +676,8 @@
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'event_date', 'direction' => $sort === 'event_date' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Ngày diễn {{ $sort === 'event_date' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'return_date', 'direction' => $sort === 'return_date' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Ngày trả {{ $sort === 'return_date' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'order_name', 'direction' => $sort === 'order_name' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Tên đơn {{ $sort === 'order_name' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
+                        <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'region', 'direction' => $sort === 'region' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Miền {{ $sort === 'region' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
+                        <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'carrier', 'direction' => $sort === 'carrier' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Nhà xe {{ $sort === 'carrier' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'product_code', 'direction' => $sort === 'product_code' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Mã hàng {{ $sort === 'product_code' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'quantity', 'direction' => $sort === 'quantity' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Số lượng {{ $sort === 'quantity' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'status', 'direction' => $sort === 'status' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Trạng thái {{ $sort === 'status' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
@@ -686,6 +703,20 @@
                             <td>
                                 <div class="name">{{ $order->order_name }}</div>
                                 <div class="muted">Tạo: {{ $order->created_at?->format('d/m/Y') }}</div>
+                            </td>
+                            <td>
+                                @if ($order->region)
+                                    <span class="region-badge region-{{ $order->region }}">{{ $order->regionLabel() }}</span>
+                                @else
+                                    <span class="muted">—</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if ($order->carrier)
+                                    <span class="carrier">{{ $order->carrier }}</span>
+                                @else
+                                    <span class="muted">—</span>
+                                @endif
                             </td>
                             <td>
                                 @if ($codeSummary->isEmpty())
@@ -753,7 +784,7 @@
                                  hoac nut "So tat ca ma hang" tren thanh cong cu. --}}
                             <tr class="codes-row row-{{ $order->statusColorKey() }}" id="codes-panel-{{ $order->id }}"
                                 data-codes-panel="{{ $order->id }}" hidden>
-                                <td colspan="14">
+                                <td colspan="16">
                                     <div class="codes-panel">
                                         <div class="codes-panel__head">
                                             <span class="codes-panel__title">{{ $order->order_name }}</span>
@@ -789,7 +820,7 @@
                         @endif
                     @empty
                         <tr>
-                            <td class="empty" colspan="14">Chưa có đơn hàng phù hợp.</td>
+                            <td class="empty" colspan="16">Chưa có đơn hàng phù hợp.</td>
                         </tr>
                     @endforelse
                 </tbody>
