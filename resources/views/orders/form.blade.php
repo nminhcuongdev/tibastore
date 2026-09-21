@@ -200,7 +200,8 @@
             display: none;
             left: 0;
             margin-top: 6px;
-            max-height: 220px;
+            /* Moi dong cao hon vi co anh nen noi khung ra cho thay duoc nhieu ma. */
+            max-height: 300px;
             overflow-y: auto;
             position: absolute;
             right: 0;
@@ -208,16 +209,36 @@
             z-index: 5;
         }
         .product-suggestion {
+            align-items: center;
             background: transparent;
             border: 0;
             border-bottom: 1px solid #f7e3e9;
             color: #3f2730;
             cursor: pointer;
-            display: block;
-            padding: 10px 12px;
+            display: flex;
+            gap: 10px;
+            padding: 8px 12px;
             text-align: left;
             width: 100%;
         }
+        .product-suggestion__info { min-width: 0; }
+        .suggestion-thumb {
+            align-items: center;
+            background: #f9e5ec;
+            border: 1px solid #f1cbd7;
+            border-radius: 6px;
+            color: #a64465;
+            display: flex;
+            flex: 0 0 auto;
+            font-size: 8px;
+            font-weight: 800;
+            height: 44px;
+            justify-content: center;
+            overflow: hidden;
+            text-align: center;
+            width: 44px;
+        }
+        .suggestion-thumb img { height: 100%; object-fit: cover; width: 100%; }
         .product-suggestion:hover { background: #fff4f7; }
         .product-code {
             color: #a13b60;
@@ -1011,6 +1032,28 @@
             });
         }
 
+        // Anh nho cua ma hang: lay anh cua size dau tien co anh.
+        function buildSuggestionThumb(group) {
+            const imageUrl = (group.items.find(product => product.image_url) || {}).image_url || null;
+
+            if (!imageUrl) {
+                const empty = document.createElement('div');
+                empty.className = 'suggestion-thumb';
+                empty.textContent = 'CHƯA CÓ ẢNH';
+                return empty;
+            }
+
+            const box = document.createElement('div');
+            box.className = 'suggestion-thumb has-image';
+
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.alt = group.code;
+            box.appendChild(img);
+
+            return box;
+        }
+
         function renderSuggestions(block, keyword = '') {
             const suggestions = block.querySelector('[data-suggestions]');
             const normalizedKeyword = keyword.trim().toLowerCase();
@@ -1033,19 +1076,22 @@
 
             matches.forEach(group => {
                 const button = document.createElement('button');
+                const info = document.createElement('div');
                 const code = document.createElement('div');
                 const name = document.createElement('div');
                 const meta = document.createElement('div');
 
                 button.type = 'button';
                 button.className = 'product-suggestion';
+                info.className = 'product-suggestion__info';
                 code.className = 'product-code';
                 code.textContent = group.code;
                 name.className = 'product-name';
                 name.textContent = group.name;
                 meta.className = 'product-meta';
                 meta.textContent = `${group.items.filter(product => stockLimit(product) > 0).length}/${group.items.length} size còn tồn`;
-                button.append(code, name, meta);
+                info.append(code, name, meta);
+                button.append(buildSuggestionThumb(group), info);
                 button.addEventListener('click', () => selectProductCode(block, group.code));
                 suggestions.appendChild(button);
             });
