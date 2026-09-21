@@ -87,7 +87,7 @@ class OrderController extends Controller
             // Danh sach ma hang duoc so ngay tren bang nen can ca san pham cua
             // tung dong; hai truy van eager-load van re hon moi dong mot request.
             ->with([
-                'items:id,order_id,product_id,quantity,returned_quantity,size_pending',
+                'items:id,order_id,product_id,quantity,returned_quantity,size_pending,note',
                 'items.product:id,code,name,size,image_path',
             ])
             ->join('products', 'products.id', '=', 'orders.product_id')
