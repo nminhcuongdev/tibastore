@@ -19,6 +19,8 @@ class WorkshopOrder extends Model
     protected $fillable = [
         'product_code',
         'size_note',
+        'quantity',
+        'unit_price',
         'order_name',
         'buyer_note',
         'source',
@@ -31,7 +33,18 @@ class WorkshopOrder extends Model
     protected $casts = [
         'ordered_date' => 'date',
         'returned_date' => 'date',
+        'quantity' => 'integer',
+        'unit_price' => 'integer',
     ];
+
+    /**
+     * Thành tiền của dòng = đơn giá × số lượng. Tính lúc đọc thay vì lưu sẵn
+     * để không bao giờ lệch với hai cột gốc.
+     */
+    public function getTotalAmountAttribute(): int
+    {
+        return (int) $this->quantity * (int) $this->unit_price;
+    }
 
     public static function statuses(): array
     {

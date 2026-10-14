@@ -71,6 +71,27 @@
             padding: 12px 14px;
         }
         .status-flash.is-error { border-left-color: #b4233f; color: #b4233f; }
+        .summary {
+            align-items: center;
+            background: #fff;
+            border: 1px solid #f0d3dc;
+            border-radius: 8px;
+            box-shadow: 0 10px 26px rgba(117, 44, 69, .06);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 22px;
+            margin-bottom: 12px;
+            padding: 10px 14px;
+        }
+        .summary-item { align-items: baseline; display: flex; gap: 8px; }
+        .summary-label {
+            color: #8b6672;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .summary-value { color: #6f253f; font-size: 18px; font-weight: 900; }
+        .summary-item.is-main .summary-value { color: #b4233f; font-size: 22px; }
         .table-shell {
             background: #fff;
             border: 1px solid #f0d3dc;
@@ -78,7 +99,7 @@
             box-shadow: 0 18px 45px rgba(117, 44, 69, .08);
             overflow-x: auto;
         }
-        table { border-collapse: collapse; min-width: 1180px; width: 100%; }
+        table { border-collapse: collapse; min-width: 1420px; width: 100%; }
         th, td {
             border-bottom: 1px solid #f7e3e9;
             padding: 12px 13px;
@@ -96,6 +117,8 @@
         .code { color: #a13b60; font-weight: 900; }
         .muted { color: #8b6672; font-size: 13px; }
         .wrap { max-width: 230px; overflow-wrap: anywhere; white-space: normal; }
+        th.num, td.num { text-align: right; white-space: nowrap; }
+        td.strong { color: #6f253f; font-weight: 900; }
         .thumb {
             align-items: center;
             background: #f9e5ec;
@@ -233,6 +256,22 @@
         <a class="button" href="{{ route('workshop-orders.create') }}">+ Thêm dòng</a>
     </form>
 
+    {{-- Tổng của toàn bộ kết quả đang lọc, không phải chỉ trang đang xem. --}}
+    <div class="summary">
+        <div class="summary-item">
+            <span class="summary-label">Số dòng</span>
+            <span class="summary-value">{{ number_format($orders->total()) }}</span>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">Tổng số lượng</span>
+            <span class="summary-value">{{ number_format($quantityTotal) }}</span>
+        </div>
+        <div class="summary-item is-main">
+            <span class="summary-label">Tổng tiền</span>
+            <span class="summary-value">{{ number_format($amountTotal) }}</span>
+        </div>
+    </div>
+
     <div class="table-shell">
         <table>
             <thead>
@@ -240,6 +279,9 @@
                     <th>Mã</th>
                     <th>Hình ảnh sản phẩm</th>
                     <th>Size</th>
+                    <th class="num">Số lượng</th>
+                    <th class="num">Đơn giá</th>
+                    <th class="num">Thành tiền</th>
                     <th>Tên đơn</th>
                     <th>Người mua hàng ghi chú</th>
                     <th>Nguồn đặt</th>
@@ -274,6 +316,9 @@
                             @endif
                         </td>
                         <td class="wrap">{{ $item->size_note ?: '—' }}</td>
+                        <td class="num">{{ number_format($item->quantity) }}</td>
+                        <td class="num">{{ number_format($item->unit_price) }}</td>
+                        <td class="num strong">{{ number_format($item->total_amount) }}</td>
                         <td class="wrap">{{ $item->order_name ?: '—' }}</td>
                         <td class="wrap muted">{{ $item->buyer_note ?: '—' }}</td>
                         <td>{{ $item->source ?: '—' }}</td>
@@ -306,7 +351,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="11">Chưa có dòng đặt xưởng nào phù hợp.</td>
+                        <td class="empty" colspan="14">Chưa có dòng đặt xưởng nào phù hợp.</td>
                     </tr>
                 @endforelse
             </tbody>

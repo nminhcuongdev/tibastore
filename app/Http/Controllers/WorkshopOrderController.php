@@ -7,6 +7,7 @@ use App\Models\WorkshopOrder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -21,7 +22,7 @@ class WorkshopOrderController extends Controller
         $orderedFrom = $this->filterDate($request->query('ordered_from'));
         $orderedTo = $this->filterDate($request->query('ordered_to'));
 
-        $orders = WorkshopOrder::query()
+        $ordersQuery = WorkshopOrder::query()
             ->with('product')
             ->when($query !== '', function ($builder) use ($query) {
                 $builder->where(function ($sub) use ($query) {
@@ -38,12 +39,24 @@ class WorkshopOrderController extends Controller
             ->when($orderedFrom, fn ($builder) => $builder->whereDate('ordered_date', '>=', $orderedFrom))
             ->when($orderedTo, fn ($builder) => $builder->whereDate('ordered_date', '<=', $orderedTo))
             ->orderByDesc('created_at')
-            ->orderByDesc('id')
-            ->paginate(30)
-            ->withQueryString();
+            ->orderByDesc('id');
+
+        // Tổng của TOÀN BỘ kết quả đang lọc, không phải chỉ trang đang xem.
+        $totals = (clone $ordersQuery)
+            ->reorder()
+            ->setEagerLoads([])
+            ->select(DB::raw(
+                'COALESCE(SUM(quantity), 0) as quantity_total,'
+                . ' COALESCE(SUM(quantity * unit_price), 0) as amount_total'
+            ))
+            ->first();
+
+        $orders = $ordersQuery->paginate(30)->withQueryString();
 
         return view('workshop_orders.index', [
             'orders' => $orders,
+            'quantityTotal' => (int) ($totals->quantity_total ?? 0),
+            'amountTotal' => (int) ($totals->amount_total ?? 0),
             'statuses' => WorkshopOrder::statuses(),
             'query' => $query,
             'status' => $status,
@@ -58,7 +71,11 @@ class WorkshopOrderController extends Controller
     {
         return view('workshop_orders.form', [
             'mode' => 'create',
-            'workshopOrder' => new WorkshopOrder(['status' => WorkshopOrder::DEFAULT_STATUS]),
+            'workshopOrder' => new WorkshopOrder([
+                'status' => WorkshopOrder::DEFAULT_STATUS,
+                'quantity' => 1,
+                'unit_price' => 0,
+            ]),
             'statuses' => WorkshopOrder::statuses(),
             'productCodes' => $this->productCodes(),
         ]);
@@ -114,6 +131,8 @@ class WorkshopOrderController extends Controller
         return $request->validate([
             'product_code' => ['required', 'string', 'max:50', Rule::exists('products', 'code')],
             'size_note' => ['nullable', 'string', 'max:255'],
+            'quantity' => ['required', 'integer', 'min:1'],
+            'unit_price' => ['nullable', 'integer', 'min:0'],
             'order_name' => ['nullable', 'string', 'max:255'],
             'buyer_note' => ['nullable', 'string', 'max:2000'],
             'source' => ['nullable', 'string', 'max:255'],
@@ -123,6 +142,10 @@ class WorkshopOrderController extends Controller
             'status' => ['required', Rule::in(array_keys(WorkshopOrder::statuses()))],
         ], [
             'product_code.required' => 'Vui lòng chọn mã hàng.',
+            'quantity.required' => 'Vui lòng nhập số lượng đặt.',
+            'quantity.min' => 'Số lượng đặt phải từ 1 trở lên.',
+            'unit_price.integer' => 'Đơn giá phải là số.',
+            'unit_price.min' => 'Đơn giá không được nhỏ hơn 0.',
             'product_code.exists' => 'Mã hàng này chưa có trong kho.',
             'returned_date.after_or_equal' => 'Ngày trả hàng không được trước ngày đặt hàng.',
         ]);

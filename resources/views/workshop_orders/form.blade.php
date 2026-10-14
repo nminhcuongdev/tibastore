@@ -253,6 +253,21 @@
             @error('size_note') <div class="error">{{ $message }}</div> @enderror
         </div>
 
+        <div class="field">
+            <label for="quantity">Số lượng đặt</label>
+            <input id="quantity" name="quantity" type="number" min="1" step="1" required
+                value="{{ old('quantity', $workshopOrder->quantity ?? 1) }}" data-amount-quantity>
+            @error('quantity') <div class="error">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="field">
+            <label for="unit_price">Đơn giá</label>
+            <input id="unit_price" name="unit_price" type="number" min="0" step="1"
+                value="{{ old('unit_price', $workshopOrder->unit_price ?? 0) }}" data-amount-price>
+            <span class="hint">Thành tiền: <strong data-amount-total>0</strong> đ (đơn giá × số lượng).</span>
+            @error('unit_price') <div class="error">{{ $message }}</div> @enderror
+        </div>
+
         <div class="preview" data-preview>
             <button class="p-thumb" type="button" data-preview-thumb title="Bấm để xem ảnh lớn">
                 <img src="" alt="" data-preview-image>
@@ -505,6 +520,22 @@
 
         // Mở form sửa (hoặc quay lại sau lỗi) thì hiện luôn ảnh của mã đang có.
         renderPreview();
+
+        // Thành tiền hiện ngay khi gõ, khỏi phải lưu mới biết.
+        const quantityInput = document.querySelector('[data-amount-quantity]');
+        const priceInput = document.querySelector('[data-amount-price]');
+        const totalEl = document.querySelector('[data-amount-total]');
+
+        function renderAmount() {
+            const quantity = Number(quantityInput.value) || 0;
+            const price = Number(priceInput.value) || 0;
+
+            totalEl.textContent = (quantity * price).toLocaleString('vi-VN');
+        }
+
+        quantityInput.addEventListener('input', renderAmount);
+        priceInput.addEventListener('input', renderAmount);
+        renderAmount();
     })();
 </script>
 </body>
