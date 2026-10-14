@@ -646,6 +646,7 @@
                         <label for="remaining">Còn lại</label>
                         <select id="remaining" name="remaining">
                             <option value="">Tất cả</option>
+                            <option value="positive" @selected($filters['remaining'] === 'positive')>Lớn hơn 0 (khách còn nợ)</option>
                             <option value="nonzero" @selected($filters['remaining'] === 'nonzero')>Khác 0 (chưa tất toán)</option>
                             <option value="zero" @selected($filters['remaining'] === 'zero')>Bằng 0 (đã tất toán)</option>
                         </select>
