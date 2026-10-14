@@ -197,6 +197,29 @@
             border-left-color: #b4233f;
             color: #b4233f;
         }
+        .summary {
+            align-items: center;
+            background: #fff;
+            border: 1px solid #f0d3dc;
+            border-radius: 8px;
+            box-shadow: 0 10px 26px rgba(117, 44, 69, .06);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 22px;
+            margin-bottom: 12px;
+            padding: 10px 14px;
+        }
+        .summary-item { display: flex; align-items: baseline; gap: 8px; }
+        .summary-label {
+            color: #8b6672;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .summary-value { color: #6f253f; font-size: 18px; font-weight: 900; }
+        .summary-item.is-main .summary-value { color: #b4233f; font-size: 22px; }
+        .summary-note { color: #8b6672; font-size: 12px; margin-left: auto; }
+        .summary-note a { color: #a13b60; font-weight: 800; text-decoration: underline; }
         .table-shell {
             background: #fff;
             border: 1px solid #f0d3dc;
@@ -695,6 +718,26 @@
                     <a class="button secondary" href="{{ route('orders.index') }}">Xóa lọc</a>
                 </div>
             </form>
+        </div>
+
+        {{-- Tong cua toan bo ket qua dang loc, khong phai chi trang dang xem. --}}
+        <div class="summary">
+            <div class="summary-item">
+                <span class="summary-label">Số đơn</span>
+                <span class="summary-value">{{ number_format($orders->total()) }}</span>
+            </div>
+            <div class="summary-item is-main">
+                <span class="summary-label">Tổng còn lại</span>
+                <span class="summary-value">{{ number_format($remainingTotal) }}</span>
+            </div>
+            @if ($filters['remaining'] === 'positive')
+                <div class="summary-note">Đã bỏ đơn còn lại bằng 0 và số âm.</div>
+            @else
+                <div class="summary-note">
+                    Đang cộng cả đơn bằng 0 và số âm.
+                    <a href="{{ route('orders.index', array_merge(request()->except('page'), ['remaining' => 'positive'])) }}">Chỉ cộng đơn còn nợ</a>
+                </div>
+            @endif
         </div>
 
         <div class="table-shell">
