@@ -18,6 +18,7 @@ class WorkshopOrderController extends Controller
         $query = trim((string) $request->query('q', ''));
         $status = (string) $request->query('status', '');
         $source = trim((string) $request->query('source', ''));
+        $supplySource = (string) $request->query('supply_source', '');
         $buyer = trim((string) $request->query('buyer', ''));
         $orderedFrom = $this->filterDate($request->query('ordered_from'));
         $orderedTo = $this->filterDate($request->query('ordered_to'));
@@ -35,6 +36,8 @@ class WorkshopOrderController extends Controller
             ->when(array_key_exists($status, WorkshopOrder::statuses()),
                 fn ($builder) => $builder->where('status', $status))
             ->when($source !== '', fn ($builder) => $builder->where('source', 'like', "%{$source}%"))
+            ->when(array_key_exists($supplySource, WorkshopOrder::supplySources()),
+                fn ($builder) => $builder->where('supply_source', $supplySource))
             ->when($buyer !== '', fn ($builder) => $builder->where('buyer', 'like', "%{$buyer}%"))
             ->when($orderedFrom, fn ($builder) => $builder->whereDate('ordered_date', '>=', $orderedFrom))
             ->when($orderedTo, fn ($builder) => $builder->whereDate('ordered_date', '<=', $orderedTo))
@@ -58,6 +61,8 @@ class WorkshopOrderController extends Controller
             'quantityTotal' => (int) ($totals->quantity_total ?? 0),
             'amountTotal' => (int) ($totals->amount_total ?? 0),
             'statuses' => WorkshopOrder::statuses(),
+            'supplySources' => WorkshopOrder::supplySources(),
+            'supplySource' => $supplySource,
             'query' => $query,
             'status' => $status,
             'source' => $source,
@@ -73,10 +78,12 @@ class WorkshopOrderController extends Controller
             'mode' => 'create',
             'workshopOrder' => new WorkshopOrder([
                 'status' => WorkshopOrder::DEFAULT_STATUS,
+                'supply_source' => WorkshopOrder::DEFAULT_SUPPLY_SOURCE,
                 'quantity' => 1,
                 'unit_price' => 0,
             ]),
             'statuses' => WorkshopOrder::statuses(),
+            'supplySources' => WorkshopOrder::supplySources(),
             'productCodes' => $this->productCodes(),
         ]);
     }
@@ -85,7 +92,7 @@ class WorkshopOrderController extends Controller
     {
         WorkshopOrder::create($this->validatedData($request));
 
-        return redirect()->route('workshop-orders.index')->with('status', 'Đã thêm dòng đặt xưởng.');
+        return redirect()->route('workshop-orders.index')->with('status', 'Đã thêm dòng đặt hàng.');
     }
 
     public function edit(WorkshopOrder $workshopOrder): View
@@ -94,6 +101,7 @@ class WorkshopOrderController extends Controller
             'mode' => 'edit',
             'workshopOrder' => $workshopOrder,
             'statuses' => WorkshopOrder::statuses(),
+            'supplySources' => WorkshopOrder::supplySources(),
             'productCodes' => $this->productCodes(),
         ]);
     }
@@ -102,7 +110,7 @@ class WorkshopOrderController extends Controller
     {
         $workshopOrder->update($this->validatedData($request));
 
-        return redirect()->route('workshop-orders.index')->with('status', 'Đã cập nhật dòng đặt xưởng.');
+        return redirect()->route('workshop-orders.index')->with('status', 'Đã cập nhật dòng đặt hàng.');
     }
 
     /**
@@ -123,13 +131,14 @@ class WorkshopOrderController extends Controller
     {
         $workshopOrder->delete();
 
-        return back()->with('status', 'Đã xoá dòng đặt xưởng.');
+        return back()->with('status', 'Đã xoá dòng đặt hàng.');
     }
 
     private function validatedData(Request $request): array
     {
         return $request->validate([
             'product_code' => ['required', 'string', 'max:50', Rule::exists('products', 'code')],
+            'supply_source' => ['required', Rule::in(array_keys(WorkshopOrder::supplySources()))],
             'size_note' => ['nullable', 'string', 'max:255'],
             'quantity' => ['required', 'integer', 'min:1'],
             'unit_price' => ['nullable', 'integer', 'min:0'],
@@ -142,6 +151,8 @@ class WorkshopOrderController extends Controller
             'status' => ['required', Rule::in(array_keys(WorkshopOrder::statuses()))],
         ], [
             'product_code.required' => 'Vui lòng chọn mã hàng.',
+            'supply_source.required' => 'Vui lòng chọn nguồn hàng.',
+            'supply_source.in' => 'Nguồn hàng không hợp lệ.',
             'quantity.required' => 'Vui lòng nhập số lượng đặt.',
             'quantity.min' => 'Số lượng đặt phải từ 1 trở lên.',
             'unit_price.integer' => 'Đơn giá phải là số.',

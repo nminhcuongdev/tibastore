@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     @include('partials.favicon')
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Đặt hàng xưởng</title>
+    <title>Đặt hàng</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -99,7 +99,7 @@
             box-shadow: 0 18px 45px rgba(117, 44, 69, .08);
             overflow-x: auto;
         }
-        table { border-collapse: collapse; min-width: 1420px; width: 100%; }
+        table { border-collapse: collapse; min-width: 1520px; width: 100%; }
         th, td {
             border-bottom: 1px solid #f7e3e9;
             padding: 12px 13px;
@@ -118,6 +118,17 @@
         .muted { color: #8b6672; font-size: 13px; }
         .wrap { max-width: 230px; overflow-wrap: anywhere; white-space: normal; }
         th.num, td.num { text-align: right; white-space: nowrap; }
+        /* Hai nguon hang hai mau de liec la phan biet duoc. */
+        .supply {
+            border-radius: 999px;
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 900;
+            padding: 3px 9px;
+            white-space: nowrap;
+        }
+        .supply-xuong_may { background: #f6e8fb; color: #7d3aa3; }
+        .supply-mua_ngoai { background: #e4eefc; color: #2f5fa6; }
         td.strong { color: #6f253f; font-weight: 900; }
         .thumb {
             align-items: center;
@@ -210,8 +221,8 @@
 <div class="layout">
 @include('partials.sidebar', ['active' => 'workshop'])
 <main class="content">
-    <h1>Đặt hàng xưởng</h1>
-    <p class="sub">Theo dõi mã hàng đã đặt xưởng: ai đặt, đặt ngày nào, hẹn trả ngày nào và xưởng đã trả hàng chưa.</p>
+    <h1>Đặt hàng</h1>
+    <p class="sub">Theo dõi mã hàng đã đặt: hàng từ xưởng may hay mua ngoài, ai đặt, đặt ngày nào, hẹn về ngày nào và đã về chưa.</p>
 
     @if (session('status'))
         <div class="status-flash">{{ session('status') }}</div>
@@ -224,6 +235,15 @@
         <div class="field">
             <label for="q">Tìm mã / tên đơn / size / ghi chú</label>
             <input id="q" name="q" type="search" value="{{ $query }}" placeholder="VD: NA5414, 3xl...">
+        </div>
+        <div class="field">
+            <label for="supply_source">Nguồn hàng</label>
+            <select id="supply_source" name="supply_source">
+                <option value="">Tất cả</option>
+                @foreach ($supplySources as $value => $label)
+                    <option value="{{ $value }}" @selected($supplySource === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
         </div>
         <div class="field">
             <label for="status">Trạng thái</label>
@@ -278,6 +298,7 @@
                 <tr>
                     <th>Mã</th>
                     <th>Hình ảnh sản phẩm</th>
+                    <th>Nguồn hàng</th>
                     <th>Size</th>
                     <th class="num">Số lượng</th>
                     <th class="num">Đơn giá</th>
@@ -288,7 +309,7 @@
                     <th>Ngày đặt hàng</th>
                     <th>Ngày trả hàng</th>
                     <th>Người mua hàng</th>
-                    <th>Xưởng đã trả chưa</th>
+                    <th>Hàng đã về chưa</th>
                     <th>Thao tác</th>
                 </tr>
             </thead>
@@ -314,6 +335,9 @@
                             @else
                                 <span class="thumb">CHƯA CÓ ẢNH</span>
                             @endif
+                        </td>
+                        <td>
+                            <span class="supply supply-{{ $item->supply_source }}">{{ $item->supplySourceLabel() }}</span>
                         </td>
                         <td class="wrap">{{ $item->size_note ?: '—' }}</td>
                         <td class="num">{{ number_format($item->quantity) }}</td>
@@ -341,7 +365,7 @@
                             <div class="row-actions">
                                 <a class="link-action" href="{{ route('workshop-orders.edit', $item) }}">Sửa</a>
                                 <form method="POST" action="{{ route('workshop-orders.destroy', $item) }}"
-                                    onsubmit="return confirm('Xoá dòng đặt xưởng của mã {{ $item->product_code }}?');">
+                                    onsubmit="return confirm('Xoá dòng đặt hàng của mã {{ $item->product_code }}?');">
                                     @csrf
                                     @method('DELETE')
                                     <button class="danger" type="submit">Xoá</button>
@@ -351,7 +375,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="14">Chưa có dòng đặt xưởng nào phù hợp.</td>
+                        <td class="empty" colspan="15">Chưa có dòng đặt hàng nào phù hợp.</td>
                     </tr>
                 @endforelse
             </tbody>

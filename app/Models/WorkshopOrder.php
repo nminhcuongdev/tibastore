@@ -16,8 +16,15 @@ class WorkshopOrder extends Model
 
     public const DEFAULT_STATUS = self::STATUS_NOT_YET;
 
+    public const SUPPLY_WORKSHOP = 'xuong_may';
+
+    public const SUPPLY_OUTSIDE = 'mua_ngoai';
+
+    public const DEFAULT_SUPPLY_SOURCE = self::SUPPLY_WORKSHOP;
+
     protected $fillable = [
         'product_code',
+        'supply_source',
         'size_note',
         'quantity',
         'unit_price',
@@ -44,6 +51,22 @@ class WorkshopOrder extends Model
     public function getTotalAmountAttribute(): int
     {
         return (int) $this->quantity * (int) $this->unit_price;
+    }
+
+    /**
+     * Nguồn hàng: hàng tự đặt xưởng may, hay mua sẵn từ bên ngoài.
+     */
+    public static function supplySources(): array
+    {
+        return [
+            self::SUPPLY_WORKSHOP => 'Xưởng may',
+            self::SUPPLY_OUTSIDE => 'Mua ngoài',
+        ];
+    }
+
+    public function supplySourceLabel(): string
+    {
+        return self::supplySources()[$this->supply_source] ?? $this->supply_source;
     }
 
     public static function statuses(): array

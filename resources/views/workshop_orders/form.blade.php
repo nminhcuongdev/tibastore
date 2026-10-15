@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     @include('partials.favicon')
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $mode === 'create' ? 'Thêm dòng đặt xưởng' : 'Sửa dòng đặt xưởng' }}</title>
+    <title>{{ $mode === 'create' ? 'Thêm dòng đặt hàng' : 'Sửa dòng đặt hàng' }}</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -211,7 +211,7 @@
 @include('partials.sidebar', ['active' => 'workshop'])
 <main class="content">
     <div class="heading">
-        <h1>{{ $mode === 'create' ? 'Thêm dòng đặt xưởng' : 'Sửa dòng đặt xưởng' }}</h1>
+        <h1>{{ $mode === 'create' ? 'Thêm dòng đặt hàng' : 'Sửa dòng đặt hàng' }}</h1>
         <p>Mã hàng phải là mã đã có trong kho; tên và ảnh sẽ tự lấy theo mã đó.</p>
     </div>
 
@@ -243,6 +243,17 @@
             </div>
             <span class="hint">Gõ mã hoặc tên, danh sách gợi ý có sẵn ảnh để bạn chọn cho đúng.</span>
             @error('product_code') <div class="error">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="field">
+            <label for="supply_source">Nguồn hàng</label>
+            <select id="supply_source" name="supply_source" required>
+                @foreach ($supplySources as $value => $label)
+                    <option value="{{ $value }}"
+                        @selected(old('supply_source', $workshopOrder->supply_source) === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
+            @error('supply_source') <div class="error">{{ $message }}</div> @enderror
         </div>
 
         <div class="field">
@@ -316,7 +327,7 @@
         </div>
 
         <div class="field">
-            <label for="status">Xưởng đã trả chưa</label>
+            <label for="status">Hàng đã về chưa</label>
             <select id="status" name="status" required>
                 @foreach ($statuses as $value => $label)
                     <option value="{{ $value }}"
