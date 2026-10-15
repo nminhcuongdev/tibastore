@@ -99,7 +99,7 @@
             box-shadow: 0 18px 45px rgba(117, 44, 69, .08);
             overflow-x: auto;
         }
-        table { border-collapse: collapse; min-width: 1520px; width: 100%; }
+        table { border-collapse: collapse; min-width: 1420px; width: 100%; }
         th, td {
             border-bottom: 1px solid #f7e3e9;
             padding: 12px 13px;
@@ -118,17 +118,28 @@
         .muted { color: #8b6672; font-size: 13px; }
         .wrap { max-width: 230px; overflow-wrap: anywhere; white-space: normal; }
         th.num, td.num { text-align: right; white-space: nowrap; }
-        /* Hai nguon hang hai mau de liec la phan biet duoc. */
-        .supply {
+        /* Toggle nguon hang: luon co dung mot the dang bat. */
+        .source-tabs {
+            background: #fff;
+            border: 1px solid #f0d3dc;
             border-radius: 999px;
-            display: inline-block;
-            font-size: 12px;
-            font-weight: 900;
-            padding: 3px 9px;
+            display: inline-flex;
+            gap: 4px;
+            margin-bottom: 12px;
+            padding: 4px;
+        }
+        .source-tab {
+            border-radius: 999px;
+            color: #8b2f4d;
+            font-weight: 800;
+            padding: 8px 18px;
             white-space: nowrap;
         }
-        .supply-xuong_may { background: #f6e8fb; color: #7d3aa3; }
-        .supply-mua_ngoai { background: #e4eefc; color: #2f5fa6; }
+        .source-tab:hover { background: #fff0f4; }
+        .source-tab.is-on { color: #fff; }
+        .source-tab.is-on:hover { opacity: .94; }
+        .source-tab.tab-xuong_may.is-on { background: #7d3aa3; }
+        .source-tab.tab-mua_ngoai.is-on { background: #2f5fa6; }
         td.strong { color: #6f253f; font-weight: 900; }
         .thumb {
             align-items: center;
@@ -222,7 +233,7 @@
 @include('partials.sidebar', ['active' => 'workshop'])
 <main class="content">
     <h1>Đặt hàng</h1>
-    <p class="sub">Theo dõi mã hàng đã đặt: hàng từ xưởng may hay mua ngoài, ai đặt, đặt ngày nào, hẹn về ngày nào và đã về chưa.</p>
+    <p class="sub">Theo dõi mã hàng đã đặt: ai đặt, đặt ngày nào, hẹn về ngày nào và đã về chưa. Danh sách tách riêng hàng đặt xưởng và hàng mua ngoài.</p>
 
     @if (session('status'))
         <div class="status-flash">{{ session('status') }}</div>
@@ -232,18 +243,10 @@
     @endif
 
     <form class="toolbar" method="GET" action="{{ route('workshop-orders.index') }}">
+        <input type="hidden" name="supply_source" value="{{ $supplySource }}">
         <div class="field">
             <label for="q">Tìm mã / tên đơn / size / ghi chú</label>
             <input id="q" name="q" type="search" value="{{ $query }}" placeholder="VD: NA5414, 3xl...">
-        </div>
-        <div class="field">
-            <label for="supply_source">Nguồn hàng</label>
-            <select id="supply_source" name="supply_source">
-                <option value="">Tất cả</option>
-                @foreach ($supplySources as $value => $label)
-                    <option value="{{ $value }}" @selected($supplySource === $value)>{{ $label }}</option>
-                @endforeach
-            </select>
         </div>
         <div class="field">
             <label for="status">Trạng thái</label>
@@ -255,7 +258,7 @@
             </select>
         </div>
         <div class="field">
-            <label for="source">Nguồn đặt</label>
+            <label for="source">Tên nhà cung cấp</label>
             <input id="source" name="source" type="search" value="{{ $source }}" placeholder="VD: Huyền Trang">
         </div>
         <div class="field">
@@ -271,10 +274,23 @@
             <input id="ordered_to" name="ordered_to" type="date" value="{{ $orderedTo }}">
         </div>
         <button class="button" type="submit">Lọc</button>
-        <a class="button secondary" href="{{ route('workshop-orders.index') }}">Xoá lọc</a>
+        {{-- Xoa loc nhung van o lai nguon hang dang xem. --}}
+        <a class="button secondary"
+           href="{{ route('workshop-orders.index', ['supply_source' => $supplySource]) }}">Xoá lọc</a>
         <div class="spacer"></div>
         <a class="button" href="{{ route('workshop-orders.create') }}">+ Thêm dòng</a>
     </form>
+
+    {{-- Danh sách chỉ hiện một nguồn hàng; bấm để đổi qua lại. --}}
+    <div class="source-tabs" role="tablist" aria-label="Nguồn hàng">
+        @foreach ($supplySources as $value => $label)
+            <a class="source-tab {{ $supplySource === $value ? 'is-on' : '' }} tab-{{ $value }}"
+               role="tab" aria-selected="{{ $supplySource === $value ? 'true' : 'false' }}"
+               href="{{ route('workshop-orders.index', array_merge(request()->except('page'), ['supply_source' => $value])) }}">
+                {{ $label }}
+            </a>
+        @endforeach
+    </div>
 
     {{-- Tổng của toàn bộ kết quả đang lọc, không phải chỉ trang đang xem. --}}
     <div class="summary">
@@ -298,14 +314,13 @@
                 <tr>
                     <th>Mã</th>
                     <th>Hình ảnh sản phẩm</th>
-                    <th>Nguồn hàng</th>
                     <th>Size</th>
                     <th class="num">Số lượng</th>
                     <th class="num">Đơn giá</th>
                     <th class="num">Thành tiền</th>
                     <th>Tên đơn</th>
                     <th>Người mua hàng ghi chú</th>
-                    <th>Nguồn đặt</th>
+                    <th>Tên nhà cung cấp</th>
                     <th>Ngày đặt hàng</th>
                     <th>Ngày trả hàng</th>
                     <th>Người mua hàng</th>
@@ -335,9 +350,6 @@
                             @else
                                 <span class="thumb">CHƯA CÓ ẢNH</span>
                             @endif
-                        </td>
-                        <td>
-                            <span class="supply supply-{{ $item->supply_source }}">{{ $item->supplySourceLabel() }}</span>
                         </td>
                         <td class="wrap">{{ $item->size_note ?: '—' }}</td>
                         <td class="num">{{ number_format($item->quantity) }}</td>
@@ -375,7 +387,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="15">Chưa có dòng đặt hàng nào phù hợp.</td>
+                        <td class="empty" colspan="14">Chưa có dòng đặt hàng nào phù hợp.</td>
                     </tr>
                 @endforelse
             </tbody>

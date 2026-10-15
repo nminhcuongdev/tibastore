@@ -299,7 +299,7 @@
         </div>
 
         <div class="field">
-            <label for="source">Nguồn đặt</label>
+            <label for="source">Tên nhà cung cấp</label>
             <input id="source" name="source" type="text"
                 value="{{ old('source', $workshopOrder->source) }}" placeholder="VD: Huyền Trang">
             @error('source') <div class="error">{{ $message }}</div> @enderror

@@ -18,7 +18,13 @@ class WorkshopOrderController extends Controller
         $query = trim((string) $request->query('q', ''));
         $status = (string) $request->query('status', '');
         $source = trim((string) $request->query('source', ''));
-        $supplySource = (string) $request->query('supply_source', '');
+        // Danh sach luon chi hien MOT nguon hang, doi qua lai bang toggle;
+        // vao thang khong kem tham so thi mac dinh xem hang dat xuong.
+        $supplySource = (string) $request->query('supply_source', WorkshopOrder::DEFAULT_SUPPLY_SOURCE);
+
+        if (! array_key_exists($supplySource, WorkshopOrder::supplySources())) {
+            $supplySource = WorkshopOrder::DEFAULT_SUPPLY_SOURCE;
+        }
         $buyer = trim((string) $request->query('buyer', ''));
         $orderedFrom = $this->filterDate($request->query('ordered_from'));
         $orderedTo = $this->filterDate($request->query('ordered_to'));
@@ -36,8 +42,7 @@ class WorkshopOrderController extends Controller
             ->when(array_key_exists($status, WorkshopOrder::statuses()),
                 fn ($builder) => $builder->where('status', $status))
             ->when($source !== '', fn ($builder) => $builder->where('source', 'like', "%{$source}%"))
-            ->when(array_key_exists($supplySource, WorkshopOrder::supplySources()),
-                fn ($builder) => $builder->where('supply_source', $supplySource))
+            ->where('supply_source', $supplySource)
             ->when($buyer !== '', fn ($builder) => $builder->where('buyer', 'like', "%{$buyer}%"))
             ->when($orderedFrom, fn ($builder) => $builder->whereDate('ordered_date', '>=', $orderedFrom))
             ->when($orderedTo, fn ($builder) => $builder->whereDate('ordered_date', '<=', $orderedTo))

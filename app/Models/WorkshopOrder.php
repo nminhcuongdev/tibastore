@@ -59,7 +59,7 @@ class WorkshopOrder extends Model
     public static function supplySources(): array
     {
         return [
-            self::SUPPLY_WORKSHOP => 'Xưởng may',
+            self::SUPPLY_WORKSHOP => 'Xưởng',
             self::SUPPLY_OUTSIDE => 'Mua ngoài',
         ];
     }
