@@ -60,6 +60,17 @@
             margin-bottom: 18px;
             padding: 12px 14px;
         }
+        .status.is-off { border-left-color: #8b6672; color: #704252; }
+        .off-badge {
+            background: #efe7ea;
+            border-radius: 999px;
+            color: #6b5560;
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 13px;
+            font-weight: 900;
+            padding: 4px 11px;
+            vertical-align: middle;
+        }
         .status.is-error {
             border-left-color: #b4233f;
             color: #b4233f;
@@ -242,7 +253,18 @@
 <div class="page">
 
 <main class="content">
-        <h1>{{ $product->code }} - {{ $product->name }}</h1>
+        <h1>
+            {{ $product->code }} - {{ $product->name }}
+            @if ($product->isDiscontinued())
+                <span class="off-badge">Đã ngừng dùng</span>
+            @endif
+        </h1>
+        @if ($product->isDiscontinued())
+            <div class="status is-off">
+                Mã này đã ngừng dùng từ {{ $product->discontinued_at?->format('d/m/Y') }}: không hiện ở kho,
+                không chọn được khi lên đơn. Đơn hàng cũ vẫn giữ nguyên.
+            </div>
+        @endif
         @if (session('status'))
             <div class="status">{{ session('status') }}</div>
         @endif
@@ -267,6 +289,22 @@
 
         <div class="page-actions">
             <a class="link-action" href="{{ route('products.create', ['copy_from' => $product->id]) }}">Thêm size</a>
+            @if ($product->isDiscontinued())
+                <form method="POST" action="{{ route('products.discontinued', $product) }}">
+                    @csrf
+                    @method('PATCH')
+                    <input type="hidden" name="action" value="resume">
+                    <button class="link-action" type="submit" style="font-family: inherit;">Dùng lại mã này</button>
+                </form>
+            @else
+                {{-- Ma da len don thi khong xoa duoc; ngung dung de cat khoi kho. --}}
+                <form method="POST" action="{{ route('products.discontinued', $product) }}"
+                    onsubmit="return confirm('Ngừng dùng mã {{ $product->code }}? Mã sẽ không hiện ở kho và không chọn được khi lên đơn, đơn cũ vẫn giữ nguyên.')">
+                    @csrf
+                    @method('PATCH')
+                    <button class="link-action" type="submit" style="font-family: inherit;">Ngừng dùng mã này</button>
+                </form>
+            @endif
             <form method="POST" action="{{ route('products.destroy', $product) }}" onsubmit="return confirm('Xóa mã hàng này và toàn bộ size khỏi kho?')">
                 @csrf
                 @method('DELETE')

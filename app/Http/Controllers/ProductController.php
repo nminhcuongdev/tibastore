@@ -37,6 +37,8 @@ class ProductController extends Controller
         $sort = $request->query('sort', 'updated');
         $direction = $request->query('direction', 'desc');
         $query = trim((string) $request->query('q', ''));
+        // Mac dinh chi hien ma con dung; ma da ngung dung xem o che do rieng.
+        $showDiscontinued = $request->boolean('discontinued');
 
         if (! array_key_exists($sort, $sortMap)) {
             $sort = 'updated';
@@ -57,6 +59,8 @@ class ProductController extends Controller
             ->selectRaw('MAX(category) as category')
             ->selectRaw('MAX(rental_price) as rental_price')
             ->selectRaw('MAX(updated_at) as updated_at')
+            ->selectRaw('MAX(discontinued_at) as discontinued_at')
+            ->when($showDiscontinued, fn ($builder) => $builder->discontinued(), fn ($builder) => $builder->active())
             ->when($query !== '', function ($builder) use ($query) {
                 $builder->where(function ($search) use ($query) {
                     $search->where('products.code', 'like', "%{$query}%")
@@ -103,6 +107,8 @@ class ProductController extends Controller
         return view('products.index', [
             'productGroups' => $productGroups,
             'totalProducts' => $products->count(),
+            'showDiscontinued' => $showDiscontinued,
+            'discontinuedCount' => Product::query()->discontinued()->distinct()->count('code'),
             'pendingInspection' => $pendingInspection,
             'rentedOut' => $rentedOut,
             'query' => $query,
@@ -242,6 +248,8 @@ class ProductController extends Controller
         $query = trim((string) $request->query('q', ''));
 
         $products = Product::query()
+            // Man nay de len don cho ngay toi, ma da ngung dung khong con can theo doi.
+            ->active()
             ->when($query !== '', function ($builder) use ($query) {
                 $builder->where(function ($search) use ($query) {
                     $search->where('code', 'like', "%{$query}%")
@@ -471,7 +479,7 @@ class ProductController extends Controller
             // Xóa thất bại: sản phẩm vẫn còn nên ở lại trang hiện tại.
             return redirect()
                 ->back()
-                ->with('error', 'Không thể xóa sản phẩm đang được dùng trong đơn hàng.');
+                ->with('error', "Không thể xóa mã {$product->code} vì đã có đơn hàng dùng mã này — xóa đi sẽ làm hỏng đơn cũ và báo cáo. Dùng nút \"Ngừng dùng\" để cất mã khỏi kho mà vẫn giữ đơn cũ.");
         }
 
         $status = $deleteScope === 'code'
@@ -479,6 +487,26 @@ class ProductController extends Controller
             : 'Đã xóa sản phẩm khỏi kho.';
 
         return $this->redirectAfterDestroy($product)->with('status', $status);
+    }
+
+    /**
+     * Ngừng dùng / dùng lại cả một mã hàng (mọi size của mã đó).
+     *
+     * Dành cho mã đã lên đơn nên không xóa được: ngừng dùng thì mã biến khỏi
+     * kho và khỏi gợi ý lên đơn, còn đơn cũ vẫn giữ nguyên để tra cứu.
+     */
+    public function toggleDiscontinued(Request $request, Product $product): RedirectResponse
+    {
+        $stop = $request->input('action') !== 'resume';
+
+        Product::where('code', $product->code)
+            ->update(['discontinued_at' => $stop ? now() : null]);
+
+        $status = $stop
+            ? "Đã ngừng dùng mã {$product->code}. Mã này không còn hiện ở kho và không chọn được khi lên đơn."
+            : "Đã dùng lại mã {$product->code}.";
+
+        return redirect()->back()->with('status', $status);
     }
 
     /**

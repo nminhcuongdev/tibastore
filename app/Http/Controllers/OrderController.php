@@ -248,7 +248,8 @@ class OrderController extends Controller
     {
         $this->inventory->syncDueOrders();
 
-        $products = Product::with('expectedReceipts')->orderBy('code')->orderBy('size')->get();
+        // Ma da ngung dung khong con chon duoc khi len don moi.
+        $products = Product::with('expectedReceipts')->active()->orderBy('code')->orderBy('size')->get();
 
         return view('orders.form', [
             'order' => new Order(['status' => Order::DEFAULT_STATUS, 'source' => Order::DEFAULT_SOURCE]),
@@ -339,8 +340,17 @@ class OrderController extends Controller
     {
         $this->inventory->syncDueOrders();
 
-        $products = Product::with('expectedReceipts')->orderBy('code')->orderBy('size')->get();
         $order->refresh()->load('items.product');
+
+        // Don cu co the dang dung ma da ngung; van phai nap de giu nguyen dong hang
+        // dang co, chi la khong chon them duoc ma ngung dung nao khac.
+        $usedProductIds = $order->items->pluck('product_id')->filter()->unique()->all();
+
+        $products = Product::with('expectedReceipts')
+            ->where(fn ($builder) => $builder->active()->orWhereIn('products.id', $usedProductIds))
+            ->orderBy('code')
+            ->orderBy('size')
+            ->get();
 
         return view('orders.form', [
             'order' => $order,

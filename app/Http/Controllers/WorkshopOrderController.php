@@ -173,6 +173,7 @@ class WorkshopOrderController extends Controller
     private function productCodes(): array
     {
         return Product::query()
+            ->active()
             ->select('code', 'name', 'image_path')
             ->orderBy('code')
             ->get()

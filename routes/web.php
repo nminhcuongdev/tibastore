@@ -38,6 +38,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/products/daily-stock', [ProductController::class, 'inventoryCalendar'])->name('products.daily-stock');
     Route::get('/products/{product}/track', [ProductController::class, 'track'])->name('products.track');
+    // Phai dat truoc Route::resource de khong bi nuot boi products/{product}.
+    Route::patch('/products/{product}/discontinued', [ProductController::class, 'toggleDiscontinued'])
+        ->name('products.discontinued');
     Route::resource('products', ProductController::class);
     Route::post('/orders/availability', [OrderController::class, 'availability'])->name('orders.availability');
     Route::get('/orders/{order}/modal-data', [OrderController::class, 'modalData'])->name('orders.modal-data');

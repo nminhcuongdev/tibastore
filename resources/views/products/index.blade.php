@@ -365,6 +365,21 @@
             color: #b4233f;
         }
 
+        /* Nut nam trong form nhung trong nhu link-action cho dong deu. */
+        .as-button { font-family: inherit; }
+
+        .discontinued-note {
+            background: #fff;
+            border: 1px solid #f0d3dc;
+            border-left: 5px solid #8b6672;
+            border-radius: 8px;
+            color: #704252;
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 14px;
+            padding: 12px 14px;
+        }
+
         .empty {
             color: #8b6672;
             padding: 36px;
@@ -498,7 +513,14 @@
 <div class="page">
 
 <main class="content">
-        <h1>Quản lí kho hàng thời trang</h1>
+        <h1>{{ $showDiscontinued ? 'Mã hàng đã ngừng dùng' : 'Quản lí kho hàng thời trang' }}</h1>
+        @if ($showDiscontinued)
+            <div class="discontinued-note">
+                Những mã này đã cất khỏi kho: không hiện ở danh sách kho, không chọn được khi lên đơn
+                và không còn trong tồn kho theo ngày. Đơn hàng cũ vẫn giữ nguyên mã để tra cứu và tính doanh thu.
+                Bấm <strong>Dùng lại</strong> để đưa mã trở lại kho.
+            </div>
+        @endif
         @if (session('status'))
             <div class="status">{{ session('status') }}</div>
         @endif
@@ -524,6 +546,17 @@
             <span>{{ number_format($totalProducts) }} mã hàng trong {{ number_format($productGroups->count()) }} danh mục</span>
             @if ($productGroups->isNotEmpty())
                 <button type="button" class="button secondary" data-bulk-toggle>Sổ hết tất cả</button>
+            @endif
+            {{-- Ma ngung dung khong hien o day; xem rieng o che do duoi. --}}
+            @if ($showDiscontinued)
+                <a class="button secondary" href="{{ route('products.index', request()->except(['discontinued', 'page'])) }}">
+                    ← Về kho đang dùng
+                </a>
+            @elseif ($discontinuedCount > 0)
+                <a class="button secondary"
+                   href="{{ route('products.index', array_merge(request()->except('page'), ['discontinued' => 1])) }}">
+                    Mã đã ngừng dùng ({{ number_format($discontinuedCount) }})
+                </a>
             @endif
         </div>
 
@@ -637,6 +670,22 @@
                                         <div class="row-actions">
                                             <a class="link-action" href="{{ route('products.show', $product) }}">Chi tiết</a>
                                             <a class="link-action" href="{{ route('products.create', ['copy_from' => $product->id]) }}">Thêm size</a>
+                                            @if ($showDiscontinued)
+                                                <form method="POST" action="{{ route('products.discontinued', $product) }}">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <input type="hidden" name="action" value="resume">
+                                                    <button class="link-action as-button" type="submit">Dùng lại</button>
+                                                </form>
+                                            @else
+                                                {{-- Ma da len don thi khong xoa duoc; ngung dung de cat khoi kho. --}}
+                                                <form method="POST" action="{{ route('products.discontinued', $product) }}"
+                                                    onsubmit="return confirm('Ngừng dùng mã {{ $product->code }}? Mã sẽ không hiện ở kho và không chọn được khi lên đơn, đơn cũ vẫn giữ nguyên.')">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button class="link-action as-button" type="submit">Ngừng dùng</button>
+                                                </form>
+                                            @endif
                                             <form method="POST" action="{{ route('products.destroy', $product) }}" onsubmit="return confirm('Xóa mã hàng này và toàn bộ size khỏi kho?')">
                                                 @csrf
                                                 @method('DELETE')

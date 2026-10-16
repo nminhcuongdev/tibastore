@@ -25,6 +25,7 @@ class Product extends Model
         'size',
         'import_price',
         'rental_price',
+        'discontinued_at',
     ];
 
     protected $casts = [
@@ -34,6 +35,7 @@ class Product extends Model
         'expected_received_at' => 'datetime',
         'import_price' => 'decimal:2',
         'rental_price' => 'integer',
+        'discontinued_at' => 'datetime',
     ];
 
     public function changeLogLabels(): array
@@ -51,7 +53,26 @@ class Product extends Model
             'expected_receive_date' => 'Ngày nhập dự kiến',
             'expected_receive_quantity' => 'SL nhập dự kiến',
             'expected_received_at' => 'Thời điểm đã nhận',
+            'discontinued_at' => 'Ngừng dùng từ',
         ];
+    }
+
+    /**
+     * Mã còn dùng: chưa bị đánh dấu ngừng dùng.
+     */
+    public function scopeActive($query)
+    {
+        return $query->whereNull('products.discontinued_at');
+    }
+
+    public function scopeDiscontinued($query)
+    {
+        return $query->whereNotNull('products.discontinued_at');
+    }
+
+    public function isDiscontinued(): bool
+    {
+        return $this->discontinued_at !== null;
     }
 
     public function changeLogSubject(): string
