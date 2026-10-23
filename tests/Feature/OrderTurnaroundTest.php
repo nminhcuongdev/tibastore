@@ -270,4 +270,41 @@ class OrderTurnaroundTest extends TestCase
         $inventory->assertItemsAvailable([['product_id' => $product->id, 'quantity' => 2]],
             '2030-10-21', '2030-10-23', null, 'toi');
     }
+
+    public function test_reminder_preferences_repeat_after_five_hours_once_and_stop_after_receipt(): void
+    {
+        $user = \App\Models\User::create(['code' => 'snooze-'.bin2hex(random_bytes(5)),
+            'name' => 'Test', 'password' => 'test-password', 'role' => 'admin', 'delflag' => false]);
+        $this->actingAs($user);
+        $product = $this->product();
+        $incoming = $this->booking($product, '2030-10-21', '2030-10-23');
+        $outgoing = $this->booking($product, '2030-10-23', '2030-10-25');
+        $service = app(OrderTurnaroundService::class);
+        $rows = fn () => $service->reminders()->filter(fn ($r) => $r['order']->id === $outgoing->id);
+        try {
+            Carbon::setTestNow('2030-10-22 01:00:00');
+            $this->assertCount(1, $service->dueReminders($rows(), $user->id));
+            $this->post('/order-reminders/preferences', ['mode' => 'repeat', 'order_ids' => [$outgoing->id]])
+                ->assertSessionHasNoErrors()->assertRedirect();
+            $this->assertCount(0, $service->dueReminders($rows(), $user->id));
+            Carbon::setTestNow('2030-10-22 05:59:59');
+            $this->assertCount(0, $service->dueReminders($rows(), $user->id));
+            Carbon::setTestNow('2030-10-22 06:00:00');
+            $this->assertCount(1, $service->dueReminders($rows(), $user->id));
+            $this->post('/order-reminders/preferences', ['mode' => 'once', 'order_ids' => [$outgoing->id]])
+                ->assertSessionHasNoErrors()->assertRedirect();
+            Carbon::setTestNow('2030-10-22 12:00:00');
+            $this->assertCount(0, $service->dueReminders($rows(), $user->id));
+            $otherUser = \App\Models\User::create(['code' => 'other-'.bin2hex(random_bytes(5)),
+                'name' => 'Test', 'password' => 'test-password', 'role' => 'admin', 'delflag' => false]);
+            $this->assertCount(1, $service->dueReminders($rows(), $otherUser->id));
+            $this->get('/orders')->assertOk()->assertSee('Nhắc đòi đồ (1)')
+                ->assertSee('Chỉ nhắc một lần')->assertSee('Nhắc lại sau 5 tiếng');
+            $incoming->update(['status' => Order::RETURNED_STATUS]);
+            $this->assertCount(0, $service->dueReminders($rows(), $otherUser->id));
+            $this->get('/orders')->assertOk()->assertSee('Nhắc đòi đồ (0)');
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
 }

@@ -218,6 +218,17 @@
                 @endforeach
 
                 <div class="reminder-actions">
+                    @if (($sameDayReminders ?? collect())->isNotEmpty())
+                        <form method="POST" action="{{ route('order-reminders.preferences') }}">
+                            @csrf
+                            @foreach ($sameDayReminders->pluck('order.id')->unique() as $reminderOrderId)
+                                <input type="hidden" name="order_ids[]" value="{{ $reminderOrderId }}">
+                            @endforeach
+                            <p>Áp dụng cho các đơn đang hiển thị, riêng tài khoản của bạn. Nhắc lại khi mở hoặc tải trang nếu chưa xác nhận đồ về.</p>
+                            <button class="reminder-button secondary" type="submit" name="mode" value="once">Chỉ nhắc một lần</button>
+                            <button class="reminder-button" type="submit" name="mode" value="repeat">Nhắc lại sau 5 tiếng</button>
+                        </form>
+                    @endif
                     <button class="reminder-close" type="button" onclick="document.getElementById('order-reminder-popup').style.display='none'">
                         Đóng
                     </button>

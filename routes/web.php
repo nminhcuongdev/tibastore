@@ -51,6 +51,8 @@ Route::middleware('auth')->group(function () {
         ->name('order-reminders.confirm');
     Route::post('/order-reminders/{order}/dismiss', [OrderReminderController::class, 'dismiss'])
         ->name('order-reminders.dismiss');
+    Route::post('/order-reminders/preferences', [OrderReminderController::class, 'preferences'])
+        ->name('order-reminders.preferences');
     Route::get('/stock-import-histories', [StockImportHistoryController::class, 'index'])
         ->name('stock-import-histories.index');
     Route::get('/reports/revenue', [ReportController::class, 'revenue'])->name('reports.revenue');

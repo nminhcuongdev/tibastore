@@ -1011,7 +1011,6 @@
     @include('orders.reminders-popup', [
         'sameDayReminders' => $returnReminders,
         'showEmptyReminders' => true,
-        'reminderInitiallyOpen' => $returnReminders->contains(fn ($reminder) => $reminder['order']->pickup_date->toDateString() <= now('Asia/Ho_Chi_Minh')->addDay()->toDateString()),
         'showAllUpcomingReminders' => true,
     ])
     <script>

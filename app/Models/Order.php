@@ -255,7 +255,7 @@ class Order extends Model
     public static function statuses(): array
     {
         return [
-            'chua_cho_size' => 'Chưa cho size',
+            'chua_cho_size' => 'Chưa in đơn',
             'da_in_file' => 'Đã in đơn lên file',
             'da_in_giay' => 'Đã in đơn ra giấy',
             'dang_soan' => 'Đang soạn đơn',

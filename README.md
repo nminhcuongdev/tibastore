@@ -62,7 +62,7 @@ Giao diện tông xanh dương sapphire, điều hướng bằng **sidebar bên 
 - Bộ lọc đầy đủ và tìm theo tên người đặt/tên đơn.
 
 ### Trạng thái đơn & thanh toán
-- Trạng thái đơn: `Chưa cho size` → `Đã in đơn lên file` → `Đã in đơn ra giấy` → `Đang soạn đơn` → `Đã soạn xong` → `Đã gửi` → `Đã trả về` → `Đã kiểm`.
+- Trạng thái đơn: `Chưa in đơn` → `Đã in đơn lên file` → `Đã in đơn ra giấy` → `Đang soạn đơn` → `Đã soạn xong` → `Đã gửi` → `Đã trả về` → `Đã kiểm`.
 - Trạng thái thanh toán: `Cọc`, `Thanh toán lần 1`, `Thanh toán lần 2`, `Còn lại`.
 - Khi chuyển sang `Đã kiểm`, nếu số lượng trả về không khớp thì bôi đỏ và cho nhập **tiền bồi thường** + ghi chú kiểm đơn.
 

@@ -7,6 +7,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class OrderTurnaroundService
 {
@@ -86,5 +87,36 @@ class OrderTurnaroundService
         }
 
         return $reminders;
+    }
+
+    public function dueReminders(Collection $reminders, int $userId): Collection
+    {
+        $preferences = DB::table('order_reminder_preferences')->where('user_id', $userId)
+            ->whereIn('order_id', $reminders->pluck('order.id')->unique())->get()->keyBy('order_id');
+        $tomorrow = now('Asia/Ho_Chi_Minh')->addDay()->toDateString();
+
+        return $reminders->filter(function ($reminder) use ($preferences, $tomorrow) {
+            $order = $reminder['order'];
+            $date = $order->pickup_date->toDateString();
+            if ($date > $tomorrow) {
+                return false;
+            }
+            $preference = $preferences->get($order->id);
+            if (! $preference || $preference->pickup_date !== $date) {
+                return true;
+            }
+            return $preference->mode !== 'once' && Carbon::parse($preference->remind_after)->lte(now());
+        });
+    }
+
+    public function acknowledge(Collection $reminders, int $userId, string $mode): void
+    {
+        foreach ($reminders->pluck('order')->unique('id') as $order) {
+            DB::table('order_reminder_preferences')->updateOrInsert(
+                ['user_id' => $userId, 'order_id' => $order->id],
+                ['pickup_date' => $order->pickup_date->toDateString(), 'mode' => $mode,
+                    'remind_after' => $mode === 'repeat' ? now()->addHours(5) : null]
+            );
+        }
     }
 }

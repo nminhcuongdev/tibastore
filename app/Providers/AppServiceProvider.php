@@ -34,6 +34,10 @@ class AppServiceProvider extends ServiceProvider
                     ? app(\App\Services\OrderTurnaroundService::class)->reminders()
                     : collect());
             }
+            $due = auth()->check()
+                ? app(\App\Services\OrderTurnaroundService::class)->dueReminders($view->getData()['sameDayReminders'], auth()->id())
+                : collect();
+            $view->with('reminderInitiallyOpen', $due->isNotEmpty());
         });
     }
 }
