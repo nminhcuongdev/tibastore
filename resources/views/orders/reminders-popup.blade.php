@@ -169,7 +169,7 @@
                             @foreach ($reminder['returns'] as $returnItem)
                                 <div>
                                     Đòi đồ từ <a href="{{ route('orders.show', $returnItem->order) }}">{{ $returnItem->order->order_name }}</a>
-                                    — {{ number_format($returnItem->quantity) }} cái, size {{ $returnItem->displaySize() }}, trả {{ $returnItem->order->return_date->format('d/m/Y') }}.
+                                    — {{ number_format($returnItem->quantity) }} cái, size {{ $returnItem->displaySize() }}, trả {{ $returnItem->order->return_date->format('d/m/Y') }} {{ $returnItem->order->periodLabel($returnItem->order->return_period) }}.
                                     @if ($returnItem->order->phone) Điện thoại: {{ $returnItem->order->phone }}. @endif
                                 </div>
                             @endforeach

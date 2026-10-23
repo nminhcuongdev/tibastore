@@ -23,6 +23,7 @@ class Order extends Model
         'pickup_date',
         'event_date',
         'return_date',
+        'return_period',
         'order_name',
         'note',
         'source',
@@ -69,6 +70,7 @@ class Order extends Model
             'pickup_date' => 'Ngày lấy',
             'event_date' => 'Ngày diễn',
             'return_date' => 'Ngày trả',
+            'return_period' => 'Buổi trả',
             'order_name' => 'Tên đơn',
             'note' => 'Ghi chú',
             'source' => 'Nguồn hàng',
@@ -114,6 +116,10 @@ class Order extends Model
 
         if ($field === 'payment_status') {
             return self::paymentStatuses()[$value] ?? (string) $value;
+        }
+
+        if ($field === 'return_period') {
+            return self::dayPeriods()[$value] ?? (string) $value;
         }
 
         if ($field === 'source') {
@@ -259,6 +265,16 @@ class Order extends Model
             'thanh_cong' => 'Đã kiểm',
             'huy_don' => 'Hủy đơn',
         ];
+    }
+
+    public static function dayPeriods(): array
+    {
+        return ['sang' => 'Sáng', 'chieu' => 'Chiều', 'toi' => 'Tối'];
+    }
+
+    public function periodLabel(?string $period): string
+    {
+        return self::dayPeriods()[$period] ?? '';
     }
 
     public static function paymentStatuses(): array

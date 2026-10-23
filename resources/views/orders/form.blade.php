@@ -529,6 +529,14 @@
                 <label for="return_date">Ngày trả</label>
                 <input id="return_date" name="return_date" type="date" value="{{ old('return_date', $order->return_date?->format('Y-m-d')) }}" required>
                 @error('return_date') <div class="error">{{ $message }}</div> @enderror
+                <label for="return_period">Buổi trả</label>
+                <select id="return_period" name="return_period">
+                    <option value="">Chưa chọn buổi</option>
+                    @foreach (\App\Models\Order::dayPeriods() as $value => $label)
+                        <option value="{{ $value }}" @selected(old('return_period', $order->return_period) === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                @error('return_period') <div class="error">{{ $message }}</div> @enderror
             </div>
 
             <div class="field">
@@ -1790,6 +1798,7 @@
                 phone: val('phone'), address: val('address'),
                 region: val('region'), carrier: val('carrier'),
                 pickup_date: val('pickup_date'), event_date: val('event_date'), return_date: val('return_date'),
+                return_period: val('return_period'),
                 status: val('status'), source: val('source'),
                 shipping_fee: val('shipping_fee'), payment_1: val('payment_1'), payment_2: val('payment_2'),
                 items, savedAt: Date.now(),
@@ -1830,6 +1839,7 @@
             set('phone', d.phone); set('address', d.address);
             set('region', d.region); set('carrier', d.carrier);
             set('pickup_date', d.pickup_date); set('event_date', d.event_date); set('return_date', d.return_date);
+            set('return_period', d.return_period);
             set('status', d.status); set('source', d.source);
             set('shipping_fee', d.shipping_fee); set('payment_1', d.payment_1); set('payment_2', d.payment_2);
         }

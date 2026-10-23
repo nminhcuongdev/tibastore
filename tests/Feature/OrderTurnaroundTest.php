@@ -206,6 +206,18 @@ class OrderTurnaroundTest extends TestCase
         $this->assertSame(2, app(OrderInventoryService::class)->projectedAvailableQuantities(
             [$otherSize->id], '2030-10-24', '2030-10-24', $outgoing->id
         )[$otherSize->id]);
+        $this->actingAs(\App\Models\User::create([
+            'code' => 'pending-'.bin2hex(random_bytes(5)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false,
+        ]));
+        try {
+            Carbon::setTestNow(Carbon::parse('2030-10-23 22:00:00', 'Asia/Ho_Chi_Minh'));
+            $this->get('/orders')->assertOk()->assertSee('Nhắc đòi đồ (1)')
+                ->assertSee('Cần xác nhận size và đòi đồ về sớm')
+                ->assertSee('Chưa xác định số thiếu theo từng size.');
+        } finally {
+            Carbon::setTestNow();
+        }
         $incoming->update(['status' => 'huy_don']);
         $this->assertCount(0, $service->reminders(Carbon::parse('2030-10-23'))
             ->filter(fn ($row) => $row['order']->id === $outgoing->id));

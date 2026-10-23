@@ -471,7 +471,7 @@
                     </div>
                     <div class="detail">
                         <div class="label">Ngày trả</div>
-                        <div class="value">{{ $order->return_date?->format('d/m/Y') }}</div>
+                        <div class="value">{{ $order->return_date?->format('d/m/Y') }} {{ $order->periodLabel($order->return_period) }}</div>
                     </div>
                 </div>
             </section>

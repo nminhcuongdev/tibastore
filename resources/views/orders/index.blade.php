@@ -804,7 +804,7 @@
                             <td class="name">{{ $order->closer_name }}</td>
                             <td>{{ $order->pickup_date?->format('d/m/Y') }}</td>
                             <td>{{ $order->event_date?->format('d/m/Y') }}</td>
-                            <td>{{ $order->return_date?->format('d/m/Y') }}</td>
+                            <td>{{ $order->return_date?->format('d/m/Y') }} {{ $order->periodLabel($order->return_period) }}</td>
                             <td>
                                 <div class="name">{{ $order->order_name }}</div>
                                 <div class="muted">Tạo: {{ $order->created_at?->format('d/m/Y') }}</div>
