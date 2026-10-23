@@ -691,6 +691,10 @@
                         <label for="carrier">Nhà xe</label>
                         <input id="carrier" name="carrier" type="search" value="{{ $filters['carrier'] }}" placeholder="VD: Hải Vân, Phương Trang...">
                     </div>
+                    <div class="filter-field">
+                        <label for="address">Địa chỉ</label>
+                        <input id="address" name="address" type="search" value="{{ $filters['address'] }}" placeholder="Nhập một phần địa chỉ...">
+                    </div>
                     <div class="filter-field wide">
                         <label>Miền <span class="muted">(chọn nhiều được; bỏ trống = tất cả)</span></label>
                         <div class="status-checks">

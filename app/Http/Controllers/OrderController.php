@@ -51,6 +51,7 @@ class OrderController extends Controller
         $orderName = trim((string) $request->query('order_name', ''));
         $closer = trim((string) $request->query('closer', ''));
         $phone = trim((string) $request->query('phone', ''));
+        $address = trim((string) $request->query('address', ''));
         $carrier = trim((string) $request->query('carrier', ''));
         // Loc mien cho phep chon nhieu; van nhan link cu dang ?region=tinh_mb.
         $selectedRegions = collect((array) $request->query('region', []))
@@ -108,6 +109,7 @@ class OrderController extends Controller
             ->when($orderName !== '', fn ($builder) => $builder->where('orders.order_name', 'like', "%{$orderName}%"))
             ->when($closer !== '', fn ($builder) => $builder->where('orders.closer_name', $closer))
             ->when($phone !== '', fn ($builder) => $builder->where('orders.phone', 'like', "%{$phone}%"))
+            ->when($address !== '', fn ($builder) => $builder->whereRaw('LOWER(orders.address) LIKE ?', ['%' . mb_strtolower($address, 'UTF-8') . '%']))
             ->when($carrier !== '', fn ($builder) => $builder->where('orders.carrier', 'like', "%{$carrier}%"))
             ->when($selectedRegions !== [], fn ($builder) => $builder->whereIn('orders.region', $selectedRegions))
             ->when($remaining !== '', function ($builder) use ($remaining, $remainingExpression) {
@@ -184,6 +186,7 @@ class OrderController extends Controller
                 'order_name' => $orderName,
                 'closer' => $closer,
                 'phone' => $phone,
+                'address' => $address,
                 'carrier' => $carrier,
                 'remaining' => $remaining,
                 'pickup_from' => $pickupFrom,
