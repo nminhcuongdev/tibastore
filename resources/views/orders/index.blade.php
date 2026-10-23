@@ -638,6 +638,22 @@
         }
         .orders-scroll tr[data-order-row] > td:nth-child(7),
         .orders-scroll thead th:nth-child(7) { border-right: 2px solid #b8cbed; }
+        .orders-scroll .codes-panel {
+            position: sticky; left: 13px; z-index: 2;
+            width: var(--codes-panel-width, 800px); max-width: 100%;
+            box-sizing: border-box;
+        }
+        .orders-scroll .codes-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+        }
+        .orders-scroll .codes-panel__head { flex-wrap: wrap; }
+        .orders-scroll .code-card { min-width: 0; max-width: 100%; }
+        .orders-scroll .code-card__name, .orders-scroll .code-card__code,
+        .orders-scroll .code-card__meta, .orders-scroll .codes-panel__title {
+            white-space: normal; overflow-wrap: anywhere;
+            overflow: visible; text-overflow: clip;
+        }
+        .orders-scroll .code-card__meta { flex-wrap: wrap; }
     </style>
 </head>
 <body>
@@ -1112,6 +1128,7 @@
         if (!table) return;
         const headers = Array.from(table.querySelectorAll('thead th')).slice(0, 7);
         function updateFrozenColumns() {
+            table.style.setProperty('--codes-panel-width', Math.max(0, table.parentElement.clientWidth - 26) + 'px');
             let left = 0;
             headers.forEach(function (header, index) {
                 const offset = left + 'px';
@@ -1124,6 +1141,7 @@
         }
         const observer = new ResizeObserver(updateFrozenColumns);
         headers.forEach(header => observer.observe(header));
+        observer.observe(table.parentElement);
         updateFrozenColumns();
     })();
 </script>
