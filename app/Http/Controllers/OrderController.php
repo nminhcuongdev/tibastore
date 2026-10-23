@@ -88,8 +88,9 @@ class OrderController extends Controller
         // Cong thuc "con lai" dung chung cho ca loc va cong tong, giong het
         // Order::getRemainingAttribute(). COALESCE vi cot tien de trong la NULL,
         // ma NULL tham gia phep tinh se lam ca bieu thuc thanh NULL.
-        $remainingExpression = "((CASE WHEN orders.status = 'huy_don' THEN 0"
-            . ' ELSE COALESCE(orders.total_amount, 0) + COALESCE(orders.compensation_amount, 0) END)'
+        $orderTotalExpression = "(CASE WHEN orders.status = 'huy_don' THEN 0"
+            . ' ELSE COALESCE(orders.total_amount, 0) + COALESCE(orders.compensation_amount, 0) END)';
+        $remainingExpression = '(' . $orderTotalExpression
             . ' + COALESCE(orders.shipping_fee, 0) - COALESCE(orders.payment_1, 0)'
             . ' - COALESCE(orders.payment_2, 0))';
 
@@ -142,12 +143,13 @@ class OrderController extends Controller
         // Tong cua TOAN BO ket qua dang loc, khong phai chi trang dang xem.
         // select() thay han danh sach cot (khong them vao orders.*, vi cot thuong
         // di kem ham gop se bi MySQL che do ONLY_FULL_GROUP_BY tu choi), va bo
-        // eager-load vi dong ket qua nay chi chua hai con so.
+        // eager-load vi dong ket qua nay chi chua cac so tong hop.
         $totals = (clone $ordersQuery)
             ->reorder()
             ->setEagerLoads([])
             ->select(DB::raw(
                 'COUNT(*) as orders_count, COALESCE(SUM(' . $remainingExpression . '), 0) as remaining_total'
+                . ', COALESCE(SUM(' . $orderTotalExpression . '), 0) as order_total'
             ))
             ->first();
 
@@ -163,6 +165,8 @@ class OrderController extends Controller
         return view('orders.index', [
             'orders' => $orders,
             'remainingTotal' => (int) ($totals->remaining_total ?? 0),
+            'orderTotal' => (int) ($totals->order_total ?? 0),
+            'collectedTotal' => (int) ($totals->order_total ?? 0) - (int) ($totals->remaining_total ?? 0),
             'query' => $query,
             'selectedStatuses' => $selectedStatuses,
             'selectedRegions' => $selectedRegions,

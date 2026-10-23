@@ -728,9 +728,17 @@
                 <span class="summary-label">Số đơn</span>
                 <span class="summary-value">{{ number_format($orders->total()) }}</span>
             </div>
+            <div class="summary-item">
+                <span class="summary-label">Tổng đơn</span>
+                <span class="summary-value">{{ number_format($orderTotal) }}</span>
+            </div>
             <div class="summary-item is-main">
                 <span class="summary-label">Tổng còn lại</span>
                 <span class="summary-value">{{ number_format($remainingTotal) }}</span>
+            </div>
+            <div class="summary-item" title="Tổng đơn − Tổng còn lại">
+                <span class="summary-label">Đã thu (Tổng đơn − Còn lại)</span>
+                <span class="summary-value">{{ number_format($collectedTotal) }}</span>
             </div>
             @if ($filters['remaining'] === 'positive')
                 <div class="summary-note">Đã bỏ đơn còn lại bằng 0 và số âm.</div>
