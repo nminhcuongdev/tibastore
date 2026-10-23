@@ -582,7 +582,12 @@
         .table-shell th:nth-child(6), tr[data-order-row] > td:nth-child(6) {
             width: 200px; min-width: 180px;
         }
-        .table-shell thead th { text-align: center; vertical-align: middle; }
+        .table-shell thead th {
+            text-align: center; vertical-align: middle;
+            background: #dbeafe; color: #172f60;
+            font-size: 13px !important; font-weight: 800; text-transform: uppercase;
+        }
+        .table-shell thead th a { color: inherit; }
         .table-shell thead th a { justify-content: center; width: 100%; }
         .table-shell th:nth-child(8), tr[data-order-row] > td:nth-child(8),
         .table-shell th:nth-child(15), tr[data-order-row] > td:nth-child(15),
