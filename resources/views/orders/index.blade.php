@@ -574,8 +574,8 @@
     @include('partials.compact')
     <style>
         .table-shell th:nth-child(5), tr[data-order-row] > td:nth-child(5),
-        .table-shell th:nth-child(14), tr[data-order-row] > td:nth-child(14),
-        .table-shell th:nth-child(17), tr[data-order-row] > td:nth-child(17) {
+        .table-shell th:nth-child(9), tr[data-order-row] > td:nth-child(9),
+        .table-shell th:nth-child(12), tr[data-order-row] > td:nth-child(12) {
             width: 220px; min-width: 200px; max-width: 280px;
             white-space: normal; overflow-wrap: anywhere;
         }
@@ -590,8 +590,8 @@
         .table-shell thead th a { color: inherit; }
         .table-shell thead th a { justify-content: center; width: 100%; }
         .table-shell th:nth-child(8), tr[data-order-row] > td:nth-child(8),
-        .table-shell th:nth-child(15), tr[data-order-row] > td:nth-child(15),
-        .table-shell th:nth-child(16), tr[data-order-row] > td:nth-child(16) {
+        .table-shell th:nth-child(10), tr[data-order-row] > td:nth-child(10),
+        .table-shell th:nth-child(11), tr[data-order-row] > td:nth-child(11) {
             width: 145px; min-width: 125px; max-width: 160px;
         }
         .status-control { position: relative; width: 140px; max-width: 100%; }
@@ -608,10 +608,10 @@
         }
         .status-control .status-select option { color: var(--status-text, #1e293b) !important; }
         tr[data-order-row] > td:nth-child(5),
-        tr[data-order-row] > td:nth-child(14),
-        tr[data-order-row] > td:nth-child(15),
-        tr[data-order-row] > td:nth-child(16),
-        tr[data-order-row] > td:nth-child(17) {
+        tr[data-order-row] > td:nth-child(9),
+        tr[data-order-row] > td:nth-child(10),
+        tr[data-order-row] > td:nth-child(11),
+        tr[data-order-row] > td:nth-child(12) {
             text-align: center; vertical-align: middle;
             white-space: normal; overflow-wrap: anywhere;
         }
@@ -624,6 +624,20 @@
             white-space: normal; overflow-wrap: anywhere; text-align: center;
             max-width: 100%; justify-content: center;
         }
+        .orders-scroll {
+            overflow: auto !important; max-height: 75vh !important;
+            max-width: 100%; position: relative; isolation: isolate;
+        }
+        .orders-scroll table { min-width: 2300px !important; }
+        .orders-scroll thead th { position: sticky; top: 0; z-index: 6; }
+        .orders-scroll tr[data-order-row] > td:nth-child(-n+7) {
+            position: sticky; left: var(--frozen-left, 0px); z-index: 4;
+        }
+        .orders-scroll thead th:nth-child(-n+7) {
+            left: var(--frozen-left, 0px); z-index: 8;
+        }
+        .orders-scroll tr[data-order-row] > td:nth-child(7),
+        .orders-scroll thead th:nth-child(7) { border-right: 2px solid #b8cbed; }
     </style>
 </head>
 <body>
@@ -828,7 +842,7 @@
             @endif
         </div>
 
-        <div class="table-shell">
+        <div class="table-shell orders-scroll" tabindex="0" aria-label="Bảng đơn hàng, cuộn để xem thêm các cột">
             <table>
                 <thead>
                     <tr>
@@ -840,15 +854,15 @@
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'product_code', 'direction' => $sort === 'product_code' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Mã hàng {{ $sort === 'product_code' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'quantity', 'direction' => $sort === 'quantity' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Số lượng {{ $sort === 'quantity' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'status', 'direction' => $sort === 'status' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Trạng thái {{ $sort === 'status' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
+                        <th>Ghi chú</th>
+                        <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'region', 'direction' => $sort === 'region' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Miền {{ $sort === 'region' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
+                        <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'carrier', 'direction' => $sort === 'carrier' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Nhà xe {{ $sort === 'carrier' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
+                        <th>Địa chỉ</th>
                         <th>Tổng đơn</th>
                         <th>Tiền ship</th>
                         <th>Thanh toán lần 1</th>
                         <th>Thanh toán lần 2</th>
                         <th>Còn lại</th>
-                        <th>Ghi chú</th>
-                        <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'region', 'direction' => $sort === 'region' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Miền {{ $sort === 'region' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
-                        <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'carrier', 'direction' => $sort === 'carrier' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Nhà xe {{ $sort === 'carrier' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
-                        <th>Địa chỉ</th>
                         <th>Thao tác</th>
                     </tr>
                 </thead>
@@ -913,11 +927,6 @@
                                     </div>
                                 </form>
                             </td>
-                            <td data-cell="total">{{ number_format($order->total_with_compensation) }}</td>
-                            <td>{{ number_format($order->shipping_fee) }}</td>
-                            <td>{{ number_format($order->payment_1) }}</td>
-                            <td>{{ number_format($order->payment_2) }}</td>
-                            <td data-cell="remaining">{{ number_format($order->remaining) }}</td>
                             <td>
                                 @if (trim((string) $order->note) === '')
                                     <span class="muted">—</span>
@@ -952,6 +961,11 @@
                                     <div class="address-cell" title="{{ $order->address }}">{{ $order->address }}</div>
                                 @endif
                             </td>
+                            <td data-cell="total">{{ number_format($order->total_with_compensation) }}</td>
+                            <td>{{ number_format($order->shipping_fee) }}</td>
+                            <td>{{ number_format($order->payment_1) }}</td>
+                            <td>{{ number_format($order->payment_2) }}</td>
+                            <td data-cell="remaining">{{ number_format($order->remaining) }}</td>
                             <td>
                                 <div class="row-actions">
                                     <a class="link-action" href="{{ route('orders.show', $order) }}">Xem</a>
@@ -1092,6 +1106,27 @@
     </script>
     </div>
 </div>
+<script>
+    (function () {
+        const table = document.querySelector('.orders-scroll table');
+        if (!table) return;
+        const headers = Array.from(table.querySelectorAll('thead th')).slice(0, 7);
+        function updateFrozenColumns() {
+            let left = 0;
+            headers.forEach(function (header, index) {
+                const offset = left + 'px';
+                header.style.setProperty('--frozen-left', offset);
+                table.querySelectorAll('tr[data-order-row] > td:nth-child(' + (index + 1) + ')').forEach(function (cell) {
+                    cell.style.setProperty('--frozen-left', offset);
+                });
+                left += header.getBoundingClientRect().width;
+            });
+        }
+        const observer = new ResizeObserver(updateFrozenColumns);
+        headers.forEach(header => observer.observe(header));
+        updateFrozenColumns();
+    })();
+</script>
 </body>
 </html>
 
