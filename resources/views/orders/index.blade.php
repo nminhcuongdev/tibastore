@@ -598,6 +598,23 @@
             appearance: none; background: transparent !important; color: transparent !important;
         }
         .status-control .status-select option { color: var(--status-text, #1e293b) !important; }
+        tr[data-order-row] > td:nth-child(5),
+        tr[data-order-row] > td:nth-child(14),
+        tr[data-order-row] > td:nth-child(15),
+        tr[data-order-row] > td:nth-child(16),
+        tr[data-order-row] > td:nth-child(17) {
+            text-align: center; vertical-align: middle;
+            white-space: normal; overflow-wrap: anywhere;
+        }
+        tr[data-order-row] .note-cell, tr[data-order-row] .address-cell {
+            display: block; -webkit-line-clamp: unset; max-height: none;
+            overflow: visible; white-space: pre-wrap; overflow-wrap: anywhere;
+            text-align: center; margin-inline: auto;
+        }
+        tr[data-order-row] .region-badge, tr[data-order-row] .carrier {
+            white-space: normal; overflow-wrap: anywhere; text-align: center;
+            max-width: 100%; justify-content: center;
+        }
     </style>
 </head>
 <body>

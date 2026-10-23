@@ -14,8 +14,8 @@
 @endphp
 <style>
     @foreach ($statusPalette as $key => [$background, $foreground])
-        .row-{{ $key }} { background: #ffffff; color: #1e293b; }
-        .row-{{ $key }} > td { background: #ffffff; color: #1e293b; }
+        .row-{{ $key }} { background: #fff1f5; color: #1e293b; }
+        .row-{{ $key }} > td { background: #fff1f5; color: #1e293b; }
         tr[data-order-row].row-{{ $key }} > td:nth-child(5) {
             background: {{ $background }}; color: {{ $foreground }};
         }
