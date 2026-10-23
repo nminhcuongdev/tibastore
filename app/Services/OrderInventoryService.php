@@ -141,7 +141,8 @@ class OrderInventoryService
         array $items,
         string $pickupDate,
         string $returnDate,
-        ?int $excludeOrderId = null
+        ?int $excludeOrderId = null,
+        ?string $returnPeriod = null
     ): void {
         // Item "chưa chốt size" không giữ kho theo size cụ thể nên bỏ qua khi kiểm tồn.
         $checkableItems = collect($items)->reject(fn ($item) => ! empty($item['size_pending']));
@@ -157,7 +158,9 @@ class OrderInventoryService
             $productIds,
             $pickupDate,
             $returnDate,
-            $excludeOrderId
+            $excludeOrderId,
+            true,
+            $returnPeriod
         );
 
         // Cộng dồn số lượng theo từng sản phẩm — nhiều dòng cùng mã-size (giá khác nhau)
@@ -216,7 +219,8 @@ class OrderInventoryService
         string $pickupDate,
         string $returnDate,
         ?int $excludeOrderId = null,
-        bool $allowSameDayTurnaround = true
+        bool $allowSameDayTurnaround = true,
+        ?string $returnPeriod = null
     ): array {
         $productIds = collect($productIds)
             ->filter()
@@ -238,6 +242,9 @@ class OrderInventoryService
         $endExclusive = $end->copy()->addDay();
         if ($allowSameDayTurnaround && $end->gt($start)) {
             $endExclusive = $end->copy();
+        }
+        if ($returnPeriod !== null) {
+            $endExclusive = $end->copy()->addDays($returnPeriod === 'toi' ? 2 : 1);
         }
         $products = Product::whereIn('id', $productIds->all())
             ->get(['id', 'stock_quantity'])
@@ -311,12 +318,13 @@ class OrderInventoryService
             ->whereIn('order_items.product_id', $productIds)
             ->where('order_items.size_pending', false)
             ->whereDate('orders.pickup_date', '<=', $to->toDateString())
-            ->whereDate('orders.return_date', '>=', $from->toDateString())
+            ->whereDate('orders.return_date', '>=', $from->copy()->subDay()->toDateString())
             ->get([
                 'order_items.product_id',
                 'order_items.quantity',
                 'orders.pickup_date',
                 'orders.return_date',
+                'orders.return_period',
             ]);
 
         foreach ($bookings as $booking) {
@@ -324,6 +332,9 @@ class OrderInventoryService
             $quantity = (int) $booking->quantity;
             $start = $this->date($booking->pickup_date);
             $end = $this->date($booking->return_date);
+            if ($booking->return_period === 'toi') {
+                $end->addDay();
+            }
 
             if ($start->lt($from)) {
                 $start = $from->copy();
@@ -536,12 +547,13 @@ class OrderInventoryService
             ->where('order_items.size_pending', false)
             ->when($excludeOrderId !== null, fn ($query) => $query->where('orders.id', '!=', $excludeOrderId))
             ->whereDate('orders.pickup_date', '<', $endExclusive)
-            ->whereDate('orders.return_date', '>=', $start)
+            ->whereDate('orders.return_date', '>=', $start->copy()->subDay())
             ->get([
                 'order_items.product_id',
                 'order_items.quantity',
                 'orders.pickup_date',
                 'orders.return_date',
+                'orders.return_period',
             ]);
 
         $initialReserved = array_fill_keys($productIds, 0);
@@ -554,6 +566,9 @@ class OrderInventoryService
             $bookingEndExclusive = $this->date($row->return_date)->addDay();
             if ($allowSameDayTurnaround && $this->date($row->return_date)->gt($bookingStart)) {
                 $bookingEndExclusive = $this->date($row->return_date);
+            }
+            if ($row->return_period !== null) {
+                $bookingEndExclusive = $this->date($row->return_date)->addDays($row->return_period === 'toi' ? 2 : 1);
             }
 
             if ($bookingStart->lt($start) && $bookingEndExclusive->gt($start)) {

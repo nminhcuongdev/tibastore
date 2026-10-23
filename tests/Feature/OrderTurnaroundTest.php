@@ -239,4 +239,35 @@ class OrderTurnaroundTest extends TestCase
         $this->assertSame($incoming->id, $rows[0]['returns']->first()->order_id);
         $this->assertSame(2, $product->fresh()->stock_quantity);
     }
+
+    public function test_return_period_controls_next_day_booking_and_calendar(): void
+    {
+        $inventory = app(OrderInventoryService::class);
+        foreach (['sang' => 2, 'chieu' => 2, 'toi' => 0] as $period => $available) {
+            $product = $this->product();
+            $incoming = $this->booking($product, '2030-10-21', '2030-10-23');
+            $incoming->update(['return_period' => $period]);
+            $this->assertSame($available, $inventory->projectedAvailableQuantities(
+                [$product->id], '2030-10-24', '2030-10-25'
+            )[$product->id]);
+            $this->assertSame(2, $inventory->projectedAvailableQuantities(
+                [$product->id], '2030-10-25', '2030-10-26'
+            )[$product->id]);
+            $calendar = $inventory->dailyAvailability([$product->id], Carbon::parse('2030-10-24'), Carbon::parse('2030-10-24'));
+            $this->assertSame($available, $calendar[$product->id]['2030-10-24']);
+        }
+    }
+
+    public function test_evening_return_cannot_overlap_existing_next_day_pickup_in_either_direction(): void
+    {
+        $product = $this->product();
+        $this->booking($product, '2030-10-24', '2030-10-26');
+        $inventory = app(OrderInventoryService::class);
+        $this->assertSame(2, $inventory->projectedAvailableQuantities(
+            [$product->id], '2030-10-21', '2030-10-23', null, true, 'sang'
+        )[$product->id]);
+        $this->expectException(ValidationException::class);
+        $inventory->assertItemsAvailable([['product_id' => $product->id, 'quantity' => 2]],
+            '2030-10-21', '2030-10-23', null, 'toi');
+    }
 }

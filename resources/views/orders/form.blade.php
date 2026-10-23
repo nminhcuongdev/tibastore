@@ -822,6 +822,7 @@
                         pickup_date: pickupDateInput.value,
                         event_date: eventDateInput.value,
                         return_date: returnDateInput.value,
+                        return_period: document.getElementById('return_period').value,
                         product_ids: allProductIds(),
                         exclude_order_id: currentOrderId,
                     }),
@@ -1692,7 +1693,7 @@
 
         addItemButton.addEventListener('click', () => addItemBlock());
 
-        [pickupDateInput, eventDateInput, returnDateInput].forEach(input => {
+        [pickupDateInput, eventDateInput, returnDateInput, document.getElementById('return_period')].forEach(input => {
             input.addEventListener('change', () => refreshAvailability('date-change'));
         });
 

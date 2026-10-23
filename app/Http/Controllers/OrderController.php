@@ -214,6 +214,7 @@ class OrderController extends Controller
             'pickup_date' => ['nullable', 'date'],
             'event_date' => ['nullable', 'date'],
             'return_date' => ['nullable', 'date'],
+            'return_period' => ['nullable', Rule::in(array_keys(Order::dayPeriods()))],
             'product_ids' => ['nullable', 'array'],
             'product_ids.*' => ['integer', 'exists:products,id'],
             'exclude_order_id' => ['nullable', 'integer', 'exists:orders,id'],
@@ -245,12 +246,13 @@ class OrderController extends Controller
             $productIds->all(),
             $data['pickup_date'],
             $data['return_date'],
-            isset($data['exclude_order_id']) ? (int) $data['exclude_order_id'] : null
+            isset($data['exclude_order_id']) ? (int) $data['exclude_order_id'] : null,
+            true, $data['return_period'] ?? null
         );
 
         $strictAvailability = $this->inventory->projectedAvailableQuantities(
             $productIds->all(), $data['pickup_date'], $data['return_date'],
-            isset($data['exclude_order_id']) ? (int) $data['exclude_order_id'] : null, false
+            isset($data['exclude_order_id']) ? (int) $data['exclude_order_id'] : null, false, $data['return_period'] ?? null
         );
         $returns = app(\App\Services\OrderTurnaroundService::class)->returns(
             $productIds->all(), $data['pickup_date'],
@@ -621,7 +623,8 @@ class OrderController extends Controller
             $data['items'],
             $data['pickup_date'],
             $data['return_date'],
-            $order?->id
+            $order?->id,
+            $data['return_period'] ?? null
         );
 
         return $data;
