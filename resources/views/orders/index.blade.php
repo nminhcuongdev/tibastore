@@ -672,6 +672,7 @@
                         <select id="remaining" name="remaining">
                             <option value="">Tất cả</option>
                             <option value="positive" @selected($filters['remaining'] === 'positive')>Lớn hơn 0 (khách còn nợ)</option>
+                            <option value="negative" @selected($filters['remaining'] === 'negative')>Nhỏ hơn 0 (số âm)</option>
                             <option value="nonzero" @selected($filters['remaining'] === 'nonzero')>Khác 0 (chưa tất toán)</option>
                             <option value="zero" @selected($filters['remaining'] === 'zero')>Bằng 0 (đã tất toán)</option>
                         </select>
@@ -736,16 +737,30 @@
                 <span class="summary-label">Tổng còn lại</span>
                 <span class="summary-value">{{ number_format($remainingTotal) }}</span>
             </div>
-            <div class="summary-item" title="Tổng đơn − Tổng còn lại">
-                <span class="summary-label">Đã thu (Tổng đơn − Còn lại)</span>
+            <div class="summary-item" title="Tổng đơn − (Tổng còn lại)">
+                <span class="summary-label">Đã thu = Tổng đơn − (Tổng còn lại)</span>
                 <span class="summary-value">{{ number_format($collectedTotal) }}</span>
             </div>
             @if ($filters['remaining'] === 'positive')
-                <div class="summary-note">Đã bỏ đơn còn lại bằng 0 và số âm.</div>
+                <div class="summary-note">
+                    Chỉ cộng đơn còn lại lớn hơn 0.
+                    <a href="{{ route('orders.index', array_merge(request()->except('page'), ['remaining' => 'negative'])) }}">Chỉ cộng đơn số âm</a>
+                </div>
+            @elseif ($filters['remaining'] === 'negative')
+                <div class="summary-note">
+                    Chỉ cộng đơn có số tiền còn lại âm.
+                    <a href="{{ route('orders.index', array_merge(request()->except('page'), ['remaining' => 'positive'])) }}">Chỉ cộng đơn còn nợ</a>
+                </div>
+            @elseif ($filters['remaining'] === 'zero')
+                <div class="summary-note">
+                    Chỉ cộng đơn còn lại bằng 0.
+                    <a href="{{ route('orders.index', array_merge(request()->except('page'), ['remaining' => 'negative'])) }}">Chỉ cộng đơn số âm</a>
+                </div>
             @else
                 <div class="summary-note">
-                    Đang cộng cả đơn bằng 0 và số âm.
+                    {{ $filters['remaining'] === 'nonzero' ? 'Đang cộng đơn số dương và số âm.' : 'Đang cộng cả đơn bằng 0 và số âm.' }}
                     <a href="{{ route('orders.index', array_merge(request()->except('page'), ['remaining' => 'positive'])) }}">Chỉ cộng đơn còn nợ</a>
+                    · <a href="{{ route('orders.index', array_merge(request()->except('page'), ['remaining' => 'negative'])) }}">Chỉ cộng đơn số âm</a>
                 </div>
             @endif
         </div>

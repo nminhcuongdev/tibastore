@@ -60,7 +60,7 @@ class OrderController extends Controller
             ->values()
             ->all();
         // Loc theo so tien con lai: '' = tat ca, 'positive' = con no (> 0),
-        // 'nonzero' = khac 0, 'zero' = bang 0.
+        // 'negative' = so am, 'nonzero' = khac 0, 'zero' = bang 0.
         $remaining = (string) $request->query('remaining', '');
         $pickupFrom = $this->filterDate($request->query('pickup_from'));
         $pickupTo = $this->filterDate($request->query('pickup_to'));
@@ -81,7 +81,7 @@ class OrderController extends Controller
             $source = '';
         }
 
-        if (! in_array($remaining, ['positive', 'nonzero', 'zero'], true)) {
+        if (! in_array($remaining, ['positive', 'negative', 'nonzero', 'zero'], true)) {
             $remaining = '';
         }
 
@@ -115,6 +115,7 @@ class OrderController extends Controller
                     'zero' => '= 0',
                     // Bo ca 0 lan so am (khach tra du/thua), chi giu don con no.
                     'positive' => '> 0',
+                    'negative' => '< 0',
                     default => '<> 0',
                 });
             })
