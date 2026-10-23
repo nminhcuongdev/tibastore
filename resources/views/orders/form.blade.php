@@ -180,6 +180,7 @@
         .rental-field {
             max-width: 220px;
         }
+        .rental-row input[data-block-days] { width: 100px; }
         .block-subtotal {
             color: #334e75;
             font-weight: 800;
@@ -440,6 +441,7 @@
                     'product_id' => $item['product_id'] ?? '',
                     'quantity' => $item['quantity'] ?? 1,
                     'rental_price' => $item['rental_price'] ?? null,
+                    'rental_days' => $item['rental_days'] ?? 1,
                     'size_pending' => ! empty($item['size_pending']),
                     'note' => $item['note'] ?? null,
                 ])->values()
@@ -448,6 +450,7 @@
                         'product_id' => $item->product_id,
                         'quantity' => $item->quantity,
                         'rental_price' => $item->rental_price,
+                        'rental_days' => $item->rental_days ?? 1,
                         'size_pending' => (bool) $item->size_pending,
                         'note' => $item->note,
                     ])->values()
@@ -561,7 +564,7 @@
             </div>
 
             <div class="field">
-                <label>Tổng đơn (tự động: giá thuê × số lượng)</label>
+                <label>Tổng đơn (giá thuê × số lượng × số ngày − chiết khấu)</label>
                 <div class="readonly-value" data-total-display>0</div>
             </div>
 
@@ -582,6 +585,19 @@
                 <label for="payment_2">Thanh toán lần 2</label>
                 <input id="payment_2" name="payment_2" type="number" min="0" step="1" value="{{ old('payment_2', $order->payment_2 ?? 0) }}">
                 @error('payment_2') <div class="error">{{ $message }}</div> @enderror
+            </div>
+
+            <div class="field">
+                <label for="discount_type">Chiết khấu</label>
+                <select id="discount_type" name="discount_type">
+                    <option value="vnd" @selected(old('discount_type', $order->discount_percent !== null ? 'percent' : 'vnd') === 'vnd')>Số tiền (VNĐ)</option>
+                    <option value="percent" @selected(old('discount_type', $order->discount_percent !== null ? 'percent' : 'vnd') === 'percent')>Phần trăm (%)</option>
+                </select>
+                @error('discount_type') <div class="error">{{ $message }}</div> @enderror
+                <label for="discount_amount">Mức chiết khấu</label>
+                <input id="discount_amount" name="discount_amount" type="number" min="0" step="0.01" value="{{ old('discount_amount', $order->discount_percent ?? $order->discount_amount ?? 0) }}">
+                <div class="muted" data-discount-display>Giảm trực tiếp vào tổng tiền hàng.</div>
+                @error('discount_amount') <div class="error">{{ $message }}</div> @enderror
             </div>
 
             <div class="field full">
@@ -651,6 +667,10 @@
         }
 
         const totalDisplay = document.querySelector('[data-total-display]');
+        const discountInput = document.getElementById('discount_amount');
+        const discountType = document.getElementById('discount_type');
+        discountType.addEventListener('change', updateComputedTotal);
+        discountInput.addEventListener('input', updateComputedTotal);
         const orderStatus = document.getElementById('status');
         orderStatus.addEventListener('change', updateComputedTotal);
 
@@ -662,6 +682,7 @@
             itemsContainer.querySelectorAll('.order-item').forEach(block => {
                 const rentalInput = block.querySelector('[data-block-rental]');
                 const rental = Number(rentalInput ? rentalInput.value || 0 : 0);
+                const days = Number(block.querySelector('[data-block-days]').value || 1);
                 let blockQuantity = 0;
 
                 block.querySelectorAll('.size-row').forEach(sizeRow => {
@@ -673,13 +694,14 @@
                     if (rentalHidden) {
                         rentalHidden.value = String(rental);
                     }
+                    sizeRow.querySelector('[data-rental-days]').value = String(days);
 
                     if (productId && quantity > 0) {
                         blockQuantity += quantity;
                     }
                 });
 
-                const subtotal = rental * blockQuantity;
+                const subtotal = rental * blockQuantity * days;
                 const subtotalEl = block.querySelector('[data-block-subtotal]');
 
                 if (subtotalEl) {
@@ -690,7 +712,14 @@
             });
 
             if (totalDisplay) {
-                totalDisplay.textContent = (orderStatus.value === 'huy_don' ? 0 : total).toLocaleString('vi-VN');
+                const value = Number(discountInput.value || 0);
+                const percent = discountType.value === 'percent';
+                const discount = percent ? Math.round(total * value / 100) : value;
+                discountInput.step = percent ? '0.01' : '1';
+                discountInput.max = String(percent ? 100 : total);
+                discountInput.setCustomValidity((percent ? value > 100 : discount > total) ? (percent ? 'Chiết khấu tối đa 100%.' : 'Chiết khấu không được vượt quá tổng tiền hàng.') : '');
+                document.querySelector('[data-discount-display]').textContent = `Số tiền giảm: ${discount.toLocaleString('vi-VN')} VNĐ${percent ? ' (làm tròn đến đồng)' : ''}.`;
+                totalDisplay.textContent = (orderStatus.value === 'huy_don' ? 0 : Math.max(0, total - discount)).toLocaleString('vi-VN');
             }
             updateTurnaroundWarning();
         }
@@ -1109,6 +1138,7 @@
             itemsContainer.querySelectorAll('.size-row').forEach(sizeRow => {
                 sizeRow.querySelector('[data-product-id]').name = `items[${index}][product_id]`;
                 sizeRow.querySelector('[data-quantity]').name = `items[${index}][quantity]`;
+                sizeRow.querySelector('[data-rental-days]').name = `items[${index}][rental_days]`;
                 const rentalHidden = sizeRow.querySelector('[data-rental]');
                 if (rentalHidden) {
                     rentalHidden.name = `items[${index}][rental_price]`;
@@ -1372,6 +1402,7 @@
                     </select>
                     <input data-product-id type="hidden" value="${size.product_id || ''}" required>
                     <input data-rental type="hidden" value="${size.rental_price != null ? size.rental_price : ''}">
+                    <input data-rental-days type="hidden" value="${size.rental_days || 1}">
                     <input data-size-pending type="hidden" value="${size.size_pending ? '1' : '0'}">
                 </div>
                 <div class="field">
@@ -1498,6 +1529,10 @@
                         <label>Giá thuê (mã này)</label>
                         <input data-block-rental type="number" min="0" step="1000" value="0">
                     </div>
+                    <div class="field">
+                        <label>Số ngày</label>
+                        <input data-block-days type="number" min="1" max="3650" step="1" value="1" required aria-label="Số ngày thuê mã hàng">
+                    </div>
                     <div class="block-subtotal">Thành tiền: <span data-block-subtotal>0</span></div>
                 </div>
                 <div class="product-actions">
@@ -1513,6 +1548,8 @@
             const selectedInfo = block.querySelector('[data-selected-info]');
 
             block.querySelector('[data-block-rental]').addEventListener('input', updateComputedTotal);
+            block.querySelector('[data-block-days]').addEventListener('input', updateComputedTotal);
+            block.querySelector('[data-block-days]').value = blockData.days || 1;
 
             searchInput.addEventListener('input', () => {
                 if (block.dataset.productCode) {
@@ -1788,6 +1825,7 @@
                         product_id: row.querySelector('[data-product-id]').value,
                         quantity: row.querySelector('[data-quantity]').value,
                         rental_price: rental,
+                        rental_days: block.querySelector('[data-block-days]').value,
                         size_pending: isPendingRow(row) ? 1 : 0,
                         note: noteEl ? noteEl.value : '',
                     });
@@ -1803,6 +1841,8 @@
                 return_period: val('return_period'),
                 status: val('status'), source: val('source'),
                 shipping_fee: val('shipping_fee'), payment_1: val('payment_1'), payment_2: val('payment_2'),
+                discount_amount: val('discount_amount'),
+                discount_type: val('discount_type'),
                 items, savedAt: Date.now(),
             };
         }
@@ -1844,6 +1884,8 @@
             set('return_period', d.return_period);
             set('status', d.status); set('source', d.source);
             set('shipping_fee', d.shipping_fee); set('payment_1', d.payment_1); set('payment_2', d.payment_2);
+            set('discount_amount', d.discount_amount);
+            set('discount_type', d.discount_type || 'vnd');
         }
 
         // Dữ liệu để dựng: ưu tiên old() (khi submit lỗi), rồi tới nháp đã lưu, rồi mặc định.
@@ -1877,10 +1919,10 @@
         itemsToBuild.forEach(item => {
             const selected = findProductById(item.product_id);
             const code = selected ? selected.group.code : null;
-            const sizeData = { product_id: item.product_id, quantity: item.quantity, rental_price: item.rental_price, size_pending: item.size_pending, note: item.note };
+            const sizeData = { product_id: item.product_id, quantity: item.quantity, rental_price: item.rental_price, rental_days: item.rental_days || 1, size_pending: item.size_pending, note: item.note };
 
             // Gộp theo MÃ + GIÁ THUÊ: cùng mã nhưng khác giá sẽ thành 2 khối riêng.
-            const groupKey = code !== null ? code + '|' + (item.rental_price != null ? item.rental_price : '') : null;
+            const groupKey = code !== null ? code + '|' + (item.rental_price != null ? item.rental_price : '') + '|' + (item.rental_days || 1) : null;
 
             if (groupKey !== null && codeToBlockIndex.has(groupKey)) {
                 groupedBlocks[codeToBlockIndex.get(groupKey)].sizes.push(sizeData);
@@ -1892,7 +1934,7 @@
             }
 
             // Giá thuê của mã lấy từ dòng đầu tiên (các size cùng mã dùng chung giá).
-            groupedBlocks.push({ code, sizes: [sizeData], rental: item.rental_price });
+            groupedBlocks.push({ code, sizes: [sizeData], rental: item.rental_price, days: item.rental_days || 1 });
         });
 
         if (groupedBlocks.length > 0) {

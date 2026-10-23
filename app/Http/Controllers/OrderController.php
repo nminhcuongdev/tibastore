@@ -90,7 +90,9 @@ class OrderController extends Controller
         // Order::getRemainingAttribute(). COALESCE vi cot tien de trong la NULL,
         // ma NULL tham gia phep tinh se lam ca bieu thuc thanh NULL.
         $orderTotalExpression = "(CASE WHEN orders.status = 'huy_don' THEN 0"
-            . ' ELSE COALESCE(orders.total_amount, 0) + COALESCE(orders.compensation_amount, 0) END)';
+            . ' ELSE (CASE WHEN COALESCE(orders.total_amount, 0) >= COALESCE(orders.discount_amount, 0)'
+            . ' THEN COALESCE(orders.total_amount, 0) - COALESCE(orders.discount_amount, 0) ELSE 0 END)'
+            . ' + COALESCE(orders.compensation_amount, 0) END)';
         $remainingExpression = '(' . $orderTotalExpression
             . ' + COALESCE(orders.shipping_fee, 0) - COALESCE(orders.payment_1, 0)'
             . ' - COALESCE(orders.payment_2, 0))';
@@ -335,6 +337,7 @@ class OrderController extends Controller
             'size_pending' => (bool) $item->size_pending,
             'stock' => (int) ($item->product?->stock_quantity ?? 0),
             'rental_price' => (int) $item->rental_price,
+            'rental_days' => (int) ($item->rental_days ?? 1),
             'image' => $item->product?->image_path
                 ? asset('storage/' . $item->product->image_path)
                 : null,
@@ -568,11 +571,16 @@ class OrderController extends Controller
             'shipping_fee' => ['nullable', 'integer'],
             'payment_1' => ['nullable', 'integer', 'min:0'],
             'payment_2' => ['nullable', 'integer', 'min:0'],
+            'discount_type' => ['nullable', 'in:vnd,percent'],
+            'discount_amount' => $request->input('discount_type') === 'percent'
+                ? ['nullable', 'numeric', 'between:0,100', 'regex:/^\d+(\.\d{1,2})?$/']
+                : ['nullable', 'integer', 'min:0'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'exists:products,id'],
             'items.*.size_pending' => ['nullable', 'boolean'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.rental_price' => ['nullable', 'integer', 'min:0'],
+            'items.*.rental_days' => ['nullable', 'integer', 'min:1', 'max:3650'],
             'items.*.note' => ['nullable', 'string', 'max:500'],
         ], [
             'closer_name.required' => 'Vui lòng nhập người chốt.',
@@ -592,6 +600,10 @@ class OrderController extends Controller
             'payment_1.min' => 'Thanh toán lần 1 không được nhỏ hơn 0.',
             'payment_2.integer' => 'Thanh toán lần 2 phải là số.',
             'payment_2.min' => 'Thanh toán lần 2 không được nhỏ hơn 0.',
+            'discount_amount.integer' => 'Chiết khấu phải là số tiền nguyên (VNĐ).',
+            'discount_amount.min' => 'Chiết khấu không được âm.',
+            'discount_amount.between' => 'Chiết khấu phần trăm phải từ 0 đến 100%.',
+            'discount_amount.regex' => 'Phần trăm chiết khấu tối đa 2 chữ số thập phân.',
             'items.required' => 'Vui lòng thêm ít nhất một sản phẩm.',
             'items.min' => 'Vui lòng thêm ít nhất một sản phẩm.',
             'items.*.product_id.required' => 'Vui lòng chọn mã hàng và size.',
@@ -601,6 +613,9 @@ class OrderController extends Controller
             'items.*.quantity.min' => 'Số lượng phải lớn hơn 0.',
             'items.*.rental_price.integer' => 'Giá thuê phải là số.',
             'items.*.rental_price.min' => 'Giá thuê không được nhỏ hơn 0.',
+            'items.*.rental_days.integer' => 'Số ngày phải là số nguyên.',
+            'items.*.rental_days.min' => 'Số ngày phải từ 1 trở lên.',
+            'items.*.rental_days.max' => 'Số ngày tối đa là 3650.',
         ]);
 
         // Chuẩn hoá giá thuê + cờ "chưa chốt size" cho từng dòng.
@@ -610,6 +625,7 @@ class OrderController extends Controller
 
         $data['items'] = collect($data['items'])->map(function ($item) use ($productRentals) {
             $item['size_pending'] = ! empty($item['size_pending']);
+            $item['rental_days'] = (int) ($item['rental_days'] ?? 1);
             $item['rental_price'] = array_key_exists('rental_price', $item) && $item['rental_price'] !== null && $item['rental_price'] !== ''
                 ? (int) $item['rental_price']
                 : (int) ($productRentals[$item['product_id']] ?? 0);
@@ -630,6 +646,17 @@ class OrderController extends Controller
             $data['return_period'] ?? null
         );
 
+        $data['discount_percent'] = ($data['discount_type'] ?? 'vnd') === 'percent'
+            ? (float) ($data['discount_amount'] ?? 0) : null;
+        if ($data['discount_percent'] !== null) {
+            $data['discount_amount'] = (int) round($this->calculateItemsTotal($data['items']) * $data['discount_percent'] / 100);
+        }
+        if ((int) ($data['discount_amount'] ?? 0) > $this->calculateItemsTotal($data['items'])) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'discount_amount' => 'Chiết khấu không được vượt quá tổng tiền hàng.',
+            ]);
+        }
+
         return $data;
     }
 
@@ -640,11 +667,12 @@ class OrderController extends Controller
     {
         return $order->items
             ->map(fn ($item) => sprintf(
-                '%s - size %s x%d @%s',
+                '%s - size %s x%d @%s x%d ngày',
                 $item->product?->code ?? 'N/A',
                 $item->displaySize(),
                 (int) $item->quantity,
-                number_format((int) $item->rental_price)
+                number_format((int) $item->rental_price),
+                (int) ($item->rental_days ?? 1)
             ))
             ->sort()
             ->values()
@@ -686,6 +714,8 @@ class OrderController extends Controller
             'source' => $data['source'],
             'status' => $data['status'],
             'total_amount' => $this->calculateItemsTotal($items),
+            'discount_amount' => $data['discount_amount'] ?? 0,
+            'discount_percent' => $data['discount_percent'] ?? null,
             'shipping_fee' => $data['shipping_fee'] ?? 0,
             'payment_1' => $data['payment_1'] ?? 0,
             'payment_2' => $data['payment_2'] ?? 0,
@@ -701,7 +731,7 @@ class OrderController extends Controller
     private function calculateItemsTotal(array $items): int
     {
         return collect($items)->reduce(function (int $total, array $item) {
-            return $total + (int) ($item['rental_price'] ?? 0) * (int) $item['quantity'];
+            return $total + (int) ($item['rental_price'] ?? 0) * (int) $item['quantity'] * (int) ($item['rental_days'] ?? 1);
         }, 0);
     }
 

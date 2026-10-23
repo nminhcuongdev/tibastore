@@ -15,6 +15,7 @@ class OrderItem extends Model
         'size_pending',
         'quantity',
         'rental_price',
+        'rental_days',
         'note',
         'returned_quantity',
         'stock_held',
@@ -23,6 +24,7 @@ class OrderItem extends Model
     protected $casts = [
         'quantity' => 'integer',
         'rental_price' => 'integer',
+        'rental_days' => 'integer',
         'returned_quantity' => 'integer',
         'stock_held' => 'integer',
         'size_pending' => 'boolean',

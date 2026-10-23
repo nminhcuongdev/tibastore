@@ -407,7 +407,7 @@
             // Gộp theo MÃ + GIÁ THUÊ: cùng một mã nhưng khác giá thuê sẽ thành 2 dòng riêng,
             // đúng như cách nhập ở form (mỗi khối mã hàng có giá thuê riêng).
             $groupedDisplayItems = $displayItems->groupBy(
-                fn ($item) => ($item->product?->code ?? 'N/A') . '|' . (int) ($item->rental_price ?? 0)
+                fn ($item) => ($item->product?->code ?? 'N/A') . '|' . (int) ($item->rental_price ?? 0) . '|' . ($item->rental_days ?? 1)
             );
         @endphp
 
@@ -485,6 +485,10 @@
                         <div class="value">{{ number_format($order->total_with_compensation) }}</div>
                     </div>
                     <div class="detail">
+                        <div class="label">Chiết khấu @if ($order->discount_percent !== null) ({{ $order->discount_percent }}%) @endif</div>
+                        <div class="value">{{ number_format($order->discount_amount) }}</div>
+                    </div>
+                    <div class="detail">
                         <div class="label">Tiền bồi thường</div>
                         <div class="value">{{ number_format($order->compensation_amount) }}</div>
                     </div>
@@ -520,6 +524,7 @@
                                 <th class="sortable" data-sort="text" tabindex="0">Vải</th>
                                 <th class="sortable" data-sort="number" tabindex="0">Size - Số lượng</th>
                                 <th class="sortable" data-sort="number" tabindex="0">Giá thuê</th>
+                                <th class="sortable" data-sort="number" tabindex="0">Số ngày</th>
                                 <th class="sortable" data-sort="number" tabindex="0">Thành tiền</th>
                             </tr>
                         </thead>
@@ -531,7 +536,8 @@
                                     $code = $product?->code ?? 'N/A';
                                     $sizeQuantities = $items->groupBy(fn ($item) => method_exists($item, 'displaySize') ? $item->displaySize() : ($item->product?->size ?? 'N/A'));
                                     $lineRental = (int) ($firstItem->rental_price ?? 0);
-                                    $lineTotal = $lineRental * $items->sum('quantity');
+                                    $lineDays = (int) ($firstItem->rental_days ?? 1);
+                                    $lineTotal = $lineRental * $items->sum('quantity') * $lineDays;
                                 @endphp
                                 <tr>
                                     <td>
@@ -569,6 +575,7 @@
                                         @endif
                                     </td>
                                     <td data-sort-value="{{ $lineRental }}">{{ number_format($lineRental) }} VND</td>
+                                    <td data-sort-value="{{ $lineDays }}">{{ $lineDays }}</td>
                                     <td data-sort-value="{{ $lineTotal }}">{{ number_format($lineTotal) }} VND</td>
                                 </tr>
                             @endforeach

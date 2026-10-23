@@ -32,6 +32,8 @@ class Order extends Model
         'status',
         'payment_status',
         'total_amount',
+        'discount_amount',
+        'discount_percent',
         'shipping_fee',
         'payment_1',
         'payment_2',
@@ -49,6 +51,8 @@ class Order extends Model
         'return_date' => 'date',
         'quantity' => 'integer',
         'total_amount' => 'integer',
+        'discount_amount' => 'integer',
+        'discount_percent' => 'decimal:2',
         'shipping_fee' => 'integer',
         'payment_1' => 'integer',
         'payment_2' => 'integer',
@@ -77,6 +81,8 @@ class Order extends Model
             'status' => 'Trạng thái',
             'payment_status' => 'Trạng thái thanh toán',
             'total_amount' => 'Tổng tiền hàng',
+            'discount_amount' => 'Chiết khấu',
+            'discount_percent' => 'Chiết khấu (%)',
             'shipping_fee' => 'Tiền ship',
             'payment_1' => 'Thanh toán lần 1',
             'payment_2' => 'Thanh toán lần 2',
@@ -136,7 +142,7 @@ class Order extends Model
                 : \Illuminate\Support\Carbon::parse($value)->format('d/m/Y');
         }
 
-        if (in_array($field, ['total_amount', 'shipping_fee', 'payment_1', 'payment_2', 'compensation_amount'], true)) {
+        if (in_array($field, ['total_amount', 'discount_amount', 'shipping_fee', 'payment_1', 'payment_2', 'compensation_amount'], true)) {
             return number_format((int) $value);
         }
 
@@ -296,7 +302,12 @@ class Order extends Model
             return 0;
         }
 
-        return (int) $this->total_amount + (int) $this->compensation_amount;
+        return $this->net_total + (int) $this->compensation_amount;
+    }
+
+    public function getNetTotalAttribute(): int
+    {
+        return $this->status === 'huy_don' ? 0 : max(0, (int) $this->total_amount - (int) $this->discount_amount);
     }
 
     /**

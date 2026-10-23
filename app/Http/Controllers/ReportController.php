@@ -61,7 +61,7 @@ class ReportController extends Controller
                 }
             })
             ->get(array_merge(
-                ['id', 'source', 'total_amount', 'compensation_amount'],
+                ['id', 'source', 'total_amount', 'discount_amount', 'status', 'compensation_amount'],
                 array_keys(self::DATE_BASES)
             ));
 
@@ -153,7 +153,7 @@ class ReportController extends Controller
         return [
             'orders' => $orders->count(),
             'compensation' => (int) $orders->sum('compensation_amount'),
-            'total' => (int) $orders->sum('total_amount'),
+            'total' => (int) $orders->sum('net_total'),
         ];
     }
 
