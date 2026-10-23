@@ -573,7 +573,9 @@
     @include('orders.status-colors')
     @include('partials.compact')
     <style>
-        .table-shell th:nth-child(5), tr[data-order-row] > td:nth-child(5) {
+        .table-shell th:nth-child(5), tr[data-order-row] > td:nth-child(5),
+        .table-shell th:nth-child(14), tr[data-order-row] > td:nth-child(14),
+        .table-shell th:nth-child(17), tr[data-order-row] > td:nth-child(17) {
             width: 220px; min-width: 200px; max-width: 280px;
             white-space: normal; overflow-wrap: anywhere;
         }
@@ -582,7 +584,9 @@
         }
         .table-shell thead th { text-align: center; vertical-align: middle; }
         .table-shell thead th a { justify-content: center; width: 100%; }
-        .table-shell th:nth-child(8), tr[data-order-row] > td:nth-child(8) {
+        .table-shell th:nth-child(8), tr[data-order-row] > td:nth-child(8),
+        .table-shell th:nth-child(15), tr[data-order-row] > td:nth-child(15),
+        .table-shell th:nth-child(16), tr[data-order-row] > td:nth-child(16) {
             width: 145px; min-width: 125px; max-width: 160px;
         }
         .status-control { position: relative; width: 140px; max-width: 100%; }
