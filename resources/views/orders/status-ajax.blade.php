@@ -48,6 +48,13 @@
                 select.dataset.current = order.status;
                 select.dataset.currentlyOut = order.currently_out ? '1' : '0';
                 select.className = 'status-select status-' + order.color_key;
+                const control = select.closest('.status-control');
+                if (control) {
+                    control.className = 'status-control status-' + order.color_key;
+                    const display = control.querySelector('[data-status-display]');
+                    display.className = 'status-display status-' + order.color_key;
+                    display.textContent = order.status_label + (order.color_key === 'thanh_cong_thieu' ? ' (thiếu)' : '');
+                }
                 const checkedOption = select.querySelector('option[value="thanh_cong"]');
                 if (checkedOption) {
                     checkedOption.className = 'status-' + (order.color_key === 'thanh_cong_thieu' ? 'thanh_cong_thieu' : 'thanh_cong');

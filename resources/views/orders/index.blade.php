@@ -572,6 +572,33 @@
     </style>
     @include('orders.status-colors')
     @include('partials.compact')
+    <style>
+        .table-shell th:nth-child(5), tr[data-order-row] > td:nth-child(5) {
+            width: 220px; min-width: 200px; max-width: 280px;
+            white-space: normal; overflow-wrap: anywhere;
+        }
+        .table-shell th:nth-child(6), tr[data-order-row] > td:nth-child(6) {
+            width: 200px; min-width: 180px;
+        }
+        .table-shell thead th { text-align: center; vertical-align: middle; }
+        .table-shell thead th a { justify-content: center; width: 100%; }
+        .table-shell th:nth-child(8), tr[data-order-row] > td:nth-child(8) {
+            width: 145px; min-width: 125px; max-width: 160px;
+        }
+        .status-control { position: relative; width: 140px; max-width: 100%; }
+        .status-display {
+            display: block; border-radius: 12px; padding: 8px 25px 8px 10px;
+            font-size: 12px; font-weight: 800; line-height: 1.4;
+            white-space: normal; overflow-wrap: anywhere;
+        }
+        .status-control::after { content: '▾'; position: absolute; right: 9px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--status-text, #1e293b); }
+        .status-control .status-select {
+            position: absolute; inset: 0; min-width: 0; min-height: 0;
+            width: 100%; height: 100%; margin: 0; border-radius: 12px;
+            appearance: none; background: transparent !important; color: transparent !important;
+        }
+        .status-control .status-select option { color: var(--status-text, #1e293b) !important; }
+    </style>
 </head>
 <body>
 <div class="layout">
@@ -841,17 +868,19 @@
                                 <form method="POST" action="{{ route('orders.status', $order) }}" class="status-form">
                                     @csrf
                                     @method('PATCH')
-                                    <select name="status" class="status-select status-{{ $order->statusColorKey() }}"
+                                    <div class="status-control status-{{ $order->statusColorKey() }}">
+                                    <span class="status-display status-{{ $order->statusColorKey() }}" aria-hidden="true" data-status-display>{{ $order->statusLabel() }}{{ $order->hasShortage() ? ' (thiếu)' : '' }}</span>
+                                    <select name="status" aria-label="Trạng thái đơn {{ $order->order_name }}" class="status-select status-{{ $order->statusColorKey() }}"
                                         data-current="{{ $order->status }}"
                                         data-currently-out="{{ $order->stock_decreased_at && ! $order->stock_returned_at ? '1' : '0' }}"
                                         data-order-name="{{ $order->order_name }}"
                                         data-check-url="{{ route('orders.status', $order) }}"
-                                        data-order-id="{{ $order->id }}"
-                                        aria-label="Cập nhật trạng thái đơn">
+                                        data-order-id="{{ $order->id }}">
                                         @foreach ($statuses as $value => $label)
                                             <option value="{{ $value }}" class="status-{{ $value === \App\Models\Order::CHECKED_STATUS && $order->hasShortage() ? 'thanh_cong_thieu' : $value }}" @selected($order->status === $value)>{{ $label }}</option>
                                         @endforeach
                                     </select>
+                                    </div>
                                 </form>
                             </td>
                             <td data-cell="total">{{ number_format($order->total_with_compensation) }}</td>

@@ -19,6 +19,7 @@
         .status-{{ $key }}, .status-select.status-{{ $key }},
         .status-select option.status-{{ $key }}, #status option.status-{{ $key }},
         #status:has(option.status-{{ $key }}:checked) {
+            --status-text: {{ $foreground }};
             background: {{ $background }}; color: {{ $foreground }};
         }
     @endforeach
