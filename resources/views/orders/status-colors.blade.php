@@ -14,8 +14,16 @@
 @endphp
 <style>
     @foreach ($statusPalette as $key => [$background, $foreground])
-        .row-{{ $key }} { background: {{ $background }}; color: {{ $foreground }}; }
-        .row-{{ $key }} > td { background: {{ $background }}; color: {{ $foreground }}; }
+        .row-{{ $key }} { background: #ffffff; color: #1e293b; }
+        .row-{{ $key }} > td { background: #ffffff; color: #1e293b; }
+        tr[data-order-row].row-{{ $key }} > td:nth-child(5) {
+            background: {{ $background }}; color: {{ $foreground }};
+        }
+        @if (in_array($key, ['thanh_cong_thieu', 'huy_don'], true))
+            .row-{{ $key }}, .row-{{ $key }} > td {
+                background: {{ $background }}; color: {{ $foreground }};
+            }
+        @endif
         .status-{{ $key }}, .status-select.status-{{ $key }},
         .status-select option.status-{{ $key }}, #status option.status-{{ $key }},
         #status:has(option.status-{{ $key }}:checked) {
@@ -24,8 +32,10 @@
         }
     @endforeach
     .status-chua_cho_size { border: 1px solid #cbd5e1; }
-    tr[class*="row-"] .muted, tr[class*="row-"] .order-name,
-    tr[class*="row-"] .name, tr[class*="row-"] .codes-panel__title,
-    tr[class*="row-"] .quantity, tr[class*="row-"] .money { color: inherit; }
-    tr[class*="row-"] .codes-panel { background: inherit; color: inherit; }
+    tr[data-order-row] > td:nth-child(5) .muted,
+    tr[data-order-row] > td:nth-child(5) .name { color: inherit; }
+    .row-thanh_cong_thieu .muted, .row-thanh_cong_thieu .name,
+    .row-thanh_cong_thieu .codes-panel__title,
+    .row-huy_don .muted, .row-huy_don .name,
+    .row-huy_don .codes-panel__title { color: inherit; }
 </style>
