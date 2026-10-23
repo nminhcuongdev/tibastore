@@ -53,7 +53,7 @@
         background: #e5efff;
         border: 1px solid #cbdcf5;
         border-radius: 8px;
-        color: #1d4ed8;
+        color: #1e40af;
         cursor: default;
         display: flex;
         flex: 0 0 auto;
@@ -72,7 +72,7 @@
     .check-thumb img { height: 100%; object-fit: cover; transition: transform .18s ease; width: 100%; }
     .check-thumb.has-image:hover,
     .check-thumb.has-image:focus {
-        border-color: #3b82f6;
+        border-color: #2563eb;
         box-shadow: 0 10px 24px rgba(30, 64, 175, .18);
         outline: none;
         overflow: visible;
@@ -123,8 +123,8 @@
     }
     .check-modal__note:focus,
     .check-item__qty input:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, .16);
         outline: none;
     }
     .check-modal__actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }

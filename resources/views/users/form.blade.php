@@ -25,7 +25,7 @@
             padding: 18px clamp(18px, 5vw, 56px);
         }
         .brand {
-            color: #1d4ed8;
+            color: #1e40af;
             font-family: Georgia, "Times New Roman", serif;
             font-size: 28px;
             font-weight: 700;
@@ -66,8 +66,8 @@
             width: 100%;
         }
         input:focus, select:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .16);
             outline: none;
         }
         .error { color: #b4233f; font-size: 13px; font-weight: 700; }
@@ -81,7 +81,7 @@
         }
         .button {
             align-items: center;
-            background: #2563eb;
+            background: #1d4ed8;
             border: 0;
             border-radius: 8px;
             color: #fff;

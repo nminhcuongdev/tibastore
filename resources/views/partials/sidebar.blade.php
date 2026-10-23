@@ -53,7 +53,7 @@
     .app-sidebar.is-collapsed .logout { justify-content: center; padding-left: 8px; padding-right: 8px; }
     .app-sidebar.is-collapsed .brand { font-size: 20px; padding: 4px 0 16px; text-align: center; }
     .app-sidebar .brand {
-        color: #1d4ed8;
+        color: #1e40af;
         font-family: Georgia, "Times New Roman", serif;
         font-size: 24px;
         font-weight: 700;
@@ -73,7 +73,7 @@
         white-space: nowrap;
     }
     .app-sidebar .side-nav a:hover { background: #eff6ff; }
-    .app-sidebar .side-nav a.active { background: #2563eb; color: #fff; }
+    .app-sidebar .side-nav a.active { background: #1d4ed8; color: #fff; }
     .app-sidebar .spacer { flex: 1; min-height: 12px; }
     .app-sidebar .logout {
         align-items: center;

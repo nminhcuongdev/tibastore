@@ -39,13 +39,13 @@
             font-family: inherit;
         }
         input:focus, select:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .16);
             outline: none;
         }
         .button {
             align-items: center;
-            background: #2563eb;
+            background: #1d4ed8;
             border: 0;
             border-radius: 8px;
             color: #fff;
@@ -76,7 +76,7 @@
         tbody tr:hover td { background: #f8fbff; }
         .muted { color: #64748b; }
         .nowrap { white-space: nowrap; }
-        .subject { color: #1d4ed8; font-weight: 800; }
+        .subject { color: #1e40af; font-weight: 800; }
         .badge {
             border-radius: 999px;
             display: inline-block;
@@ -126,7 +126,7 @@
             color: #1e40af;
             padding: 6px 10px;
         }
-        .pages .active { background: #2563eb; border-color: #2563eb; color: #fff; }
+        .pages .active { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
     </style>
     @include('partials.compact')
 </head>

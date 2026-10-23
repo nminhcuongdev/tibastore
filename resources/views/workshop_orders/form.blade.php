@@ -53,8 +53,8 @@
         }
         textarea { min-height: 84px; resize: vertical; }
         input:focus, select:focus, textarea:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .16);
             outline: none;
         }
         .error { color: #b4233f; font-size: 13px; font-weight: 700; }
@@ -94,7 +94,7 @@
             background: #e5efff;
             border: 1px solid #cbdcf5;
             border-radius: 6px;
-            color: #1d4ed8;
+            color: #1e40af;
             display: flex;
             flex: 0 0 auto;
             font-size: 9px;
@@ -106,7 +106,7 @@
             width: 52px;
         }
         .suggestion .s-thumb img { height: 100%; object-fit: cover; width: 100%; }
-        .suggestion .s-code { color: #1d4ed8; font-weight: 900; }
+        .suggestion .s-code { color: #1e40af; font-weight: 900; }
         .suggestion .s-name { color: #64748b; font-size: 13px; }
         .no-match { color: #64748b; font-size: 13px; padding: 14px; }
 
@@ -128,7 +128,7 @@
             background: #e5efff;
             border: 1px solid #cbdcf5;
             border-radius: 8px;
-            color: #1d4ed8;
+            color: #1e40af;
             cursor: zoom-in;
             display: flex;
             flex: 0 0 auto;
@@ -142,7 +142,7 @@
             width: 104px;
         }
         .preview .p-thumb img { height: 100%; object-fit: cover; width: 100%; }
-        .preview .p-code { color: #1d4ed8; font-size: 17px; font-weight: 900; }
+        .preview .p-code { color: #1e40af; font-size: 17px; font-weight: 900; }
         .preview .p-name { font-weight: 700; }
         .preview .p-warn { color: #b4233f; font-weight: 800; }
 
@@ -178,7 +178,7 @@
         }
         .button {
             align-items: center;
-            background: #2563eb;
+            background: #1d4ed8;
             border: 0;
             border-radius: 8px;
             color: #fff;

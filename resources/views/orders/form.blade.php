@@ -25,7 +25,7 @@
             padding: 18px clamp(18px, 5vw, 56px);
         }
         .brand {
-            color: #1d4ed8;
+            color: #1e40af;
             font-family: Georgia, "Times New Roman", serif;
             font-size: 28px;
             font-weight: 700;
@@ -93,7 +93,7 @@
         .drag-handle:active { cursor: grabbing; }
         .drag-handle .hint { font-size: 11px; font-weight: 700; }
         .order-item.is-dragging { opacity: .45; }
-        .order-item.is-drop-target { box-shadow: 0 -3px 0 0 #2563eb; }
+        .order-item.is-drop-target { box-shadow: 0 -3px 0 0 #1d4ed8; }
         .size-rows {
             display: grid;
             gap: 10px;
@@ -115,7 +115,7 @@
             background: #e5efff;
             border: 1px solid #cbdcf5;
             border-radius: 8px;
-            color: #1d4ed8;
+            color: #1e40af;
             cursor: default;
             display: flex;
             font-family: inherit;
@@ -141,7 +141,7 @@
         }
         .size-thumb.has-image:hover,
         .size-thumb.has-image:focus {
-            border-color: #3b82f6;
+            border-color: #2563eb;
             box-shadow: 0 10px 24px rgba(30, 64, 175, .18);
             outline: none;
         }
@@ -186,7 +186,7 @@
             padding-bottom: 12px;
         }
         .block-subtotal span {
-            color: #1d4ed8;
+            color: #1e40af;
         }
         .product-picker-cell {
             min-width: 0;
@@ -227,7 +227,7 @@
             background: #e5efff;
             border: 1px solid #cbdcf5;
             border-radius: 6px;
-            color: #1d4ed8;
+            color: #1e40af;
             display: flex;
             flex: 0 0 auto;
             font-size: 8px;
@@ -241,7 +241,7 @@
         .suggestion-thumb img { height: 100%; object-fit: cover; width: 100%; }
         .product-suggestion:hover { background: #eff6ff; }
         .product-code {
-            color: #1d4ed8;
+            color: #1e40af;
             font-weight: 900;
         }
         .product-name,
@@ -296,8 +296,8 @@
         input:focus,
         select:focus,
         textarea:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .16);
             outline: none;
         }
         .error {
@@ -339,7 +339,7 @@
         .items-actions { justify-content: flex-start; }
         .button {
             align-items: center;
-            background: #2563eb;
+            background: #1d4ed8;
             border: 0;
             border-radius: 8px;
             color: #fff;

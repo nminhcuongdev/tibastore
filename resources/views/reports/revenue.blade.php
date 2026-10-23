@@ -43,13 +43,13 @@
             padding: 10px 13px;
         }
         input:focus, select:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .16);
             outline: none;
         }
         .button {
             align-items: center;
-            background: #2563eb;
+            background: #1d4ed8;
             border: 0;
             border-radius: 8px;
             color: #fff;
@@ -76,8 +76,8 @@
             padding: 8px 14px;
             user-select: none;
         }
-        .check.is-on { background: #e5efff; border-color: #3b82f6; color: #1e40af; }
-        .check input { accent-color: #2563eb; cursor: pointer; margin: 0; min-height: 0; width: auto; }
+        .check.is-on { background: #e5efff; border-color: #2563eb; color: #1e40af; }
+        .check input { accent-color: #1d4ed8; cursor: pointer; margin: 0; min-height: 0; width: auto; }
         .cards {
             display: grid;
             gap: 14px;
@@ -93,7 +93,7 @@
         }
         .card .label { color: #64748b; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
         .card .value { color: #1e3a5f; font-size: 24px; font-weight: 900; }
-        .card.is-primary { background: #2563eb; border-color: #2563eb; }
+        .card.is-primary { background: #1d4ed8; border-color: #1d4ed8; }
         .card.is-primary .label { color: #dbeafe; }
         .card.is-primary .value { color: #fff; }
         h2 {
@@ -142,7 +142,7 @@
         .note {
             background: #fff;
             border: 1px solid #d8e4f5;
-            border-left: 5px solid #2563eb;
+            border-left: 5px solid #1d4ed8;
             border-radius: 8px;
             color: #475569;
             font-size: 13px;

@@ -25,7 +25,7 @@
             padding: 18px clamp(18px, 5vw, 56px);
         }
         .brand {
-            color: #1d4ed8;
+            color: #1e40af;
             font-family: Georgia, "Times New Roman", serif;
             font-size: 28px;
             font-weight: 700;
@@ -47,7 +47,7 @@
             padding: 10px 16px;
         }
         .nav a.active {
-            background: #2563eb;
+            background: #1d4ed8;
             color: #fff;
         }
         .content { padding: 28px clamp(18px, 5vw, 56px) 56px; }
@@ -133,7 +133,7 @@
             background: #e5efff;
             border: 1px solid #cbdcf5;
             border-radius: 8px;
-            color: #1d4ed8;
+            color: #1e40af;
             display: flex;
             font-size: 12px;
             font-weight: 800;
@@ -160,7 +160,7 @@
             white-space: nowrap;
         }
         .code {
-            color: #1d4ed8;
+            color: #1e40af;
             font-weight: 900;
         }
         .name {
@@ -233,7 +233,7 @@
             color: #1e40af;
         }
         .page-current {
-            background: #2563eb;
+            background: #1d4ed8;
             color: #fff;
         }
         @media (max-width: 760px) {

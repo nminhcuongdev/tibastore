@@ -25,7 +25,7 @@
             padding: 18px clamp(18px, 5vw, 56px);
         }
         .brand {
-            color: #1d4ed8;
+            color: #1e40af;
             font-family: Georgia, "Times New Roman", serif;
             font-size: 28px;
             font-weight: 700;
@@ -47,7 +47,7 @@
             padding: 10px 16px;
         }
         .nav a.active {
-            background: #2563eb;
+            background: #1d4ed8;
             color: #fff;
         }
         .content { padding: 28px clamp(18px, 5vw, 56px) 56px; }
@@ -71,14 +71,14 @@
             width: 100%;
         }
         input:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .16);
             outline: none;
         }
         .actions { display: flex; flex-wrap: wrap; gap: 10px; }
         .button {
             align-items: center;
-            background: #2563eb;
+            background: #1d4ed8;
             border: 0;
             border-radius: 8px;
             color: #fff;
@@ -92,7 +92,7 @@
         .status {
             background: #fff;
             border: 1px solid #cbdcf5;
-            border-left: 5px solid #3b82f6;
+            border-left: 5px solid #2563eb;
             border-radius: 8px;
             color: #334e75;
             margin-bottom: 18px;
@@ -121,7 +121,7 @@
             text-transform: uppercase;
         }
         tbody tr:hover { background: #f8fbff; }
-        .code { color: #1d4ed8; font-weight: 800; }
+        .code { color: #1e40af; font-weight: 800; }
         .name { color: #1e293b; font-weight: 800; }
         .muted { color: #64748b; font-size: 13px; }
         .role-badge {
@@ -172,7 +172,7 @@
             place-content: center;
         }
         .page-link { background: #fff; border: 1px solid #d8e4f5; color: #1e40af; }
-        .page-current { background: #2563eb; color: #fff; }
+        .page-current { background: #1d4ed8; color: #fff; }
         @media (max-width: 760px) {
             .topbar, .toolbar { align-items: stretch; grid-template-columns: 1fr; }
             .topbar { flex-direction: column; }

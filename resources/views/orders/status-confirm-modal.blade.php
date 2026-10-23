@@ -64,7 +64,7 @@
     }
     .sconfirm__table th.num, .sconfirm__table td.num { text-align: right; }
     .sconfirm__table tbody tr:last-child td { border-bottom: 0; }
-    .sconfirm__code { color: #1d4ed8; font-weight: 800; }
+    .sconfirm__code { color: #1e40af; font-weight: 800; }
     .sconfirm__delta { font-weight: 900; }
     .sconfirm__delta.is-down { color: #b4233f; }
     .sconfirm__delta.is-up { color: #247857; }

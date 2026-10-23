@@ -81,7 +81,7 @@
         }
 
         .reminder-button {
-            background: #2563eb;
+            background: #1d4ed8;
             border: 0;
             border-radius: 8px;
             color: #fff;

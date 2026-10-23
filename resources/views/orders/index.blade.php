@@ -25,7 +25,7 @@
             padding: 18px clamp(18px, 5vw, 56px);
         }
         .brand {
-            color: #1d4ed8;
+            color: #1e40af;
             font-family: Georgia, "Times New Roman", serif;
             font-size: 28px;
             font-weight: 700;
@@ -47,7 +47,7 @@
             padding: 10px 16px;
         }
         .nav a.active {
-            background: #2563eb;
+            background: #1d4ed8;
             color: #fff;
         }
         .content { padding: 28px clamp(18px, 5vw, 56px) 56px; }
@@ -71,7 +71,7 @@
         .filter-toggle__caret { display: inline-block; transition: transform .18s ease; }
         .filter-toggle[aria-expanded="true"] .filter-toggle__caret { transform: rotate(90deg); }
         .filter-toggle__badge {
-            background: #2563eb;
+            background: #1d4ed8;
             border-radius: 999px;
             color: #fff;
             font-size: 11px;
@@ -123,10 +123,10 @@
             padding: 9px 14px;
             user-select: none;
         }
-        .status-check:hover { border-color: #3b82f6; }
-        .status-check input { accent-color: #2563eb; cursor: pointer; margin: 0; }
+        .status-check:hover { border-color: #2563eb; }
+        .status-check input { accent-color: #1d4ed8; cursor: pointer; margin: 0; }
         .status-check:has(input:checked) { border-color: transparent; color: #fff; }
-        .status-check:has(input:focus-visible) { box-shadow: 0 0 0 3px rgba(59, 130, 246, .22); }
+        .status-check:has(input:focus-visible) { box-shadow: 0 0 0 3px rgba(37, 99, 235, .22); }
         select {
             background: #fff;
             border: 1px solid #c3d4ed;
@@ -138,8 +138,8 @@
             width: 100%;
         }
         select:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .16);
             outline: none;
         }
         label {
@@ -158,8 +158,8 @@
             width: 100%;
         }
         input:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .16);
             outline: none;
         }
         .actions {
@@ -169,7 +169,7 @@
         }
         .button {
             align-items: center;
-            background: #2563eb;
+            background: #1d4ed8;
             border: 0;
             border-radius: 8px;
             color: #fff;
@@ -219,7 +219,7 @@
         .summary-value { color: #1e3a5f; font-size: 18px; font-weight: 900; }
         .summary-item.is-main .summary-value { color: #b4233f; font-size: 22px; }
         .summary-note { color: #64748b; font-size: 12px; margin-left: auto; }
-        .summary-note a { color: #1d4ed8; font-weight: 800; text-decoration: underline; }
+        .summary-note a { color: #1e40af; font-weight: 800; text-decoration: underline; }
         .table-shell {
             background: #fff;
             border: 1px solid #d8e4f5;
@@ -277,7 +277,7 @@
         .row-thanh_cong { background: #e8f7ef; }
         .row-thanh_cong_thieu { background: #fdecec; }
         .code {
-            color: #1d4ed8;
+            color: #1e40af;
             font-weight: 800;
         }
         /* Moi mien mot mau nhat de liec la phan biet duoc vung khach. */
@@ -300,7 +300,7 @@
         .region-tinh_mt { background: #fdf0da; color: #8a5a00; }
         .region-tinh_mn { background: #e6f6ee; color: #247857; }
         .region-ha_noi { background: #f6e8fb; color: #7d3aa3; }
-        .region-badge:hover, .carrier:hover { box-shadow: 0 0 0 2px rgba(59, 130, 246, .35); }
+        .region-badge:hover, .carrier:hover { box-shadow: 0 0 0 2px rgba(37, 99, 235, .35); }
         .carrier {
             border-radius: 5px;
             display: inline-block;
@@ -330,7 +330,7 @@
             background: rgba(255, 255, 255, .75);
             border: 1px solid #c3d4ed;
             border-radius: 999px;
-            color: #1d4ed8;
+            color: #1e40af;
             display: inline-flex;
             font-size: 11px;
             font-weight: 900;
@@ -375,7 +375,7 @@
             background: #e5efff;
             border: 1px solid #cbdcf5;
             border-radius: 6px;
-            color: #1d4ed8;
+            color: #1e40af;
             display: flex;
             flex: 0 0 auto;
             font-family: inherit;
@@ -393,7 +393,7 @@
         /* Hover phong to tai cho, bam mo anh lon - giong ben kho hang. */
         .code-thumb.has-image:hover,
         .code-thumb.has-image:focus {
-            border-color: #3b82f6;
+            border-color: #2563eb;
             box-shadow: 0 10px 24px rgba(30, 64, 175, .18);
             outline: none;
             overflow: visible;
@@ -405,7 +405,7 @@
             transform: scale(2.6);
         }
         .code-card__info { min-width: 0; }
-        .code-card__code { color: #1d4ed8; font-weight: 900; }
+        .code-card__code { color: #1e40af; font-weight: 900; }
         .code-card__name {
             color: #475569;
             font-size: 12px;
@@ -479,8 +479,8 @@
         /* Danh sach xo xuong giu nen sang de van doc duoc tren nen dam. */
         .status-select option { background: #fff; color: #1e293b; }
         .status-select:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .16);
             outline: none;
         }
         .status-chua_cho_size { background: #64748b; color: #fff; }
@@ -553,7 +553,7 @@
             color: #1e40af;
         }
         .page-current {
-            background: #2563eb;
+            background: #1d4ed8;
             color: #fff;
         }
         @media (max-width: 760px) {

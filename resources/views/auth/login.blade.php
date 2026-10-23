@@ -84,7 +84,7 @@
         }
 
         .eyebrow {
-            color: #2563eb;
+            color: #1d4ed8;
             font-size: 13px;
             font-weight: 800;
             letter-spacing: .08em;
@@ -129,8 +129,8 @@
 
         input[type="text"]:focus,
         input[type="password"]:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .16);
             outline: none;
         }
 
@@ -142,7 +142,7 @@
         }
 
         .remember input {
-            accent-color: #2563eb;
+            accent-color: #1d4ed8;
             height: 16px;
             width: 16px;
         }
@@ -154,7 +154,7 @@
         }
 
         button {
-            background: #2563eb;
+            background: #1d4ed8;
             border: 0;
             border-radius: 8px;
             color: #fff;
@@ -167,7 +167,7 @@
         }
 
         button:hover {
-            background: #1d4ed8;
+            background: #1e40af;
         }
 
         .error {

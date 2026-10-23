@@ -25,7 +25,7 @@
             padding: 18px clamp(18px, 5vw, 56px);
         }
         .brand {
-            color: #1d4ed8;
+            color: #1e40af;
             font-family: Georgia, "Times New Roman", serif;
             font-size: 28px;
             font-weight: 700;
@@ -47,7 +47,7 @@
             padding: 10px 16px;
         }
         .nav a.active {
-            background: #2563eb;
+            background: #1d4ed8;
             color: #fff;
         }
         .content { padding: 28px clamp(18px, 5vw, 56px) 56px; }
@@ -125,16 +125,16 @@
         }
         .line {
             fill: none;
-            stroke: #2563eb;
+            stroke: #1d4ed8;
             stroke-linecap: round;
             stroke-linejoin: round;
             stroke-width: 4;
         }
         .area {
-            fill: rgba(37, 99, 235, .1);
+            fill: rgba(29, 78, 216, .1);
         }
         .dot {
-            fill: #2563eb;
+            fill: #1d4ed8;
             stroke: #fff;
             stroke-width: 3;
         }
@@ -186,13 +186,13 @@
             width: 100%;
         }
         .range-field input:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .16);
             outline: none;
         }
         .button {
             align-items: center;
-            background: #2563eb;
+            background: #1d4ed8;
             border: 0;
             border-radius: 8px;
             color: #fff;
@@ -300,7 +300,7 @@
         }
         .table-shell { overflow-x: auto; }
         .code {
-            color: #1d4ed8;
+            color: #1e40af;
             font-weight: 900;
         }
         .name {
@@ -359,7 +359,7 @@
             color: #1e40af;
         }
         .page-current {
-            background: #2563eb;
+            background: #1d4ed8;
             color: #fff;
         }
         @media (max-width: 900px) {

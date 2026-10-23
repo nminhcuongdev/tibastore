@@ -34,7 +34,7 @@
         }
 
         .brand {
-            color: #1d4ed8;
+            color: #1e40af;
             font-family: Georgia, "Times New Roman", serif;
             font-size: 28px;
             font-weight: 700;
@@ -154,8 +154,8 @@
         }
 
         input:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .16);
             outline: none;
         }
 
@@ -241,7 +241,7 @@
         }
 
         .code-suggestion-next {
-            color: #1d4ed8;
+            color: #1e40af;
         }
 
         .code-suggestion-meta {
@@ -267,7 +267,7 @@
             background: #eff6ff;
             border: 1px dashed #adc7eb;
             border-radius: 8px;
-            color: #1d4ed8;
+            color: #1e40af;
             display: grid;
             font-weight: 800;
             min-height: 240px;
@@ -292,7 +292,7 @@
 
         .button {
             align-items: center;
-            background: #2563eb;
+            background: #1d4ed8;
             border: 0;
             border-radius: 8px;
             color: #fff;

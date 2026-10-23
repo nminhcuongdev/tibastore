@@ -41,10 +41,10 @@
             min-height: 44px;
             padding: 10px 13px;
         }
-        input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, .16); outline: none; }
+        input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, .16); outline: none; }
         .button {
             align-items: center;
-            background: #2563eb;
+            background: #1d4ed8;
             border: 0;
             border-radius: 8px;
             color: #fff;
@@ -100,14 +100,14 @@
             padding: 2px 8px;
             white-space: nowrap;
         }
-        .code { color: #1d4ed8; font-weight: 800; }
+        .code { color: #1e40af; font-weight: 800; }
         .muted { color: #64748b; font-size: 12px; }
         .dow { color: #a06; font-size: 11px; font-weight: 700; }
         .cell { font-weight: 800; }
         .cell-ok { background: #e8f7ef; color: #1f7d55; }
         .cell-low { background: #fff7d6; color: #8a5a00; }
         .cell-out { background: #ffe1e1; color: #b4233f; }
-        td.today, thead th.today { box-shadow: inset 2px 0 0 #2563eb, inset -2px 0 0 #2563eb; }
+        td.today, thead th.today { box-shadow: inset 2px 0 0 #1d4ed8, inset -2px 0 0 #1d4ed8; }
         .prod-cell { align-items: center; display: flex; gap: 10px; }
         .prod-info { min-width: 0; }
         .thumb {
@@ -115,7 +115,7 @@
             background: #e5efff;
             border: 1px solid #cbdcf5;
             border-radius: 8px;
-            color: #1d4ed8;
+            color: #1e40af;
             cursor: default;
             display: flex;
             flex: 0 0 auto;
@@ -130,7 +130,7 @@
             width: 52px;
         }
         .thumb.has-image { cursor: zoom-in; }
-        .thumb.has-image:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, .16); }
+        .thumb.has-image:focus { border-color: #2563eb; outline: none; box-shadow: 0 0 0 3px rgba(37, 99, 235, .16); }
         .thumb img { height: 100%; object-fit: cover; width: 100%; }
         .image-lightbox {
             align-items: center;

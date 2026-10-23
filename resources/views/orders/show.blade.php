@@ -25,7 +25,7 @@
             padding: 18px clamp(18px, 5vw, 56px);
         }
         .brand {
-            color: #1d4ed8;
+            color: #1e40af;
             font-family: Georgia, "Times New Roman", serif;
             font-size: 28px;
             font-weight: 700;
@@ -37,7 +37,7 @@
         }
         .button {
             align-items: center;
-            background: #2563eb;
+            background: #1d4ed8;
             border: 0;
             border-radius: 8px;
             color: #fff;
@@ -137,8 +137,8 @@
             padding: 9px 12px;
         }
         .status-select:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .16);
             outline: none;
         }
         .section { padding: 24px; }
@@ -146,7 +146,7 @@
         /* Keo tha dong de xep lai bang cho de nhin truoc khi chup man hinh. */
         tbody tr[draggable="true"] { cursor: grab; }
         tbody tr.is-dragging { opacity: .4; }
-        tbody tr.is-drop-target td { box-shadow: inset 0 3px 0 -1px #2563eb; }
+        tbody tr.is-drop-target td { box-shadow: inset 0 3px 0 -1px #1d4ed8; }
         .table-hint {
             color: #64748b;
             font-size: 12px;
@@ -163,7 +163,7 @@
             user-select: none;
             white-space: nowrap;
         }
-        th.sortable:hover { color: #2563eb; }
+        th.sortable:hover { color: #1d4ed8; }
         th.sortable::after {
             color: #9aafca;
             content: '95';
@@ -171,9 +171,9 @@
             position: absolute;
             right: 7px;
         }
-        th.sortable[aria-sort="ascending"]::after { color: #2563eb; content: '91'; }
-        th.sortable[aria-sort="descending"]::after { color: #2563eb; content: '93'; }
-        th.sortable:focus-visible { outline: 2px solid #3b82f6; outline-offset: -2px; }
+        th.sortable[aria-sort="ascending"]::after { color: #1d4ed8; content: '91'; }
+        th.sortable[aria-sort="descending"]::after { color: #1d4ed8; content: '93'; }
+        th.sortable:focus-visible { outline: 2px solid #2563eb; outline-offset: -2px; }
         .section-title {
             color: #334e75;
             font-size: 16px;
@@ -223,7 +223,7 @@
             text-transform: uppercase;
         }
         .code {
-            color: #1d4ed8;
+            color: #1e40af;
             font-weight: 900;
         }
         .muted {
@@ -264,7 +264,7 @@
         }
         .product-thumb.has-image:hover,
         .product-thumb.has-image:focus {
-            border-color: #3b82f6;
+            border-color: #2563eb;
             box-shadow: 0 10px 24px rgba(30, 64, 175, .18);
             outline: none;
         }
