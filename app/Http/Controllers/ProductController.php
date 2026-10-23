@@ -62,9 +62,12 @@ class ProductController extends Controller
             ->selectRaw('MAX(discontinued_at) as discontinued_at')
             ->when($showDiscontinued, fn ($builder) => $builder->discontinued(), fn ($builder) => $builder->active())
             ->when($query !== '', function ($builder) use ($query) {
-                $builder->where(function ($search) use ($query) {
-                    $search->where('products.code', 'like', "%{$query}%")
-                        ->orWhere('products.name', 'like', "%{$query}%");
+                $searchTerm = '%' . mb_strtolower($query, 'UTF-8') . '%';
+
+                $builder->where(function ($search) use ($searchTerm) {
+                    $search->whereRaw('LOWER(products.code) LIKE ?', [$searchTerm])
+                        ->orWhereRaw('LOWER(products.name) LIKE ?', [$searchTerm])
+                        ->orWhereRaw('LOWER(products.category) LIKE ?', [$searchTerm]);
                 });
             })
             ->groupBy('code')

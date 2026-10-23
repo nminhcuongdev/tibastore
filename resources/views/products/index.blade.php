@@ -530,8 +530,8 @@
 
         <div class="toolbar">
             <form class="search" method="GET" action="{{ route('products.index') }}">
-                <label for="q">Tìm kiếm theo mã hoặc tên sản phẩm</label>
-                <input id="q" name="q" type="search" value="{{ $query }}" placeholder="VD: VAY001, áo lụa...">
+                <label for="q">Tìm kiếm theo mã, tên sản phẩm hoặc danh mục</label>
+                <input id="q" name="q" type="search" value="{{ $query }}" placeholder="VD: VAY001, áo lụa, đầm dạ hội...">
                 <input type="hidden" name="sort" value="{{ $sort }}">
                 <input type="hidden" name="direction" value="{{ $direction }}">
             </form>
