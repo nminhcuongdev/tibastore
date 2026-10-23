@@ -2,7 +2,7 @@
 
 Ứng dụng web quản lí **kho hàng và cho thuê trang phục** cho cửa hàng thời trang/biểu diễn, xây dựng bằng **Laravel 9**. Hệ thống theo dõi tồn kho theo từng mã–size, lên đơn cho thuê theo lịch lấy/diễn/trả, tính doanh thu theo nguồn khách và ghi lại toàn bộ lịch sử thay đổi.
 
-Giao diện tông hồng boutique, điều hướng bằng **sidebar bên trái**, tối ưu cho thao tác nhập liệu nhanh hằng ngày.
+Giao diện tông xanh dương sapphire, điều hướng bằng **sidebar bên trái**, tối ưu cho thao tác nhập liệu nhanh hằng ngày.
 
 ---
 
@@ -12,7 +12,7 @@ Giao diện tông hồng boutique, điều hướng bằng **sidebar bên trái*
 
 ![Kho hàng](screenshoots/products.png)
 
-**Tồn kho theo ngày** — ma trận số lượng *khả dụng* của từng mã–size theo mỗi ngày; ô xanh còn nhiều, vàng còn ít, đỏ hết/vượt. Cột hôm nay viền hồng.
+**Tồn kho theo ngày** — ma trận số lượng *khả dụng* của từng mã–size theo mỗi ngày; ô xanh còn nhiều, vàng còn ít, đỏ hết/vượt. Cột hôm nay viền xanh dương.
 
 ![Tồn kho theo ngày](screenshoots/daily-stock.png)
 

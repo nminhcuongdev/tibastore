@@ -8,8 +8,8 @@
     <style>
         * { box-sizing: border-box; }
         body {
-            background: #fff7f9;
-            color: #3f2730;
+            background: #f5f8ff;
+            color: #1e293b;
             font-family: "Segoe UI", Arial, sans-serif;
             margin: 0;
             min-height: 100vh;
@@ -18,14 +18,14 @@
         .topbar {
             align-items: center;
             background: #fff;
-            border-bottom: 1px solid #f5d9e2;
+            border-bottom: 1px solid #dce7f7;
             display: flex;
             gap: 20px;
             justify-content: space-between;
             padding: 18px clamp(18px, 5vw, 56px);
         }
         .brand {
-            color: #b63f68;
+            color: #1d4ed8;
             font-family: Georgia, "Times New Roman", serif;
             font-size: 28px;
             font-weight: 700;
@@ -33,21 +33,21 @@
         .content { padding: 36px clamp(18px, 5vw, 56px) 56px; }
         .heading { margin-bottom: 22px; }
         .heading h1 {
-            color: #6f253f;
+            color: #1e3a5f;
             font-family: Georgia, "Times New Roman", serif;
             font-size: clamp(32px, 4vw, 48px);
             line-height: 1.08;
             margin: 0 0 8px;
         }
         .heading p {
-            color: #704252;
+            color: #475569;
             margin: 0;
         }
         .form-shell {
             background: #fff;
-            border: 1px solid #f0d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
-            box-shadow: 0 18px 45px rgba(117, 44, 69, .08);
+            box-shadow: 0 18px 45px rgba(30, 64, 175, .08);
             display: grid;
             gap: 16px;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -66,8 +66,8 @@
             grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
         }
         .order-item {
-            background: #fffafb;
-            border: 1px solid #f2d3dc;
+            background: #f8fbff;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
             display: grid;
             gap: 12px;
@@ -79,7 +79,7 @@
         .drag-handle {
             align-items: center;
             border-radius: 6px;
-            color: #b98ba0;
+            color: #8ca3bf;
             cursor: grab;
             display: inline-flex;
             font-size: 15px;
@@ -89,11 +89,11 @@
             padding: 4px 8px;
             user-select: none;
         }
-        .drag-handle:hover { background: #fff0f4; color: #8b2f4d; }
+        .drag-handle:hover { background: #eff6ff; color: #1e40af; }
         .drag-handle:active { cursor: grabbing; }
         .drag-handle .hint { font-size: 11px; font-weight: 700; }
         .order-item.is-dragging { opacity: .45; }
-        .order-item.is-drop-target { box-shadow: 0 -3px 0 0 #be476f; }
+        .order-item.is-drop-target { box-shadow: 0 -3px 0 0 #2563eb; }
         .size-rows {
             display: grid;
             gap: 10px;
@@ -112,10 +112,10 @@
         }
         .size-thumb {
             align-items: center;
-            background: #f9e5ec;
-            border: 1px solid #f1cbd7;
+            background: #e5efff;
+            border: 1px solid #cbdcf5;
             border-radius: 8px;
-            color: #a64465;
+            color: #1d4ed8;
             cursor: default;
             display: flex;
             font-family: inherit;
@@ -141,13 +141,13 @@
         }
         .size-thumb.has-image:hover,
         .size-thumb.has-image:focus {
-            border-color: #c9577d;
-            box-shadow: 0 10px 24px rgba(117, 44, 69, .18);
+            border-color: #3b82f6;
+            box-shadow: 0 10px 24px rgba(30, 64, 175, .18);
             outline: none;
         }
         .image-lightbox {
             align-items: center;
-            background: rgba(63, 39, 48, .72);
+            background: rgba(15, 23, 42, .72);
             cursor: zoom-out;
             display: none;
             inset: 0;
@@ -181,12 +181,12 @@
             max-width: 220px;
         }
         .block-subtotal {
-            color: #7a344c;
+            color: #334e75;
             font-weight: 800;
             padding-bottom: 12px;
         }
         .block-subtotal span {
-            color: #a13b60;
+            color: #1d4ed8;
         }
         .product-picker-cell {
             min-width: 0;
@@ -194,9 +194,9 @@
         }
         .product-suggestions {
             background: #fff;
-            border: 1px solid #f0d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
-            box-shadow: 0 14px 36px rgba(117, 44, 69, .08);
+            box-shadow: 0 14px 36px rgba(30, 64, 175, .08);
             display: none;
             left: 0;
             margin-top: 6px;
@@ -212,8 +212,8 @@
             align-items: center;
             background: transparent;
             border: 0;
-            border-bottom: 1px solid #f7e3e9;
-            color: #3f2730;
+            border-bottom: 1px solid #e7eef8;
+            color: #1e293b;
             cursor: pointer;
             display: flex;
             gap: 10px;
@@ -224,10 +224,10 @@
         .product-suggestion__info { min-width: 0; }
         .suggestion-thumb {
             align-items: center;
-            background: #f9e5ec;
-            border: 1px solid #f1cbd7;
+            background: #e5efff;
+            border: 1px solid #cbdcf5;
             border-radius: 6px;
-            color: #a64465;
+            color: #1d4ed8;
             display: flex;
             flex: 0 0 auto;
             font-size: 8px;
@@ -239,21 +239,21 @@
             width: 44px;
         }
         .suggestion-thumb img { height: 100%; object-fit: cover; width: 100%; }
-        .product-suggestion:hover { background: #fff4f7; }
+        .product-suggestion:hover { background: #eff6ff; }
         .product-code {
-            color: #a13b60;
+            color: #1d4ed8;
             font-weight: 900;
         }
         .product-name,
         .product-meta {
-            color: #8b6672;
+            color: #64748b;
             font-size: 13px;
         }
         .selected-product-info {
-            background: #fff4f7;
-            border: 1px solid #f2d3dc;
+            background: #eff6ff;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
-            color: #704252;
+            color: #475569;
             display: none;
             font-size: 13px;
             grid-column: 1 / -1;
@@ -261,7 +261,7 @@
             padding: 10px 12px;
         }
         label {
-            color: #7a344c;
+            color: #334e75;
             font-size: 13px;
             font-weight: 800;
         }
@@ -269,9 +269,9 @@
         select,
         textarea {
             background: #fff;
-            border: 1px solid #ebc5d2;
+            border: 1px solid #c3d4ed;
             border-radius: 8px;
-            color: #3f2730;
+            color: #1e293b;
             font-size: 15px;
             min-height: 44px;
             padding: 10px 13px;
@@ -279,10 +279,10 @@
         }
         .readonly-value {
             align-items: center;
-            background: #fff4f7;
-            border: 1px solid #f2d3dc;
+            background: #eff6ff;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
-            color: #7a344c;
+            color: #334e75;
             display: flex;
             font-weight: 900;
             min-height: 44px;
@@ -296,8 +296,8 @@
         input:focus,
         select:focus,
         textarea:focus {
-            border-color: #c9577d;
-            box-shadow: 0 0 0 3px rgba(201, 87, 125, .16);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
             outline: none;
         }
         .error {
@@ -339,7 +339,7 @@
         .items-actions { justify-content: flex-start; }
         .button {
             align-items: center;
-            background: #be476f;
+            background: #2563eb;
             border: 0;
             border-radius: 8px;
             color: #fff;
@@ -351,8 +351,8 @@
         }
         .button.secondary {
             background: #fff;
-            border: 1px solid #ebc5d2;
-            color: #8b2f4d;
+            border: 1px solid #c3d4ed;
+            color: #1e40af;
         }
         .button.danger {
             background: #fff;
@@ -378,7 +378,7 @@
         }
         .flash {
             background: #fff;
-            border: 1px solid #f0c7d3;
+            border: 1px solid #cbdcf5;
             border-left: 5px solid #2f9e6f;
             border-radius: 8px;
             color: #236c4f;

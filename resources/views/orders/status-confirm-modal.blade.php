@@ -2,7 +2,7 @@
 <style>
     .sconfirm {
         align-items: center;
-        background: rgba(63, 39, 48, .72);
+        background: rgba(15, 23, 42, .72);
         display: none;
         inset: 0;
         justify-content: center;
@@ -13,7 +13,7 @@
     .sconfirm.is-open { display: flex; }
     .sconfirm__box {
         background: #fff;
-        border: 1px solid #f0d3dc;
+        border: 1px solid #d8e4f5;
         border-radius: 12px;
         box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
         max-height: 88vh;
@@ -23,7 +23,7 @@
         width: 100%;
     }
     .sconfirm__title {
-        color: #6f253f;
+        color: #1e3a5f;
         font-family: Georgia, "Times New Roman", serif;
         font-size: 24px;
         margin: 0 0 12px;
@@ -41,7 +41,7 @@
         font-weight: 900;
         padding: 7px 13px;
     }
-    .sconfirm__arrow { color: #8b6672; font-weight: 900; }
+    .sconfirm__arrow { color: #64748b; font-weight: 900; }
     .sconfirm__effect {
         border-radius: 8px;
         font-size: 14px;
@@ -51,20 +51,20 @@
     }
     .sconfirm__effect.is-down { background: #fff7d6; color: #8a5a00; }
     .sconfirm__effect.is-up { background: #e8f7ef; color: #247857; }
-    .sconfirm__effect.is-none { background: #f3eef1; color: #6b5560; }
-    .sconfirm__table-shell { border: 1px solid #f2d3dc; border-radius: 8px; overflow: hidden; }
+    .sconfirm__effect.is-none { background: #f1f5f9; color: #64748b; }
+    .sconfirm__table-shell { border: 1px solid #d8e4f5; border-radius: 8px; overflow: hidden; }
     .sconfirm__table { border-collapse: collapse; width: 100%; }
     .sconfirm__table th,
-    .sconfirm__table td { border-bottom: 1px solid #f7e3e9; padding: 10px 12px; text-align: left; }
+    .sconfirm__table td { border-bottom: 1px solid #e7eef8; padding: 10px 12px; text-align: left; }
     .sconfirm__table thead th {
-        background: #fff0f4;
-        color: #81304c;
+        background: #eff6ff;
+        color: #1e3a5f;
         font-size: 12px;
         text-transform: uppercase;
     }
     .sconfirm__table th.num, .sconfirm__table td.num { text-align: right; }
     .sconfirm__table tbody tr:last-child td { border-bottom: 0; }
-    .sconfirm__code { color: #a13b60; font-weight: 800; }
+    .sconfirm__code { color: #1d4ed8; font-weight: 800; }
     .sconfirm__delta { font-weight: 900; }
     .sconfirm__delta.is-down { color: #b4233f; }
     .sconfirm__delta.is-up { color: #247857; }
@@ -79,7 +79,7 @@
         margin-top: 14px;
         padding: 12px 14px;
     }
-    .sconfirm__hint { color: #8b6672; font-size: 13px; line-height: 1.5; margin: 12px 0 0; }
+    .sconfirm__hint { color: #64748b; font-size: 13px; line-height: 1.5; margin: 12px 0 0; }
     .sconfirm__actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
 </style>
 

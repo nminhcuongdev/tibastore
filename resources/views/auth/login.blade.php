@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="vi">
 <head>
     <meta charset="utf-8">
@@ -11,8 +11,8 @@
         }
 
         body {
-            background: #fff7f9;
-            color: #3f2730;
+            background: #f5f8ff;
+            color: #1e293b;
             font-family: "Segoe UI", Arial, sans-serif;
             margin: 0;
             min-height: 100vh;
@@ -26,7 +26,7 @@
 
         .visual {
             background:
-                linear-gradient(115deg, rgba(255, 247, 249, .88), rgba(255, 229, 238, .58)),
+                linear-gradient(115deg, rgba(239, 246, 255, .88), rgba(191, 219, 254, .58)),
                 url("https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=1600&q=80");
             background-position: center;
             background-size: cover;
@@ -37,7 +37,7 @@
         }
 
         .brand {
-            color: #9d345a;
+            color: #1e40af;
             font-family: Georgia, "Times New Roman", serif;
             font-size: clamp(32px, 4vw, 54px);
             font-weight: 700;
@@ -50,7 +50,7 @@
         }
 
         .visual-copy h1 {
-            color: #6f253f;
+            color: #1e3a5f;
             font-family: Georgia, "Times New Roman", serif;
             font-size: clamp(38px, 5vw, 72px);
             line-height: 1.02;
@@ -58,7 +58,7 @@
         }
 
         .visual-copy p {
-            color: #704252;
+            color: #475569;
             font-size: 18px;
             line-height: 1.65;
             margin: 0;
@@ -67,8 +67,8 @@
 
         .login-pane {
             align-items: center;
-            background: linear-gradient(180deg, #fff 0%, #fff8fa 100%);
-            border-left: 1px solid #f2d3dc;
+            background: linear-gradient(180deg, #fff 0%, #f5f8ff 100%);
+            border-left: 1px solid #d8e4f5;
             display: flex;
             justify-content: center;
             padding: 32px;
@@ -76,15 +76,15 @@
 
         .login-box {
             background: #fff;
-            border: 1px solid #f0d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
-            box-shadow: 0 24px 60px rgba(117, 44, 69, .12);
+            box-shadow: 0 24px 60px rgba(30, 64, 175, .12);
             padding: clamp(26px, 4vw, 38px);
             width: min(100%, 430px);
         }
 
         .eyebrow {
-            color: #be476f;
+            color: #2563eb;
             font-size: 13px;
             font-weight: 800;
             letter-spacing: .08em;
@@ -93,7 +93,7 @@
         }
 
         h2 {
-            color: #542033;
+            color: #172f50;
             font-family: Georgia, "Times New Roman", serif;
             font-size: 34px;
             line-height: 1.1;
@@ -101,13 +101,13 @@
         }
 
         .hint {
-            color: #80606a;
+            color: #64748b;
             line-height: 1.55;
             margin: 0 0 24px;
         }
 
         label {
-            color: #7a344c;
+            color: #334e75;
             display: block;
             font-size: 13px;
             font-weight: 800;
@@ -117,9 +117,9 @@
         input[type="text"],
         input[type="password"] {
             background: #fff;
-            border: 1px solid #ebc5d2;
+            border: 1px solid #c3d4ed;
             border-radius: 8px;
-            color: #3f2730;
+            color: #1e293b;
             font-size: 16px;
             margin-bottom: 16px;
             min-height: 48px;
@@ -129,8 +129,8 @@
 
         input[type="text"]:focus,
         input[type="password"]:focus {
-            border-color: #c9577d;
-            box-shadow: 0 0 0 3px rgba(201, 87, 125, .16);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
             outline: none;
         }
 
@@ -142,19 +142,19 @@
         }
 
         .remember input {
-            accent-color: #be476f;
+            accent-color: #2563eb;
             height: 16px;
             width: 16px;
         }
 
         .remember label {
-            color: #704252;
+            color: #475569;
             font-weight: 700;
             margin: 0;
         }
 
         button {
-            background: #be476f;
+            background: #2563eb;
             border: 0;
             border-radius: 8px;
             color: #fff;
@@ -167,7 +167,7 @@
         }
 
         button:hover {
-            background: #a83d61;
+            background: #1d4ed8;
         }
 
         .error {
@@ -183,7 +183,7 @@
         }
 
         .footer-note {
-            color: #9b7580;
+            color: #71839b;
             font-size: 13px;
             line-height: 1.5;
             margin: 18px 0 0;

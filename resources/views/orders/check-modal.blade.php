@@ -2,7 +2,7 @@
 <style>
     .check-modal {
         align-items: center;
-        background: rgba(63, 39, 48, .72);
+        background: rgba(15, 23, 42, .72);
         display: none;
         inset: 0;
         justify-content: center;
@@ -13,7 +13,7 @@
     .check-modal.is-open { display: flex; }
     .check-modal__box {
         background: #fff;
-        border: 1px solid #f0d3dc;
+        border: 1px solid #d8e4f5;
         border-radius: 12px;
         box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
         max-height: 88vh;
@@ -23,13 +23,13 @@
         width: 100%;
     }
     .check-modal__title {
-        color: #6f253f;
+        color: #1e3a5f;
         font-family: Georgia, "Times New Roman", serif;
         font-size: 24px;
         margin: 0 0 8px;
     }
     .check-modal__hint {
-        color: #8b6672;
+        color: #64748b;
         font-size: 13px;
         line-height: 1.5;
         margin: 0 0 16px;
@@ -37,8 +37,8 @@
     .check-modal__items { display: grid; gap: 10px; margin-bottom: 16px; }
     .check-item {
         align-items: center;
-        background: #fffafb;
-        border: 1px solid #f2d3dc;
+        background: #f8fbff;
+        border: 1px solid #d8e4f5;
         border-radius: 8px;
         display: flex;
         flex-wrap: wrap;
@@ -47,13 +47,13 @@
         padding: 12px 14px;
     }
     .check-item__main { align-items: center; display: flex; gap: 10px; min-width: 0; }
-    .check-item__label { color: #3f2730; font-weight: 800; }
+    .check-item__label { color: #1e293b; font-weight: 800; }
     .check-thumb {
         align-items: center;
-        background: #f9e5ec;
-        border: 1px solid #f1cbd7;
+        background: #e5efff;
+        border: 1px solid #cbdcf5;
         border-radius: 8px;
-        color: #a64465;
+        color: #1d4ed8;
         cursor: default;
         display: flex;
         flex: 0 0 auto;
@@ -72,8 +72,8 @@
     .check-thumb img { height: 100%; object-fit: cover; transition: transform .18s ease; width: 100%; }
     .check-thumb.has-image:hover,
     .check-thumb.has-image:focus {
-        border-color: #c9577d;
-        box-shadow: 0 10px 24px rgba(117, 44, 69, .18);
+        border-color: #3b82f6;
+        box-shadow: 0 10px 24px rgba(30, 64, 175, .18);
         outline: none;
         overflow: visible;
         z-index: 20;
@@ -82,7 +82,7 @@
     .check-thumb.has-image:focus img { border-radius: 8px; transform: scale(2.4); }
     .check-lightbox {
         align-items: center;
-        background: rgba(63, 39, 48, .82);
+        background: rgba(15, 23, 42, .82);
         cursor: zoom-out;
         display: none;
         inset: 0;
@@ -102,18 +102,18 @@
         object-fit: contain;
     }
     .check-item__qty { align-items: center; display: flex; gap: 10px; }
-    .check-item__qty span { color: #8b6672; font-size: 13px; font-weight: 700; }
+    .check-item__qty span { color: #64748b; font-size: 13px; font-weight: 700; }
     .check-item__qty input {
-        border: 1px solid #ebc5d2;
+        border: 1px solid #c3d4ed;
         border-radius: 8px;
         font-size: 15px;
         min-height: 40px;
         padding: 8px 10px;
         width: 90px;
     }
-    .check-modal__label { color: #7a344c; display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+    .check-modal__label { color: #334e75; display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
     .check-modal__note {
-        border: 1px solid #ebc5d2;
+        border: 1px solid #c3d4ed;
         border-radius: 8px;
         font-family: inherit;
         font-size: 15px;
@@ -123,8 +123,8 @@
     }
     .check-modal__note:focus,
     .check-item__qty input:focus {
-        border-color: #c9577d;
-        box-shadow: 0 0 0 3px rgba(201, 87, 125, .16);
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
         outline: none;
     }
     .check-modal__actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }

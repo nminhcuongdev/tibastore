@@ -8,8 +8,8 @@
     <style>
         * { box-sizing: border-box; }
         body {
-            background: #fff7f9;
-            color: #3f2730;
+            background: #f5f8ff;
+            color: #1e293b;
             font-family: "Segoe UI", Arial, sans-serif;
             margin: 0;
             min-height: 100vh;
@@ -17,11 +17,11 @@
         a { color: inherit; text-decoration: none; }
         .content { flex: 1; min-width: 0; padding: 28px clamp(18px, 4vw, 48px) 56px; }
         h1 {
-            color: #6f253f;
+            color: #1e3a5f;
             font-family: Georgia, "Times New Roman", serif;
             margin: 0 0 6px;
         }
-        .sub { color: #704252; }
+        .sub { color: #475569; }
         .toolbar {
             align-items: end;
             display: flex;
@@ -30,22 +30,22 @@
             margin-bottom: 14px;
         }
         .field { display: grid; gap: 5px; }
-        label { color: #7a344c; font-weight: 700; }
+        label { color: #334e75; font-weight: 700; }
         input, select {
             background: #fff;
-            border: 1px solid #ebc5d2;
+            border: 1px solid #c3d4ed;
             border-radius: 8px;
-            color: #3f2730;
+            color: #1e293b;
             font-family: inherit;
         }
         input:focus, select:focus {
-            border-color: #c9577d;
-            box-shadow: 0 0 0 3px rgba(201, 87, 125, .16);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
             outline: none;
         }
         .button {
             align-items: center;
-            background: #be476f;
+            background: #2563eb;
             border: 0;
             border-radius: 8px;
             color: #fff;
@@ -53,30 +53,30 @@
             display: inline-flex;
             font-weight: 800;
         }
-        .button.secondary { background: #fff; border: 1px solid #ebc5d2; color: #8b2f4d; }
+        .button.secondary { background: #fff; border: 1px solid #c3d4ed; color: #1e40af; }
         .table-shell {
             background: #fff;
-            border: 1px solid #f0d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
-            box-shadow: 0 18px 45px rgba(117, 44, 69, .08);
+            box-shadow: 0 18px 45px rgba(30, 64, 175, .08);
             overflow-x: auto;
         }
         table { border-collapse: collapse; width: 100%; }
         th, td {
-            border-bottom: 1px solid #f7e3e9;
+            border-bottom: 1px solid #e7eef8;
             text-align: left;
             vertical-align: top;
         }
         thead th {
-            background: #fff0f4;
-            color: #81304c;
+            background: #eff6ff;
+            color: #1e3a5f;
             text-transform: uppercase;
             white-space: nowrap;
         }
-        tbody tr:hover td { background: #fffafb; }
-        .muted { color: #8b6672; }
+        tbody tr:hover td { background: #f8fbff; }
+        .muted { color: #64748b; }
         .nowrap { white-space: nowrap; }
-        .subject { color: #a13b60; font-weight: 800; }
+        .subject { color: #1d4ed8; font-weight: 800; }
         .badge {
             border-radius: 999px;
             display: inline-block;
@@ -92,7 +92,7 @@
         /* Mỗi dòng thay đổi: tên trường, giá trị cũ gạch ngang, giá trị mới đậm. */
         .changes { display: grid; gap: 4px; margin: 0; min-width: 320px; padding: 0; }
         .change { display: flex; flex-wrap: wrap; gap: 6px; }
-        .change .name { color: #7a344c; font-weight: 800; }
+        .change .name { color: #334e75; font-weight: 800; }
         .change .old {
             background: #fdecec;
             border-radius: 5px;
@@ -100,7 +100,7 @@
             padding: 1px 6px;
             text-decoration: line-through;
         }
-        .change .arrow { color: #8b6672; font-weight: 900; }
+        .change .arrow { color: #64748b; font-weight: 900; }
         .change .new {
             background: #e8f7ef;
             border-radius: 5px;
@@ -108,8 +108,8 @@
             font-weight: 800;
             padding: 1px 6px;
         }
-        .change .empty-val { color: #a08693; font-style: italic; }
-        .empty { color: #8b6672; padding: 36px; text-align: center; }
+        .change .empty-val { color: #8293aa; font-style: italic; }
+        .empty { color: #64748b; padding: 36px; text-align: center; }
         .pagination {
             align-items: center;
             display: flex;
@@ -121,12 +121,12 @@
         .pages { display: flex; flex-wrap: wrap; gap: 6px; }
         .pages a, .pages span {
             background: #fff;
-            border: 1px solid #ebc5d2;
+            border: 1px solid #c3d4ed;
             border-radius: 8px;
-            color: #8b2f4d;
+            color: #1e40af;
             padding: 6px 10px;
         }
-        .pages .active { background: #be476f; border-color: #be476f; color: #fff; }
+        .pages .active { background: #2563eb; border-color: #2563eb; color: #fff; }
     </style>
     @include('partials.compact')
 </head>

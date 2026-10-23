@@ -8,8 +8,8 @@
     <style>
         * { box-sizing: border-box; }
         body {
-            background: #fff7f9;
-            color: #3f2730;
+            background: #f5f8ff;
+            color: #1e293b;
             font-family: "Segoe UI", Arial, sans-serif;
             margin: 0;
             min-height: 100vh;
@@ -17,12 +17,12 @@
         a { color: inherit; text-decoration: none; }
         .content { flex: 1; min-width: 0; padding: 28px clamp(18px, 4vw, 48px) 56px; }
         h1 {
-            color: #6f253f;
+            color: #1e3a5f;
             font-family: Georgia, "Times New Roman", serif;
             font-size: clamp(28px, 4vw, 40px);
             margin: 0 0 6px;
         }
-        .sub { color: #704252; margin: 0 0 20px; }
+        .sub { color: #475569; margin: 0 0 20px; }
         .toolbar {
             align-items: end;
             display: flex;
@@ -31,25 +31,25 @@
             margin-bottom: 18px;
         }
         .field { display: grid; gap: 6px; }
-        label { color: #7a344c; font-size: 13px; font-weight: 700; }
+        label { color: #334e75; font-size: 13px; font-weight: 700; }
         input, select {
             background: #fff;
-            border: 1px solid #ebc5d2;
+            border: 1px solid #c3d4ed;
             border-radius: 8px;
-            color: #3f2730;
+            color: #1e293b;
             font-family: inherit;
             font-size: 15px;
             min-height: 44px;
             padding: 10px 13px;
         }
         input:focus, select:focus {
-            border-color: #c9577d;
-            box-shadow: 0 0 0 3px rgba(201, 87, 125, .16);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
             outline: none;
         }
         .button {
             align-items: center;
-            background: #be476f;
+            background: #2563eb;
             border: 0;
             border-radius: 8px;
             color: #fff;
@@ -59,14 +59,14 @@
             min-height: 44px;
             padding: 10px 16px;
         }
-        .button.secondary { background: #fff; border: 1px solid #ebc5d2; color: #8b2f4d; }
+        .button.secondary { background: #fff; border: 1px solid #c3d4ed; color: #1e40af; }
         .basis-group { display: flex; flex-wrap: wrap; gap: 8px; }
         .check {
             align-items: center;
             background: #fff;
-            border: 1px solid #ebc5d2;
+            border: 1px solid #c3d4ed;
             border-radius: 999px;
-            color: #8b2f4d;
+            color: #1e40af;
             cursor: pointer;
             display: inline-flex;
             font-size: 14px;
@@ -76,8 +76,8 @@
             padding: 8px 14px;
             user-select: none;
         }
-        .check.is-on { background: #fdeaf0; border-color: #c9577d; color: #8b2f4d; }
-        .check input { accent-color: #be476f; cursor: pointer; margin: 0; min-height: 0; width: auto; }
+        .check.is-on { background: #e5efff; border-color: #3b82f6; color: #1e40af; }
+        .check input { accent-color: #2563eb; cursor: pointer; margin: 0; min-height: 0; width: auto; }
         .cards {
             display: grid;
             gap: 14px;
@@ -86,65 +86,65 @@
         }
         .card {
             background: #fff;
-            border: 1px solid #f0d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 10px;
-            box-shadow: 0 14px 34px rgba(117, 44, 69, .07);
+            box-shadow: 0 14px 34px rgba(30, 64, 175, .07);
             padding: 16px 18px;
         }
-        .card .label { color: #8b6672; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
-        .card .value { color: #6f253f; font-size: 24px; font-weight: 900; }
-        .card.is-primary { background: #be476f; border-color: #be476f; }
-        .card.is-primary .label { color: #ffdce8; }
+        .card .label { color: #64748b; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+        .card .value { color: #1e3a5f; font-size: 24px; font-weight: 900; }
+        .card.is-primary { background: #2563eb; border-color: #2563eb; }
+        .card.is-primary .label { color: #dbeafe; }
         .card.is-primary .value { color: #fff; }
         h2 {
-            color: #6f253f;
+            color: #1e3a5f;
             font-family: Georgia, "Times New Roman", serif;
             font-size: 22px;
             margin: 26px 0 12px;
         }
         .table-shell {
             background: #fff;
-            border: 1px solid #f0d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
-            box-shadow: 0 18px 45px rgba(117, 44, 69, .08);
+            box-shadow: 0 18px 45px rgba(30, 64, 175, .08);
             overflow-x: auto;
         }
         table { border-collapse: separate; border-spacing: 0; width: 100%; }
         th, td {
-            border-bottom: 1px solid #f7e3e9;
+            border-bottom: 1px solid #e7eef8;
             padding: 11px 13px;
             text-align: right;
             white-space: nowrap;
         }
         th.text, td.text { text-align: left; }
         thead th {
-            background: #fff0f4;
-            color: #81304c;
+            background: #eff6ff;
+            color: #1e3a5f;
             font-size: 12px;
             position: sticky;
             text-transform: uppercase;
             top: 0;
             z-index: 2;
         }
-        tbody tr:hover td { background: #fffafb; }
+        tbody tr:hover td { background: #f8fbff; }
         tfoot td {
-            background: #fff0f4;
-            border-top: 2px solid #f0d3dc;
+            background: #eff6ff;
+            border-top: 2px solid #d8e4f5;
             font-weight: 900;
             position: sticky;
             bottom: 0;
         }
-        .muted { color: #8b6672; font-size: 12px; }
-        .strong { color: #6f253f; font-weight: 900; }
-        .zero { color: #c4a9b3; }
-        .muted-col { color: #8b6672; }
-        .empty { color: #8b6672; padding: 36px; text-align: center; }
+        .muted { color: #64748b; font-size: 12px; }
+        .strong { color: #1e3a5f; font-weight: 900; }
+        .zero { color: #a7b9d0; }
+        .muted-col { color: #64748b; }
+        .empty { color: #64748b; padding: 36px; text-align: center; }
         .note {
             background: #fff;
-            border: 1px solid #f0d3dc;
-            border-left: 5px solid #be476f;
+            border: 1px solid #d8e4f5;
+            border-left: 5px solid #2563eb;
             border-radius: 8px;
-            color: #704252;
+            color: #475569;
             font-size: 13px;
             line-height: 1.6;
             margin-top: 22px;

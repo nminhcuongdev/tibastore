@@ -8,8 +8,8 @@
     <style>
         * { box-sizing: border-box; }
         body {
-            background: #fff7f9;
-            color: #3f2730;
+            background: #f5f8ff;
+            color: #1e293b;
             font-family: "Segoe UI", Arial, sans-serif;
             margin: 0;
             min-height: 100vh;
@@ -18,14 +18,14 @@
         .topbar {
             align-items: center;
             background: #fff;
-            border-bottom: 1px solid #f5d9e2;
+            border-bottom: 1px solid #dce7f7;
             display: flex;
             gap: 20px;
             justify-content: space-between;
             padding: 18px clamp(18px, 5vw, 56px);
         }
         .brand {
-            color: #b63f68;
+            color: #1d4ed8;
             font-family: Georgia, "Times New Roman", serif;
             font-size: 28px;
             font-weight: 700;
@@ -39,15 +39,15 @@
         .nav a,
         .logout {
             background: #fff;
-            border: 1px solid #e8b8c8;
+            border: 1px solid #b9cfee;
             border-radius: 999px;
-            color: #8b2f4d;
+            color: #1e40af;
             cursor: pointer;
             font-weight: 700;
             padding: 10px 16px;
         }
         .nav a.active {
-            background: #be476f;
+            background: #2563eb;
             color: #fff;
         }
         .content { padding: 28px clamp(18px, 5vw, 56px) 56px; }
@@ -64,31 +64,31 @@
             max-width: 560px;
         }
         label {
-            color: #7a344c;
+            color: #334e75;
             font-size: 13px;
             font-weight: 700;
         }
         input {
             background: #fff;
-            border: 1px solid #ebc5d2;
+            border: 1px solid #c3d4ed;
             border-radius: 8px;
-            color: #3f2730;
+            color: #1e293b;
             font-size: 15px;
             min-height: 44px;
             padding: 10px 13px;
             width: 100%;
         }
         input:focus {
-            border-color: #c9577d;
-            box-shadow: 0 0 0 3px rgba(201, 87, 125, .16);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
             outline: none;
         }
         .button {
             align-items: center;
             background: #fff;
-            border: 1px solid #ebc5d2;
+            border: 1px solid #c3d4ed;
             border-radius: 8px;
-            color: #8b2f4d;
+            color: #1e40af;
             display: inline-flex;
             font-weight: 800;
             min-height: 44px;
@@ -96,9 +96,9 @@
         }
         .table-shell {
             background: #fff;
-            border: 1px solid #f0d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
-            box-shadow: 0 18px 45px rgba(117, 44, 69, .08);
+            box-shadow: 0 18px 45px rgba(30, 64, 175, .08);
             overflow-x: auto;
         }
         table {
@@ -107,29 +107,29 @@
             width: 100%;
         }
         th, td {
-            border-bottom: 1px solid #f7e3e9;
+            border-bottom: 1px solid #e7eef8;
             padding: 15px;
             text-align: left;
             vertical-align: middle;
         }
         th {
-            background: #fff0f4;
-            color: #81304c;
+            background: #eff6ff;
+            color: #1e3a5f;
             font-size: 13px;
             letter-spacing: .02em;
             text-transform: uppercase;
         }
-        tbody tr:hover { background: #fff9fb; }
+        tbody tr:hover { background: #f8fbff; }
         .code {
-            color: #a13b60;
+            color: #1d4ed8;
             font-weight: 800;
         }
         .name {
-            color: #3f2730;
+            color: #1e293b;
             font-weight: 800;
         }
         .muted {
-            color: #8b6672;
+            color: #64748b;
             font-size: 13px;
         }
         .quantity {
@@ -137,7 +137,7 @@
             font-weight: 900;
         }
         .empty {
-            color: #8b6672;
+            color: #64748b;
             padding: 36px;
             text-align: center;
         }
@@ -165,11 +165,11 @@
         }
         .page-link {
             background: #fff;
-            border: 1px solid #f0d3dc;
-            color: #8b2f4d;
+            border: 1px solid #d8e4f5;
+            color: #1e40af;
         }
         .page-current {
-            background: #be476f;
+            background: #2563eb;
             color: #fff;
         }
         @media (max-width: 760px) {

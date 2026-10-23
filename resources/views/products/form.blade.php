@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="vi">
 <head>
     <meta charset="utf-8">
@@ -11,8 +11,8 @@
         }
 
         body {
-            background: #fff7f9;
-            color: #3f2730;
+            background: #f5f8ff;
+            color: #1e293b;
             font-family: "Segoe UI", Arial, sans-serif;
             margin: 0;
             min-height: 100vh;
@@ -26,7 +26,7 @@
         .topbar {
             align-items: center;
             background: #fff;
-            border-bottom: 1px solid #f5d9e2;
+            border-bottom: 1px solid #dce7f7;
             display: flex;
             gap: 20px;
             justify-content: space-between;
@@ -34,7 +34,7 @@
         }
 
         .brand {
-            color: #b63f68;
+            color: #1d4ed8;
             font-family: Georgia, "Times New Roman", serif;
             font-size: 28px;
             font-weight: 700;
@@ -49,7 +49,7 @@
         }
 
         .heading h1 {
-            color: #6f253f;
+            color: #1e3a5f;
             font-family: Georgia, "Times New Roman", serif;
             font-size: clamp(32px, 4vw, 48px);
             line-height: 1.08;
@@ -57,15 +57,15 @@
         }
 
         .heading p {
-            color: #704252;
+            color: #475569;
             margin: 0;
         }
 
         .form-shell {
             background: #fff;
-            border: 1px solid #f0d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
-            box-shadow: 0 18px 45px rgba(117, 44, 69, .08);
+            box-shadow: 0 18px 45px rgba(30, 64, 175, .08);
             display: grid;
             gap: 24px;
             grid-template-columns: minmax(0, 1fr) 240px;
@@ -94,8 +94,8 @@
         }
 
         .size-row {
-            background: #fffafb;
-            border: 1px solid #f2d3dc;
+            background: #f8fbff;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
             display: grid;
             gap: 12px;
@@ -105,7 +105,7 @@
 
         .expected-receipts {
             background: #fff;
-            border: 1px solid #f2d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
             display: grid;
             gap: 10px;
@@ -137,16 +137,16 @@
         }
 
         label {
-            color: #7a344c;
+            color: #334e75;
             font-size: 13px;
             font-weight: 800;
         }
 
         input {
             background: #fff;
-            border: 1px solid #ebc5d2;
+            border: 1px solid #c3d4ed;
             border-radius: 8px;
-            color: #3f2730;
+            color: #1e293b;
             font-size: 15px;
             min-height: 44px;
             padding: 10px 13px;
@@ -154,21 +154,21 @@
         }
 
         input:focus {
-            border-color: #c9577d;
-            box-shadow: 0 0 0 3px rgba(201, 87, 125, .16);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
             outline: none;
         }
 
         .apply-scope {
-            background: #fff4f7;
-            border: 1px solid #f2d3dc;
+            background: #eff6ff;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
             gap: 6px;
             padding: 12px 14px;
         }
         .apply-scope-toggle {
             align-items: center;
-            color: #7a344c;
+            color: #334e75;
             cursor: pointer;
             display: flex;
             font-size: 15px;
@@ -191,7 +191,7 @@
         }
 
         .hint {
-            color: #8b6672;
+            color: #64748b;
             font-size: 12px;
         }
 
@@ -206,9 +206,9 @@
 
         .code-suggestions {
             background: #fff;
-            border: 1px solid #f0d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
-            box-shadow: 0 14px 36px rgba(117, 44, 69, .08);
+            box-shadow: 0 14px 36px rgba(30, 64, 175, .08);
             display: none;
             left: 0;
             margin-top: 6px;
@@ -223,7 +223,7 @@
         .code-suggestion {
             background: transparent;
             border: 0;
-            border-bottom: 1px solid #f7e3e9;
+            border-bottom: 1px solid #e7eef8;
             cursor: pointer;
             display: block;
             padding: 9px 12px;
@@ -232,20 +232,20 @@
         }
 
         .code-suggestion:hover {
-            background: #fff4f7;
+            background: #eff6ff;
         }
 
         .code-suggestion-main {
-            color: #3f2730;
+            color: #1e293b;
             font-weight: 800;
         }
 
         .code-suggestion-next {
-            color: #a13b60;
+            color: #1d4ed8;
         }
 
         .code-suggestion-meta {
-            color: #8b6672;
+            color: #64748b;
             font-size: 12px;
             margin-top: 2px;
         }
@@ -264,10 +264,10 @@
 
         .preview {
             align-content: center;
-            background: #fff4f7;
-            border: 1px dashed #e8aebe;
+            background: #eff6ff;
+            border: 1px dashed #adc7eb;
             border-radius: 8px;
-            color: #a64465;
+            color: #1d4ed8;
             display: grid;
             font-weight: 800;
             min-height: 240px;
@@ -292,7 +292,7 @@
 
         .button {
             align-items: center;
-            background: #be476f;
+            background: #2563eb;
             border: 0;
             border-radius: 8px;
             color: #fff;
@@ -305,8 +305,8 @@
 
         .button.secondary {
             background: #fff;
-            border: 1px solid #ebc5d2;
-            color: #8b2f4d;
+            border: 1px solid #c3d4ed;
+            color: #1e40af;
         }
 
         .button.danger {
@@ -317,7 +317,7 @@
 
         .flash {
             background: #fff;
-            border: 1px solid #f0c7d3;
+            border: 1px solid #cbdcf5;
             border-left: 5px solid #2f9e6f;
             border-radius: 8px;
             color: #236c4f;

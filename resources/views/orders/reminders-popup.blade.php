@@ -2,7 +2,7 @@
     <style>
         .reminder-backdrop {
             align-items: center;
-            background: rgba(63, 39, 48, .38);
+            background: rgba(15, 23, 42, .38);
             display: flex;
             inset: 0;
             justify-content: center;
@@ -13,9 +13,9 @@
 
         .reminder-modal {
             background: #fff;
-            border: 1px solid #f0d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
-            box-shadow: 0 30px 90px rgba(63, 39, 48, .28);
+            box-shadow: 0 30px 90px rgba(15, 23, 42, .28);
             max-height: min(760px, 92vh);
             max-width: 760px;
             overflow: auto;
@@ -23,20 +23,20 @@
         }
 
         .reminder-head {
-            background: #fff0f4;
-            border-bottom: 1px solid #f7d7e1;
+            background: #eff6ff;
+            border-bottom: 1px solid #d8e4f5;
             padding: 18px 20px;
         }
 
         .reminder-head h2 {
-            color: #6f253f;
+            color: #1e3a5f;
             font-family: Georgia, "Times New Roman", serif;
             font-size: 26px;
             margin: 0 0 6px;
         }
 
         .reminder-head p {
-            color: #704252;
+            color: #475569;
             line-height: 1.5;
             margin: 0;
         }
@@ -48,7 +48,7 @@
         }
 
         .reminder-item {
-            border: 1px solid #f2d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
             display: grid;
             gap: 12px;
@@ -56,18 +56,18 @@
         }
 
         .reminder-title {
-            color: #9d345a;
+            color: #1e40af;
             font-weight: 900;
             margin-bottom: 5px;
         }
 
         .reminder-name {
-            color: #3f2730;
+            color: #1e293b;
             font-weight: 900;
         }
 
         .reminder-meta {
-            color: #704252;
+            color: #475569;
             display: grid;
             gap: 4px;
             line-height: 1.45;
@@ -81,7 +81,7 @@
         }
 
         .reminder-button {
-            background: #be476f;
+            background: #2563eb;
             border: 0;
             border-radius: 8px;
             color: #fff;
@@ -93,13 +93,13 @@
 
         .reminder-button.secondary {
             background: #fff;
-            border: 1px solid #ebc5d2;
-            color: #8b2f4d;
+            border: 1px solid #c3d4ed;
+            color: #1e40af;
         }
 
         .reminder-check {
             align-items: center;
-            color: #704252;
+            color: #475569;
             display: flex;
             font-weight: 700;
             gap: 8px;
@@ -108,7 +108,7 @@
         .reminder-close {
             background: transparent;
             border: 0;
-            color: #8b2f4d;
+            color: #1e40af;
             cursor: pointer;
             font-weight: 900;
             margin-left: auto;

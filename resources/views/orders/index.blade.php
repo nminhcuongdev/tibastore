@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="vi">
 <head>
     <meta charset="utf-8">
@@ -8,8 +8,8 @@
     <style>
         * { box-sizing: border-box; }
         body {
-            background: #fff7f9;
-            color: #3f2730;
+            background: #f5f8ff;
+            color: #1e293b;
             font-family: "Segoe UI", Arial, sans-serif;
             margin: 0;
             min-height: 100vh;
@@ -18,14 +18,14 @@
         .topbar {
             align-items: center;
             background: #fff;
-            border-bottom: 1px solid #f5d9e2;
+            border-bottom: 1px solid #dce7f7;
             display: flex;
             gap: 20px;
             justify-content: space-between;
             padding: 18px clamp(18px, 5vw, 56px);
         }
         .brand {
-            color: #b63f68;
+            color: #1d4ed8;
             font-family: Georgia, "Times New Roman", serif;
             font-size: 28px;
             font-weight: 700;
@@ -39,15 +39,15 @@
         .nav a,
         .logout {
             background: #fff;
-            border: 1px solid #e8b8c8;
+            border: 1px solid #b9cfee;
             border-radius: 999px;
-            color: #8b2f4d;
+            color: #1e40af;
             cursor: pointer;
             font-weight: 700;
             padding: 10px 16px;
         }
         .nav a.active {
-            background: #be476f;
+            background: #2563eb;
             color: #fff;
         }
         .content { padding: 28px clamp(18px, 5vw, 56px) 56px; }
@@ -71,7 +71,7 @@
         .filter-toggle__caret { display: inline-block; transition: transform .18s ease; }
         .filter-toggle[aria-expanded="true"] .filter-toggle__caret { transform: rotate(90deg); }
         .filter-toggle__badge {
-            background: #be476f;
+            background: #2563eb;
             border-radius: 999px;
             color: #fff;
             font-size: 11px;
@@ -112,9 +112,9 @@
         .status-check {
             align-items: center;
             background: #fff;
-            border: 1px solid #ebc5d2;
+            border: 1px solid #c3d4ed;
             border-radius: 999px;
-            color: #8b2f4d;
+            color: #1e40af;
             cursor: pointer;
             display: inline-flex;
             font-size: 13px;
@@ -123,43 +123,43 @@
             padding: 9px 14px;
             user-select: none;
         }
-        .status-check:hover { border-color: #c9577d; }
-        .status-check input { accent-color: #be476f; cursor: pointer; margin: 0; }
+        .status-check:hover { border-color: #3b82f6; }
+        .status-check input { accent-color: #2563eb; cursor: pointer; margin: 0; }
         .status-check:has(input:checked) { border-color: transparent; color: #fff; }
-        .status-check:has(input:focus-visible) { box-shadow: 0 0 0 3px rgba(201, 87, 125, .22); }
+        .status-check:has(input:focus-visible) { box-shadow: 0 0 0 3px rgba(59, 130, 246, .22); }
         select {
             background: #fff;
-            border: 1px solid #ebc5d2;
+            border: 1px solid #c3d4ed;
             border-radius: 8px;
-            color: #3f2730;
+            color: #1e293b;
             font-size: 15px;
             min-height: 44px;
             padding: 10px 13px;
             width: 100%;
         }
         select:focus {
-            border-color: #c9577d;
-            box-shadow: 0 0 0 3px rgba(201, 87, 125, .16);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
             outline: none;
         }
         label {
-            color: #7a344c;
+            color: #334e75;
             font-size: 13px;
             font-weight: 700;
         }
         input {
             background: #fff;
-            border: 1px solid #ebc5d2;
+            border: 1px solid #c3d4ed;
             border-radius: 8px;
-            color: #3f2730;
+            color: #1e293b;
             font-size: 15px;
             min-height: 44px;
             padding: 10px 13px;
             width: 100%;
         }
         input:focus {
-            border-color: #c9577d;
-            box-shadow: 0 0 0 3px rgba(201, 87, 125, .16);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
             outline: none;
         }
         .actions {
@@ -169,7 +169,7 @@
         }
         .button {
             align-items: center;
-            background: #be476f;
+            background: #2563eb;
             border: 0;
             border-radius: 8px;
             color: #fff;
@@ -181,12 +181,12 @@
         }
         .button.secondary {
             background: #fff;
-            border: 1px solid #ebc5d2;
-            color: #8b2f4d;
+            border: 1px solid #c3d4ed;
+            color: #1e40af;
         }
         .status {
             background: #fff;
-            border: 1px solid #f0c7d3;
+            border: 1px solid #cbdcf5;
             border-left: 5px solid #2f9e6f;
             border-radius: 8px;
             color: #236c4f;
@@ -200,9 +200,9 @@
         .summary {
             align-items: center;
             background: #fff;
-            border: 1px solid #f0d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
-            box-shadow: 0 10px 26px rgba(117, 44, 69, .06);
+            box-shadow: 0 10px 26px rgba(30, 64, 175, .06);
             display: flex;
             flex-wrap: wrap;
             gap: 10px 22px;
@@ -211,20 +211,20 @@
         }
         .summary-item { display: flex; align-items: baseline; gap: 8px; }
         .summary-label {
-            color: #8b6672;
+            color: #64748b;
             font-size: 12px;
             font-weight: 700;
             text-transform: uppercase;
         }
-        .summary-value { color: #6f253f; font-size: 18px; font-weight: 900; }
+        .summary-value { color: #1e3a5f; font-size: 18px; font-weight: 900; }
         .summary-item.is-main .summary-value { color: #b4233f; font-size: 22px; }
-        .summary-note { color: #8b6672; font-size: 12px; margin-left: auto; }
-        .summary-note a { color: #a13b60; font-weight: 800; text-decoration: underline; }
+        .summary-note { color: #64748b; font-size: 12px; margin-left: auto; }
+        .summary-note a { color: #1d4ed8; font-weight: 800; text-decoration: underline; }
         .table-shell {
             background: #fff;
-            border: 1px solid #f0d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
-            box-shadow: 0 18px 45px rgba(117, 44, 69, .08);
+            box-shadow: 0 18px 45px rgba(30, 64, 175, .08);
             overflow-x: auto;
         }
         table {
@@ -234,14 +234,14 @@
             width: 100%;
         }
         th, td {
-            border-bottom: 1px solid #f7e3e9;
+            border-bottom: 1px solid #e7eef8;
             padding: 15px;
             text-align: left;
             vertical-align: middle;
         }
         th {
-            background: #fff0f4;
-            color: #81304c;
+            background: #eff6ff;
+            color: #1e3a5f;
             font-size: 13px;
             letter-spacing: .02em;
             text-transform: uppercase;
@@ -254,7 +254,7 @@
         }
         /* border-collapse an vien duoi cua o ghim, ve lai bang box-shadow. */
         thead th::after {
-            box-shadow: inset 0 -1px 0 #f0d3dc;
+            box-shadow: inset 0 -1px 0 #d8e4f5;
             content: '';
             inset: 0;
             pointer-events: none;
@@ -265,9 +265,9 @@
             display: inline-flex;
             gap: 6px;
         }
-        tbody tr:hover td { box-shadow: inset 0 0 0 100vh rgba(63, 39, 48, .05); }
+        tbody tr:hover td { box-shadow: inset 0 0 0 100vh rgba(15, 23, 42, .05); }
         /* Nen dong dong bo voi mau trang thai o cot "Trang thai". */
-        .row-chua_cho_size { background: #f3eef1; }
+        .row-chua_cho_size { background: #f1f5f9; }
         .row-da_in_file { background: #eaf2fd; }
         .row-da_in_giay { background: #eef0fb; }
         .row-dang_soan { background: #f6ecfb; }
@@ -277,7 +277,7 @@
         .row-thanh_cong { background: #e8f7ef; }
         .row-thanh_cong_thieu { background: #fdecec; }
         .code {
-            color: #a13b60;
+            color: #1d4ed8;
             font-weight: 800;
         }
         /* Moi mien mot mau nhat de liec la phan biet duoc vung khach. */
@@ -290,7 +290,7 @@
             white-space: nowrap;
         }
         /* The loc mien: chua chon thi vien nhat, chon roi to dung mau mien. */
-        .region-check { background: #fff; color: #8b2f4d; }
+        .region-check { background: #fff; color: #1e40af; }
         .region-check:has(input:checked) { border-color: transparent; font-weight: 900; }
         .region-check.region-tinh_mb:has(input:checked) { background: #2f5fa6; color: #fff; }
         .region-check.region-tinh_mt:has(input:checked) { background: #8a5a00; color: #fff; }
@@ -300,7 +300,7 @@
         .region-tinh_mt { background: #fdf0da; color: #8a5a00; }
         .region-tinh_mn { background: #e6f6ee; color: #247857; }
         .region-ha_noi { background: #f6e8fb; color: #7d3aa3; }
-        .region-badge:hover, .carrier:hover { box-shadow: 0 0 0 2px rgba(201, 87, 125, .35); }
+        .region-badge:hover, .carrier:hover { box-shadow: 0 0 0 2px rgba(59, 130, 246, .35); }
         .carrier {
             border-radius: 5px;
             display: inline-block;
@@ -328,34 +328,34 @@
         }
         .code-chip {
             background: rgba(255, 255, 255, .75);
-            border: 1px solid #ebc5d2;
+            border: 1px solid #c3d4ed;
             border-radius: 999px;
-            color: #a13b60;
+            color: #1d4ed8;
             display: inline-flex;
             font-size: 11px;
             font-weight: 900;
             gap: 4px;
             padding: 2px 7px;
         }
-        .code-chip__size { color: #8b6672; font-weight: 700; }
-        .code-chip.is-more { color: #8b6672; }
+        .code-chip__size { color: #64748b; font-weight: 700; }
+        .code-chip.is-more { color: #64748b; }
         .codes-row > td { padding: 0 13px 12px; }
         .codes-panel {
             background: rgba(255, 255, 255, .78);
-            border: 1px solid #f0d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
             padding: 10px 12px;
         }
         .codes-panel__head {
             align-items: baseline;
-            border-bottom: 1px dashed #f0d3dc;
+            border-bottom: 1px dashed #d8e4f5;
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
             margin-bottom: 9px;
             padding-bottom: 7px;
         }
-        .codes-panel__title { color: #6f253f; font-weight: 900; }
+        .codes-panel__title { color: #1e3a5f; font-weight: 900; }
         .codes-grid {
             display: grid;
             gap: 8px;
@@ -364,7 +364,7 @@
         .code-card {
             align-items: center;
             background: #fff;
-            border: 1px solid #f2d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
             display: flex;
             gap: 8px;
@@ -372,10 +372,10 @@
         }
         .code-thumb {
             align-items: center;
-            background: #f9e5ec;
-            border: 1px solid #f1cbd7;
+            background: #e5efff;
+            border: 1px solid #cbdcf5;
             border-radius: 6px;
-            color: #a64465;
+            color: #1d4ed8;
             display: flex;
             flex: 0 0 auto;
             font-family: inherit;
@@ -393,8 +393,8 @@
         /* Hover phong to tai cho, bam mo anh lon - giong ben kho hang. */
         .code-thumb.has-image:hover,
         .code-thumb.has-image:focus {
-            border-color: #c9577d;
-            box-shadow: 0 10px 24px rgba(117, 44, 69, .18);
+            border-color: #3b82f6;
+            box-shadow: 0 10px 24px rgba(30, 64, 175, .18);
             outline: none;
             overflow: visible;
             z-index: 20;
@@ -405,9 +405,9 @@
             transform: scale(2.6);
         }
         .code-card__info { min-width: 0; }
-        .code-card__code { color: #a13b60; font-weight: 900; }
+        .code-card__code { color: #1d4ed8; font-weight: 900; }
         .code-card__name {
-            color: #704252;
+            color: #475569;
             font-size: 12px;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -416,7 +416,7 @@
         .code-card__meta { display: flex; font-size: 12px; gap: 8px; }
         /* Ghi chu / dia chi dai thi cat con hai dong, re chuot vao xem day du. */
         .note-cell, .address-cell {
-            color: #704252;
+            color: #475569;
             display: -webkit-box;
             font-size: 12px;
             line-height: 1.45;
@@ -426,11 +426,11 @@
             -webkit-line-clamp: 2;
         }
         .address-cell { max-width: 260px; }
-        .code-card__size { color: #8b6672; font-weight: 700; }
-        .code-card__qty { color: #3f2730; font-weight: 900; }
+        .code-card__size { color: #64748b; font-weight: 700; }
+        .code-card__qty { color: #1e293b; font-weight: 900; }
         .codes-zoom {
             align-items: center;
-            background: rgba(63, 39, 48, .82);
+            background: rgba(15, 23, 42, .82);
             cursor: zoom-out;
             display: none;
             inset: 0;
@@ -450,11 +450,11 @@
             object-fit: contain;
         }
         .name {
-            color: #3f2730;
+            color: #1e293b;
             font-weight: 800;
         }
         .muted {
-            color: #8b6672;
+            color: #64748b;
             font-size: 13px;
         }
         .status-badge {
@@ -477,13 +477,13 @@
             width: 100%;
         }
         /* Danh sach xo xuong giu nen sang de van doc duoc tren nen dam. */
-        .status-select option { background: #fff; color: #3f2730; }
+        .status-select option { background: #fff; color: #1e293b; }
         .status-select:focus {
-            border-color: #c9577d;
-            box-shadow: 0 0 0 3px rgba(201, 87, 125, .16);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
             outline: none;
         }
-        .status-chua_cho_size { background: #6b5560; color: #fff; }
+        .status-chua_cho_size { background: #64748b; color: #fff; }
         .status-da_in_file { background: #2f5fa6; color: #fff; }
         .status-da_in_giay { background: #45489c; color: #fff; }
         .status-dang_soan { background: #7d3aa3; color: #fff; }
@@ -493,8 +493,8 @@
         .status-thanh_cong { background: #247857; color: #fff; }
         .status-thanh_cong_thieu { background: #b4233f; color: #fff; }
         /* Chua chon thi giu nen trang; chi to mau khi da tick. */
-        .status-check:not(:has(input:checked)) { background: #fff; color: #8b2f4d; }
-        .pay-coc { background: #f3eef1; color: #6b5560; }
+        .status-check:not(:has(input:checked)) { background: #fff; color: #1e40af; }
+        .pay-coc { background: #f1f5f9; color: #64748b; }
         .pay-thanh_toan_1 { background: #eaf2fd; color: #2f5fa6; }
         .pay-thanh_toan_2 { background: #f6ecfb; color: #7d3aa3; }
         .pay-con_lai { background: #fff7d6; color: #8a5a00; }
@@ -511,9 +511,9 @@
             padding: 8px 10px;
         }
         .link-action {
-            background: #fff4f7;
-            border: 1px solid #f1cbd7;
-            color: #8b2f4d;
+            background: #eff6ff;
+            border: 1px solid #cbdcf5;
+            color: #1e40af;
         }
         .danger {
             background: #fff;
@@ -521,7 +521,7 @@
             color: #b4233f;
         }
         .empty {
-            color: #8b6672;
+            color: #64748b;
             padding: 36px;
             text-align: center;
         }
@@ -549,11 +549,11 @@
         }
         .page-link {
             background: #fff;
-            border: 1px solid #f0d3dc;
-            color: #8b2f4d;
+            border: 1px solid #d8e4f5;
+            color: #1e40af;
         }
         .page-current {
-            background: #be476f;
+            background: #2563eb;
             color: #fff;
         }
         @media (max-width: 760px) {

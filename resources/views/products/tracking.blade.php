@@ -8,8 +8,8 @@
     <style>
         * { box-sizing: border-box; }
         body {
-            background: #fff7f9;
-            color: #3f2730;
+            background: #f5f8ff;
+            color: #1e293b;
             font-family: "Segoe UI", Arial, sans-serif;
             margin: 0;
             min-height: 100vh;
@@ -18,14 +18,14 @@
         .topbar {
             align-items: center;
             background: #fff;
-            border-bottom: 1px solid #f5d9e2;
+            border-bottom: 1px solid #dce7f7;
             display: flex;
             gap: 20px;
             justify-content: space-between;
             padding: 18px clamp(18px, 5vw, 56px);
         }
         .brand {
-            color: #b63f68;
+            color: #1d4ed8;
             font-family: Georgia, "Times New Roman", serif;
             font-size: 28px;
             font-weight: 700;
@@ -39,15 +39,15 @@
         .nav a,
         .logout {
             background: #fff;
-            border: 1px solid #e8b8c8;
+            border: 1px solid #b9cfee;
             border-radius: 999px;
-            color: #8b2f4d;
+            color: #1e40af;
             cursor: pointer;
             font-weight: 700;
             padding: 10px 16px;
         }
         .nav a.active {
-            background: #be476f;
+            background: #2563eb;
             color: #fff;
         }
         .content { padding: 28px clamp(18px, 5vw, 56px) 56px; }
@@ -60,22 +60,22 @@
         .metric,
         .panel {
             background: #fff;
-            border: 1px solid #f0d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
-            box-shadow: 0 18px 45px rgba(117, 44, 69, .08);
+            box-shadow: 0 18px 45px rgba(30, 64, 175, .08);
         }
         .metric {
             padding: 18px;
         }
         .metric-label {
-            color: #8b6672;
+            color: #64748b;
             font-size: 13px;
             font-weight: 800;
             margin-bottom: 8px;
             text-transform: uppercase;
         }
         .metric-value {
-            color: #542033;
+            color: #172f50;
             font-size: 24px;
             font-weight: 900;
         }
@@ -85,21 +85,21 @@
         }
         .panel-head {
             align-items: center;
-            background: #fff0f4;
-            border-bottom: 1px solid #f7d7e1;
+            background: #eff6ff;
+            border-bottom: 1px solid #d8e4f5;
             display: flex;
             justify-content: space-between;
             gap: 16px;
             padding: 16px 18px;
         }
         .panel-head h2 {
-            color: #6f253f;
+            color: #1e3a5f;
             font-family: Georgia, "Times New Roman", serif;
             font-size: 24px;
             margin: 0;
         }
         .panel-head p {
-            color: #8b6672;
+            color: #64748b;
             line-height: 1.5;
             margin: 4px 0 0;
         }
@@ -111,46 +111,46 @@
             min-width: 860px;
         }
         .axis-label {
-            fill: #8b6672;
+            fill: #64748b;
             font-size: 12px;
         }
         .axis-value {
-            fill: #542033;
+            fill: #172f50;
             font-size: 13px;
             font-weight: 800;
         }
         .grid-line {
-            stroke: #f7d7e1;
+            stroke: #d8e4f5;
             stroke-width: 1;
         }
         .line {
             fill: none;
-            stroke: #be476f;
+            stroke: #2563eb;
             stroke-linecap: round;
             stroke-linejoin: round;
             stroke-width: 4;
         }
         .area {
-            fill: rgba(190, 71, 111, .1);
+            fill: rgba(37, 99, 235, .1);
         }
         .dot {
-            fill: #be476f;
+            fill: #2563eb;
             stroke: #fff;
             stroke-width: 3;
         }
         .point-label-bg {
             fill: #fff;
-            stroke: #f0c7d3;
+            stroke: #cbdcf5;
             stroke-width: 1;
         }
         .point-label {
-            fill: #6f253f;
+            fill: #1e3a5f;
             font-size: 13px;
             font-weight: 900;
             text-anchor: middle;
         }
         .zero-line {
-            stroke: #f0d3dc;
+            stroke: #d8e4f5;
             stroke-dasharray: 5 5;
             stroke-width: 2;
         }
@@ -171,28 +171,28 @@
             gap: 7px;
         }
         .range-field label {
-            color: #7a344c;
+            color: #334e75;
             font-size: 13px;
             font-weight: 800;
         }
         .range-field input {
             background: #fff;
-            border: 1px solid #ebc5d2;
+            border: 1px solid #c3d4ed;
             border-radius: 8px;
-            color: #3f2730;
+            color: #1e293b;
             font-size: 15px;
             min-height: 44px;
             padding: 10px 13px;
             width: 100%;
         }
         .range-field input:focus {
-            border-color: #c9577d;
-            box-shadow: 0 0 0 3px rgba(201, 87, 125, .16);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
             outline: none;
         }
         .button {
             align-items: center;
-            background: #be476f;
+            background: #2563eb;
             border: 0;
             border-radius: 8px;
             color: #fff;
@@ -209,13 +209,13 @@
             padding: 0 18px 18px;
         }
         .forecast-card {
-            background: #fff8fa;
-            border: 1px solid #f0d3dc;
+            background: #f5f8ff;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
             padding: 14px;
         }
         .forecast-card span {
-            color: #8b6672;
+            color: #64748b;
             display: block;
             font-size: 12px;
             font-weight: 800;
@@ -223,7 +223,7 @@
             text-transform: uppercase;
         }
         .forecast-card strong {
-            color: #542033;
+            color: #172f50;
             font-size: 22px;
         }
         .day-events {
@@ -231,7 +231,7 @@
             gap: 6px;
         }
         .day-event {
-            color: #704252;
+            color: #475569;
             font-size: 13px;
             line-height: 1.4;
         }
@@ -262,7 +262,7 @@
         }
         .event {
             align-items: center;
-            border: 1px solid #f5d9e2;
+            border: 1px solid #dce7f7;
             border-radius: 8px;
             display: grid;
             gap: 10px;
@@ -276,7 +276,7 @@
         .event-change.positive { color: #247857; }
         .event-change.negative { color: #b4233f; }
         .event-stock {
-            color: #542033;
+            color: #172f50;
             font-weight: 900;
             text-align: right;
         }
@@ -286,29 +286,29 @@
             width: 100%;
         }
         th, td {
-            border-bottom: 1px solid #f7e3e9;
+            border-bottom: 1px solid #e7eef8;
             padding: 15px;
             text-align: left;
             vertical-align: middle;
         }
         th {
-            background: #fff0f4;
-            color: #81304c;
+            background: #eff6ff;
+            color: #1e3a5f;
             font-size: 13px;
             letter-spacing: .02em;
             text-transform: uppercase;
         }
         .table-shell { overflow-x: auto; }
         .code {
-            color: #a13b60;
+            color: #1d4ed8;
             font-weight: 900;
         }
         .name {
-            color: #3f2730;
+            color: #1e293b;
             font-weight: 800;
         }
         .muted {
-            color: #8b6672;
+            color: #64748b;
             font-size: 13px;
         }
         .status-badge {
@@ -318,7 +318,7 @@
             font-weight: 900;
             padding: 7px 11px;
         }
-        .status-chua_cho_size { background: #f3eef1; color: #6b5560; }
+        .status-chua_cho_size { background: #f1f5f9; color: #64748b; }
         .status-da_in_file { background: #eaf2fd; color: #2f5fa6; }
         .status-da_in_giay { background: #eef0fb; color: #45489c; }
         .status-dang_soan { background: #f6ecfb; color: #7d3aa3; }
@@ -327,7 +327,7 @@
         .status-da_tra_ve { background: #ffeede; color: #a85a18; }
         .status-thanh_cong { background: #e8f7ef; color: #247857; }
         .empty {
-            color: #8b6672;
+            color: #64748b;
             padding: 34px;
             text-align: center;
         }
@@ -355,11 +355,11 @@
         }
         .page-link {
             background: #fff;
-            border: 1px solid #f0d3dc;
-            color: #8b2f4d;
+            border: 1px solid #d8e4f5;
+            color: #1e40af;
         }
         .page-current {
-            background: #be476f;
+            background: #2563eb;
             color: #fff;
         }
         @media (max-width: 900px) {

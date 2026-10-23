@@ -8,8 +8,8 @@
     <style>
         * { box-sizing: border-box; }
         body {
-            background: #fff7f9;
-            color: #3f2730;
+            background: #f5f8ff;
+            color: #1e293b;
             font-family: "Segoe UI", Arial, sans-serif;
             margin: 0;
             min-height: 100vh;
@@ -18,14 +18,14 @@
         .topbar {
             align-items: center;
             background: #fff;
-            border-bottom: 1px solid #f5d9e2;
+            border-bottom: 1px solid #dce7f7;
             display: flex;
             gap: 20px;
             justify-content: space-between;
             padding: 18px clamp(18px, 5vw, 56px);
         }
         .brand {
-            color: #b63f68;
+            color: #1d4ed8;
             font-family: Georgia, "Times New Roman", serif;
             font-size: 28px;
             font-weight: 700;
@@ -39,32 +39,32 @@
         .nav a,
         .logout {
             background: #fff;
-            border: 1px solid #e8b8c8;
+            border: 1px solid #b9cfee;
             border-radius: 999px;
-            color: #8b2f4d;
+            color: #1e40af;
             cursor: pointer;
             font-weight: 700;
             padding: 10px 16px;
         }
         .nav a.active {
-            background: #be476f;
+            background: #2563eb;
             color: #fff;
         }
         .content { padding: 28px clamp(18px, 5vw, 56px) 56px; }
         .status {
             background: #fff;
-            border: 1px solid #f0c7d3;
+            border: 1px solid #cbdcf5;
             border-left: 5px solid #2f9e6f;
             border-radius: 8px;
             color: #236c4f;
             margin-bottom: 18px;
             padding: 12px 14px;
         }
-        .status.is-off { border-left-color: #8b6672; color: #704252; }
+        .status.is-off { border-left-color: #64748b; color: #475569; }
         .off-badge {
-            background: #efe7ea;
+            background: #e8eef5;
             border-radius: 999px;
-            color: #6b5560;
+            color: #64748b;
             font-family: "Segoe UI", Arial, sans-serif;
             font-size: 13px;
             font-weight: 900;
@@ -84,20 +84,20 @@
         .metric,
         .table-shell {
             background: #fff;
-            border: 1px solid #f0d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
-            box-shadow: 0 18px 45px rgba(117, 44, 69, .08);
+            box-shadow: 0 18px 45px rgba(30, 64, 175, .08);
         }
         .metric { padding: 18px; }
         .metric-label {
-            color: #8b6672;
+            color: #64748b;
             font-size: 13px;
             font-weight: 800;
             margin-bottom: 8px;
             text-transform: uppercase;
         }
         .metric-value {
-            color: #542033;
+            color: #172f50;
             font-size: 24px;
             font-weight: 900;
         }
@@ -109,14 +109,14 @@
         }
         th,
         td {
-            border-bottom: 1px solid #f7e3e9;
+            border-bottom: 1px solid #e7eef8;
             padding: 15px;
             text-align: left;
             vertical-align: middle;
         }
         th {
-            background: #fff0f4;
-            color: #81304c;
+            background: #eff6ff;
+            color: #1e3a5f;
             font-size: 13px;
             letter-spacing: .02em;
             text-transform: uppercase;
@@ -127,13 +127,13 @@
             gap: 6px;
         }
         tbody tr.clickable { cursor: pointer; }
-        tbody tr.clickable:hover { background: #fff9fb; }
+        tbody tr.clickable:hover { background: #f8fbff; }
         .thumb {
             align-items: center;
-            background: #f9e5ec;
-            border: 1px solid #f1cbd7;
+            background: #e5efff;
+            border: 1px solid #cbdcf5;
             border-radius: 8px;
-            color: #a64465;
+            color: #1d4ed8;
             display: flex;
             font-size: 12px;
             font-weight: 800;
@@ -160,15 +160,15 @@
             white-space: nowrap;
         }
         .code {
-            color: #a13b60;
+            color: #1d4ed8;
             font-weight: 900;
         }
         .name {
-            color: #3f2730;
+            color: #1e293b;
             font-weight: 800;
         }
         .muted {
-            color: #8b6672;
+            color: #64748b;
             font-size: 13px;
         }
         .row-actions {
@@ -191,9 +191,9 @@
             padding: 8px 10px;
         }
         .link-action {
-            background: #fff4f7;
-            border: 1px solid #f1cbd7;
-            color: #8b2f4d;
+            background: #eff6ff;
+            border: 1px solid #cbdcf5;
+            color: #1e40af;
         }
         .danger {
             background: #fff;
@@ -201,7 +201,7 @@
             color: #b4233f;
         }
         .empty {
-            color: #8b6672;
+            color: #64748b;
             padding: 36px;
             text-align: center;
         }
@@ -229,11 +229,11 @@
         }
         .page-link {
             background: #fff;
-            border: 1px solid #f0d3dc;
-            color: #8b2f4d;
+            border: 1px solid #d8e4f5;
+            color: #1e40af;
         }
         .page-current {
-            background: #be476f;
+            background: #2563eb;
             color: #fff;
         }
         @media (max-width: 760px) {

@@ -8,8 +8,8 @@
     <style>
         * { box-sizing: border-box; }
         body {
-            background: #fff7f9;
-            color: #3f2730;
+            background: #f5f8ff;
+            color: #1e293b;
             font-family: "Segoe UI", Arial, sans-serif;
             margin: 0;
             min-height: 100vh;
@@ -18,14 +18,14 @@
         .topbar {
             align-items: center;
             background: #fff;
-            border-bottom: 1px solid #f5d9e2;
+            border-bottom: 1px solid #dce7f7;
             display: flex;
             gap: 20px;
             justify-content: space-between;
             padding: 18px clamp(18px, 5vw, 56px);
         }
         .brand {
-            color: #b63f68;
+            color: #1d4ed8;
             font-family: Georgia, "Times New Roman", serif;
             font-size: 28px;
             font-weight: 700;
@@ -39,15 +39,15 @@
         .nav a,
         .logout {
             background: #fff;
-            border: 1px solid #e8b8c8;
+            border: 1px solid #b9cfee;
             border-radius: 999px;
-            color: #8b2f4d;
+            color: #1e40af;
             cursor: pointer;
             font-weight: 700;
             padding: 10px 16px;
         }
         .nav a.active {
-            background: #be476f;
+            background: #2563eb;
             color: #fff;
         }
         .content { padding: 28px clamp(18px, 5vw, 56px) 56px; }
@@ -59,26 +59,26 @@
             margin-bottom: 18px;
         }
         .search { display: grid; gap: 8px; max-width: 560px; }
-        label { color: #7a344c; font-size: 13px; font-weight: 700; }
+        label { color: #334e75; font-size: 13px; font-weight: 700; }
         input {
             background: #fff;
-            border: 1px solid #ebc5d2;
+            border: 1px solid #c3d4ed;
             border-radius: 8px;
-            color: #3f2730;
+            color: #1e293b;
             font-size: 15px;
             min-height: 44px;
             padding: 10px 13px;
             width: 100%;
         }
         input:focus {
-            border-color: #c9577d;
-            box-shadow: 0 0 0 3px rgba(201, 87, 125, .16);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
             outline: none;
         }
         .actions { display: flex; flex-wrap: wrap; gap: 10px; }
         .button {
             align-items: center;
-            background: #be476f;
+            background: #2563eb;
             border: 0;
             border-radius: 8px;
             color: #fff;
@@ -88,42 +88,42 @@
             min-height: 44px;
             padding: 10px 16px;
         }
-        .button.secondary { background: #fff; border: 1px solid #ebc5d2; color: #8b2f4d; }
+        .button.secondary { background: #fff; border: 1px solid #c3d4ed; color: #1e40af; }
         .status {
             background: #fff;
-            border: 1px solid #f0c7d3;
-            border-left: 5px solid #c9577d;
+            border: 1px solid #cbdcf5;
+            border-left: 5px solid #3b82f6;
             border-radius: 8px;
-            color: #693143;
+            color: #334e75;
             margin-bottom: 18px;
             padding: 12px 14px;
         }
         .status.error { border-left-color: #b4233f; color: #b4233f; }
         .table-shell {
             background: #fff;
-            border: 1px solid #f0d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
-            box-shadow: 0 18px 45px rgba(117, 44, 69, .08);
+            box-shadow: 0 18px 45px rgba(30, 64, 175, .08);
             overflow-x: auto;
         }
         table { border-collapse: collapse; min-width: 760px; width: 100%; }
         th, td {
-            border-bottom: 1px solid #f7e3e9;
+            border-bottom: 1px solid #e7eef8;
             padding: 15px;
             text-align: left;
             vertical-align: middle;
         }
         th {
-            background: #fff0f4;
-            color: #81304c;
+            background: #eff6ff;
+            color: #1e3a5f;
             font-size: 13px;
             letter-spacing: .02em;
             text-transform: uppercase;
         }
-        tbody tr:hover { background: #fff9fb; }
-        .code { color: #a13b60; font-weight: 800; }
-        .name { color: #3f2730; font-weight: 800; }
-        .muted { color: #8b6672; font-size: 13px; }
+        tbody tr:hover { background: #f8fbff; }
+        .code { color: #1d4ed8; font-weight: 800; }
+        .name { color: #1e293b; font-weight: 800; }
+        .muted { color: #64748b; font-size: 13px; }
         .role-badge {
             border-radius: 999px;
             display: inline-flex;
@@ -131,7 +131,7 @@
             font-weight: 900;
             padding: 7px 11px;
         }
-        .role-admin { background: #fdeaf0; color: #b1325c; }
+        .role-admin { background: #e5efff; color: #1e40af; }
         .role-cong_tac_vien { background: #eaf2fd; color: #2f5fa6; }
         .you-tag {
             background: #fff4d6;
@@ -150,10 +150,10 @@
             font-weight: 800;
             padding: 8px 10px;
         }
-        .link-action { background: #fff4f7; border: 1px solid #f1cbd7; color: #8b2f4d; }
+        .link-action { background: #eff6ff; border: 1px solid #cbdcf5; color: #1e40af; }
         .danger { background: #fff; border: 1px solid #f0b7c1; color: #b4233f; }
         .danger:disabled { cursor: not-allowed; opacity: .45; }
-        .empty { color: #8b6672; padding: 36px; text-align: center; }
+        .empty { color: #64748b; padding: 36px; text-align: center; }
         .pagination {
             align-items: center;
             display: flex;
@@ -171,8 +171,8 @@
             padding: 10px 12px;
             place-content: center;
         }
-        .page-link { background: #fff; border: 1px solid #f0d3dc; color: #8b2f4d; }
-        .page-current { background: #be476f; color: #fff; }
+        .page-link { background: #fff; border: 1px solid #d8e4f5; color: #1e40af; }
+        .page-current { background: #2563eb; color: #fff; }
         @media (max-width: 760px) {
             .topbar, .toolbar { align-items: stretch; grid-template-columns: 1fr; }
             .topbar { flex-direction: column; }

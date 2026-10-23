@@ -8,8 +8,8 @@
     <style>
         * { box-sizing: border-box; }
         body {
-            background: #fff7f9;
-            color: #3f2730;
+            background: #f5f8ff;
+            color: #1e293b;
             font-family: "Segoe UI", Arial, sans-serif;
             margin: 0;
             min-height: 100vh;
@@ -17,12 +17,12 @@
         a { color: inherit; text-decoration: none; }
         .content { flex: 1; min-width: 0; padding: 28px clamp(18px, 4vw, 48px) 56px; }
         h1 {
-            color: #6f253f;
+            color: #1e3a5f;
             font-family: Georgia, "Times New Roman", serif;
             font-size: clamp(28px, 4vw, 40px);
             margin: 0 0 6px;
         }
-        .sub { color: #704252; margin: 0 0 20px; }
+        .sub { color: #475569; margin: 0 0 20px; }
         .toolbar {
             align-items: end;
             display: flex;
@@ -31,20 +31,20 @@
             margin-bottom: 14px;
         }
         .field { display: grid; gap: 6px; }
-        label { color: #7a344c; font-size: 13px; font-weight: 700; }
+        label { color: #334e75; font-size: 13px; font-weight: 700; }
         input {
             background: #fff;
-            border: 1px solid #ebc5d2;
+            border: 1px solid #c3d4ed;
             border-radius: 8px;
-            color: #3f2730;
+            color: #1e293b;
             font-size: 15px;
             min-height: 44px;
             padding: 10px 13px;
         }
-        input:focus { border-color: #c9577d; box-shadow: 0 0 0 3px rgba(201, 87, 125, .16); outline: none; }
+        input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, .16); outline: none; }
         .button {
             align-items: center;
-            background: #be476f;
+            background: #2563eb;
             border: 0;
             border-radius: 8px;
             color: #fff;
@@ -54,8 +54,8 @@
             min-height: 44px;
             padding: 10px 16px;
         }
-        .button.secondary { background: #fff; border: 1px solid #ebc5d2; color: #8b2f4d; }
-        .legend { color: #704252; display: flex; flex-wrap: wrap; font-size: 13px; gap: 16px; margin-bottom: 14px; }
+        .button.secondary { background: #fff; border: 1px solid #c3d4ed; color: #1e40af; }
+        .legend { color: #475569; display: flex; flex-wrap: wrap; font-size: 13px; gap: 16px; margin-bottom: 14px; }
         .legend span { align-items: center; display: inline-flex; gap: 6px; }
         .dot { border-radius: 3px; display: inline-block; height: 14px; width: 14px; }
         .dot.ok { background: #e8f7ef; border: 1px solid #9bd9ba; }
@@ -63,22 +63,22 @@
         .dot.out { background: #ffe1e1; border: 1px solid #eaa; }
         .table-shell {
             background: #fff;
-            border: 1px solid #f0d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
-            box-shadow: 0 18px 45px rgba(117, 44, 69, .08);
+            box-shadow: 0 18px 45px rgba(30, 64, 175, .08);
             overflow-x: auto;
         }
         table { border-collapse: separate; border-spacing: 0; width: 100%; }
-        th, td { border-bottom: 1px solid #f7e3e9; border-right: 1px solid #f7e3e9; padding: 8px 10px; text-align: center; white-space: nowrap; }
+        th, td { border-bottom: 1px solid #e7eef8; border-right: 1px solid #e7eef8; padding: 8px 10px; text-align: center; white-space: nowrap; }
         thead th {
-            background: #fff0f4;
-            color: #81304c;
+            background: #eff6ff;
+            color: #1e3a5f;
             font-size: 12px;
             position: sticky;
             top: 0;
             z-index: 2;
         }
-        thead th.today { background: #ffd9e6; }
+        thead th.today { background: #dbeafe; }
         th.prod, td.prod {
             background: #fff;
             left: 0;
@@ -87,7 +87,7 @@
             text-align: left;
             z-index: 1;
         }
-        thead th.prod { z-index: 3; background: #fff0f4; }
+        thead th.prod { z-index: 3; background: #eff6ff; }
         /* Hang da ve kho nhung chua kiem: da cong vao ton, chi nhac kiem. */
         .pending-check {
             background: #fff7d6;
@@ -100,22 +100,22 @@
             padding: 2px 8px;
             white-space: nowrap;
         }
-        .code { color: #a13b60; font-weight: 800; }
-        .muted { color: #8b6672; font-size: 12px; }
+        .code { color: #1d4ed8; font-weight: 800; }
+        .muted { color: #64748b; font-size: 12px; }
         .dow { color: #a06; font-size: 11px; font-weight: 700; }
         .cell { font-weight: 800; }
         .cell-ok { background: #e8f7ef; color: #1f7d55; }
         .cell-low { background: #fff7d6; color: #8a5a00; }
         .cell-out { background: #ffe1e1; color: #b4233f; }
-        td.today, thead th.today { box-shadow: inset 2px 0 0 #be476f, inset -2px 0 0 #be476f; }
+        td.today, thead th.today { box-shadow: inset 2px 0 0 #2563eb, inset -2px 0 0 #2563eb; }
         .prod-cell { align-items: center; display: flex; gap: 10px; }
         .prod-info { min-width: 0; }
         .thumb {
             align-items: center;
-            background: #f9e5ec;
-            border: 1px solid #f1cbd7;
+            background: #e5efff;
+            border: 1px solid #cbdcf5;
             border-radius: 8px;
-            color: #a64465;
+            color: #1d4ed8;
             cursor: default;
             display: flex;
             flex: 0 0 auto;
@@ -130,11 +130,11 @@
             width: 52px;
         }
         .thumb.has-image { cursor: zoom-in; }
-        .thumb.has-image:focus { border-color: #c9577d; outline: none; box-shadow: 0 0 0 3px rgba(201, 87, 125, .16); }
+        .thumb.has-image:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, .16); }
         .thumb img { height: 100%; object-fit: cover; width: 100%; }
         .image-lightbox {
             align-items: center;
-            background: rgba(63, 39, 48, .72);
+            background: rgba(15, 23, 42, .72);
             cursor: zoom-out;
             display: none;
             inset: 0;
@@ -153,7 +153,7 @@
             max-width: min(88vw, 760px);
             object-fit: contain;
         }
-        .empty { color: #8b6672; padding: 36px; text-align: center; }
+        .empty { color: #64748b; padding: 36px; text-align: center; }
     </style>
     @include('partials.compact')
 </head>
@@ -185,7 +185,7 @@
         <span><i class="dot ok"></i> Còn nhiều</span>
         <span><i class="dot low"></i> Còn ít (1–2)</span>
         <span><i class="dot out"></i> Hết / vượt (≤ 0)</span>
-        <span class="muted">Tối đa 60 ngày mỗi lần xem. Cột viền hồng là hôm nay.</span>
+        <span class="muted">Tối đa 60 ngày mỗi lần xem. Cột viền xanh dương là hôm nay.</span>
     </div>
 
     @php $todayStr = now()->toDateString(); $dow = ['CN','T2','T3','T4','T5','T6','T7']; @endphp

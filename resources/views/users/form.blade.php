@@ -8,8 +8,8 @@
     <style>
         * { box-sizing: border-box; }
         body {
-            background: #fff7f9;
-            color: #3f2730;
+            background: #f5f8ff;
+            color: #1e293b;
             font-family: "Segoe UI", Arial, sans-serif;
             margin: 0;
             min-height: 100vh;
@@ -18,14 +18,14 @@
         .topbar {
             align-items: center;
             background: #fff;
-            border-bottom: 1px solid #f5d9e2;
+            border-bottom: 1px solid #dce7f7;
             display: flex;
             gap: 20px;
             justify-content: space-between;
             padding: 18px clamp(18px, 5vw, 56px);
         }
         .brand {
-            color: #b63f68;
+            color: #1d4ed8;
             font-family: Georgia, "Times New Roman", serif;
             font-size: 28px;
             font-weight: 700;
@@ -33,18 +33,18 @@
         .content { padding: 36px clamp(18px, 5vw, 56px) 56px; }
         .heading { margin-bottom: 22px; }
         .heading h1 {
-            color: #6f253f;
+            color: #1e3a5f;
             font-family: Georgia, "Times New Roman", serif;
             font-size: clamp(32px, 4vw, 48px);
             line-height: 1.08;
             margin: 0 0 8px;
         }
-        .heading p { color: #704252; margin: 0; }
+        .heading p { color: #475569; margin: 0; }
         .form-shell {
             background: #fff;
-            border: 1px solid #f0d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
-            box-shadow: 0 18px 45px rgba(117, 44, 69, .08);
+            box-shadow: 0 18px 45px rgba(30, 64, 175, .08);
             display: grid;
             gap: 16px;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -53,21 +53,21 @@
         }
         .field { display: grid; gap: 7px; }
         .field.full { grid-column: 1 / -1; }
-        label { color: #7a344c; font-size: 13px; font-weight: 800; }
-        .hint { color: #8b6672; font-size: 12px; font-weight: 600; }
+        label { color: #334e75; font-size: 13px; font-weight: 800; }
+        .hint { color: #64748b; font-size: 12px; font-weight: 600; }
         input, select {
             background: #fff;
-            border: 1px solid #ebc5d2;
+            border: 1px solid #c3d4ed;
             border-radius: 8px;
-            color: #3f2730;
+            color: #1e293b;
             font-size: 15px;
             min-height: 44px;
             padding: 10px 13px;
             width: 100%;
         }
         input:focus, select:focus {
-            border-color: #c9577d;
-            box-shadow: 0 0 0 3px rgba(201, 87, 125, .16);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
             outline: none;
         }
         .error { color: #b4233f; font-size: 13px; font-weight: 700; }
@@ -81,7 +81,7 @@
         }
         .button {
             align-items: center;
-            background: #be476f;
+            background: #2563eb;
             border: 0;
             border-radius: 8px;
             color: #fff;
@@ -91,7 +91,7 @@
             min-height: 44px;
             padding: 10px 16px;
         }
-        .button.secondary { background: #fff; border: 1px solid #ebc5d2; color: #8b2f4d; }
+        .button.secondary { background: #fff; border: 1px solid #c3d4ed; color: #1e40af; }
         @media (max-width: 760px) {
             .topbar, .form-shell { align-items: stretch; grid-template-columns: 1fr; }
             .topbar { flex-direction: column; }

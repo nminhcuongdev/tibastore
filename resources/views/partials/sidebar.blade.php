@@ -5,7 +5,7 @@
     .layout .page { flex: 1; min-width: 0; }
     .app-sidebar {
         background: #fff;
-        border-right: 1px solid #f5d9e2;
+        border-right: 1px solid #dce7f7;
         display: flex;
         flex-direction: column;
         flex-shrink: 0;
@@ -25,9 +25,9 @@
     .sidebar-toggle {
         align-items: center;
         background: #fff;
-        border: 1px solid #e8b8c8;
+        border: 1px solid #b9cfee;
         border-radius: 10px;
-        color: #8b2f4d;
+        color: #1e40af;
         cursor: pointer;
         display: flex;
         font-size: 16px;
@@ -39,7 +39,7 @@
         padding: 8px;
         width: 100%;
     }
-    .sidebar-toggle:hover { background: #fff0f4; }
+    .sidebar-toggle:hover { background: #eff6ff; }
     /* Nhan chu an di khi thu gon, chi con icon o giua. */
     .app-sidebar .ico {
         display: inline-block;
@@ -53,7 +53,7 @@
     .app-sidebar.is-collapsed .logout { justify-content: center; padding-left: 8px; padding-right: 8px; }
     .app-sidebar.is-collapsed .brand { font-size: 20px; padding: 4px 0 16px; text-align: center; }
     .app-sidebar .brand {
-        color: #b63f68;
+        color: #1d4ed8;
         font-family: Georgia, "Times New Roman", serif;
         font-size: 24px;
         font-weight: 700;
@@ -64,7 +64,7 @@
     .app-sidebar .side-nav a {
         align-items: center;
         border-radius: 10px;
-        color: #8b2f4d;
+        color: #1e40af;
         display: flex;
         font-weight: 700;
         gap: 10px;
@@ -72,15 +72,15 @@
         text-decoration: none;
         white-space: nowrap;
     }
-    .app-sidebar .side-nav a:hover { background: #fff0f4; }
-    .app-sidebar .side-nav a.active { background: #be476f; color: #fff; }
+    .app-sidebar .side-nav a:hover { background: #eff6ff; }
+    .app-sidebar .side-nav a.active { background: #2563eb; color: #fff; }
     .app-sidebar .spacer { flex: 1; min-height: 12px; }
     .app-sidebar .logout {
         align-items: center;
         background: #fff;
-        border: 1px solid #e8b8c8;
+        border: 1px solid #b9cfee;
         border-radius: 10px;
-        color: #8b2f4d;
+        color: #1e40af;
         cursor: pointer;
         display: flex;
         font-weight: 700;
@@ -90,7 +90,7 @@
         white-space: nowrap;
         width: 100%;
     }
-    .app-sidebar .logout:hover { background: #fff0f4; }
+    .app-sidebar .logout:hover { background: #eff6ff; }
     @media print {
         .app-sidebar { display: none !important; }
         .layout { display: block; }

@@ -1,7 +1,7 @@
 <style>
     .codes-modal {
         align-items: center;
-        background: rgba(63, 39, 48, .72);
+        background: rgba(15, 23, 42, .72);
         display: none;
         inset: 0;
         justify-content: center;
@@ -12,7 +12,7 @@
     .codes-modal.is-open { display: flex; }
     .codes-modal__box {
         background: #fff;
-        border: 1px solid #f0d3dc;
+        border: 1px solid #d8e4f5;
         border-radius: 12px;
         box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
         max-height: 88vh;
@@ -22,32 +22,32 @@
         width: 100%;
     }
     .codes-modal__title {
-        color: #6f253f;
+        color: #1e3a5f;
         font-family: Georgia, "Times New Roman", serif;
         font-size: 24px;
         margin: 0 0 8px;
     }
     .codes-modal__hint {
-        color: #8b6672;
+        color: #64748b;
         font-size: 13px;
         line-height: 1.5;
         margin: 0 0 16px;
     }
     .codes-modal__table-shell {
-        border: 1px solid #f2d3dc;
+        border: 1px solid #d8e4f5;
         border-radius: 8px;
         overflow: hidden;
     }
     .codes-modal__table { border-collapse: collapse; width: 100%; }
     .codes-modal__table th,
     .codes-modal__table td {
-        border-bottom: 1px solid #f7e3e9;
+        border-bottom: 1px solid #e7eef8;
         padding: 10px 12px;
         text-align: left;
     }
     .codes-modal__table thead th {
-        background: #fff0f4;
-        color: #81304c;
+        background: #eff6ff;
+        color: #1e3a5f;
         font-size: 12px;
         letter-spacing: .02em;
         text-transform: uppercase;
@@ -56,18 +56,18 @@
     .codes-modal__table th.qty { text-align: right; }
     .codes-modal__table tbody tr:last-child td { border-bottom: 0; }
     .codes-modal__table tfoot td {
-        background: #fffafb;
-        border-top: 1px solid #f2d3dc;
+        background: #f8fbff;
+        border-top: 1px solid #d8e4f5;
         font-weight: 800;
     }
-    .codes-modal__code { color: #a13b60; font-weight: 800; }
+    .codes-modal__code { color: #1d4ed8; font-weight: 800; }
     .codes-modal__table td.thumb-cell { width: 64px; }
     .codes-thumb {
         align-items: center;
-        background: #f9e5ec;
-        border: 1px solid #f1cbd7;
+        background: #e5efff;
+        border: 1px solid #cbdcf5;
         border-radius: 8px;
-        color: #a64465;
+        color: #1d4ed8;
         cursor: default;
         display: flex;
         font-family: inherit;
@@ -85,8 +85,8 @@
     .codes-thumb img { height: 100%; object-fit: cover; transition: transform .18s ease; width: 100%; }
     .codes-thumb.has-image:hover,
     .codes-thumb.has-image:focus {
-        border-color: #c9577d;
-        box-shadow: 0 10px 24px rgba(117, 44, 69, .18);
+        border-color: #3b82f6;
+        box-shadow: 0 10px 24px rgba(30, 64, 175, .18);
         outline: none;
         overflow: visible;
         z-index: 20;
@@ -98,7 +98,7 @@
     }
     .codes-lightbox {
         align-items: center;
-        background: rgba(63, 39, 48, .82);
+        background: rgba(15, 23, 42, .82);
         cursor: zoom-out;
         display: none;
         inset: 0;

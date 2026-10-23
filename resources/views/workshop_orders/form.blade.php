@@ -8,8 +8,8 @@
     <style>
         * { box-sizing: border-box; }
         body {
-            background: #fff7f9;
-            color: #3f2730;
+            background: #f5f8ff;
+            color: #1e293b;
             font-family: "Segoe UI", Arial, sans-serif;
             margin: 0;
             min-height: 100vh;
@@ -18,18 +18,18 @@
         .content { flex: 1; min-width: 0; padding: 32px clamp(18px, 4vw, 48px) 56px; }
         .heading { margin-bottom: 20px; }
         .heading h1 {
-            color: #6f253f;
+            color: #1e3a5f;
             font-family: Georgia, "Times New Roman", serif;
             font-size: clamp(26px, 3.4vw, 38px);
             line-height: 1.1;
             margin: 0 0 8px;
         }
-        .heading p { color: #704252; margin: 0; }
+        .heading p { color: #475569; margin: 0; }
         .form-shell {
             background: #fff;
-            border: 1px solid #f0d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
-            box-shadow: 0 18px 45px rgba(117, 44, 69, .08);
+            box-shadow: 0 18px 45px rgba(30, 64, 175, .08);
             display: grid;
             gap: 16px;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -38,13 +38,13 @@
         }
         .field { display: grid; gap: 7px; }
         .field.full { grid-column: 1 / -1; }
-        label { color: #7a344c; font-size: 13px; font-weight: 800; }
-        .hint { color: #8b6672; font-size: 12px; font-weight: 600; }
+        label { color: #334e75; font-size: 13px; font-weight: 800; }
+        .hint { color: #64748b; font-size: 12px; font-weight: 600; }
         input, select, textarea {
             background: #fff;
-            border: 1px solid #ebc5d2;
+            border: 1px solid #c3d4ed;
             border-radius: 8px;
-            color: #3f2730;
+            color: #1e293b;
             font-family: inherit;
             font-size: 15px;
             min-height: 44px;
@@ -53,8 +53,8 @@
         }
         textarea { min-height: 84px; resize: vertical; }
         input:focus, select:focus, textarea:focus {
-            border-color: #c9577d;
-            box-shadow: 0 0 0 3px rgba(201, 87, 125, .16);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .16);
             outline: none;
         }
         .error { color: #b4233f; font-size: 13px; font-weight: 700; }
@@ -63,9 +63,9 @@
         .picker { min-width: 0; position: relative; }
         .suggestions {
             background: #fff;
-            border: 1px solid #f0d3dc;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
-            box-shadow: 0 14px 36px rgba(117, 44, 69, .14);
+            box-shadow: 0 14px 36px rgba(30, 64, 175, .14);
             display: none;
             left: 0;
             margin-top: 6px;
@@ -80,7 +80,7 @@
             align-items: center;
             background: transparent;
             border: 0;
-            border-bottom: 1px solid #f7e3e9;
+            border-bottom: 1px solid #e7eef8;
             cursor: pointer;
             display: flex;
             gap: 12px;
@@ -88,13 +88,13 @@
             text-align: left;
             width: 100%;
         }
-        .suggestion:hover, .suggestion.is-active { background: #fff4f7; }
+        .suggestion:hover, .suggestion.is-active { background: #eff6ff; }
         .suggestion .s-thumb {
             align-items: center;
-            background: #f9e5ec;
-            border: 1px solid #f1cbd7;
+            background: #e5efff;
+            border: 1px solid #cbdcf5;
             border-radius: 6px;
-            color: #a64465;
+            color: #1d4ed8;
             display: flex;
             flex: 0 0 auto;
             font-size: 9px;
@@ -106,17 +106,17 @@
             width: 52px;
         }
         .suggestion .s-thumb img { height: 100%; object-fit: cover; width: 100%; }
-        .suggestion .s-code { color: #a13b60; font-weight: 900; }
-        .suggestion .s-name { color: #8b6672; font-size: 13px; }
-        .no-match { color: #8b6672; font-size: 13px; padding: 14px; }
+        .suggestion .s-code { color: #1d4ed8; font-weight: 900; }
+        .suggestion .s-name { color: #64748b; font-size: 13px; }
+        .no-match { color: #64748b; font-size: 13px; padding: 14px; }
 
         /* ===== Preview mã đã chọn ===== */
         .preview {
             align-items: center;
-            background: #fff4f7;
-            border: 1px solid #f2d3dc;
+            background: #eff6ff;
+            border: 1px solid #d8e4f5;
             border-radius: 8px;
-            color: #704252;
+            color: #475569;
             display: none;
             gap: 14px;
             grid-column: 1 / -1;
@@ -125,10 +125,10 @@
         .preview.is-on { display: flex; }
         .preview .p-thumb {
             align-items: center;
-            background: #f9e5ec;
-            border: 1px solid #f1cbd7;
+            background: #e5efff;
+            border: 1px solid #cbdcf5;
             border-radius: 8px;
-            color: #a64465;
+            color: #1d4ed8;
             cursor: zoom-in;
             display: flex;
             flex: 0 0 auto;
@@ -142,13 +142,13 @@
             width: 104px;
         }
         .preview .p-thumb img { height: 100%; object-fit: cover; width: 100%; }
-        .preview .p-code { color: #a13b60; font-size: 17px; font-weight: 900; }
+        .preview .p-code { color: #1d4ed8; font-size: 17px; font-weight: 900; }
         .preview .p-name { font-weight: 700; }
         .preview .p-warn { color: #b4233f; font-weight: 800; }
 
         .image-lightbox {
             align-items: center;
-            background: rgba(63, 39, 48, .72);
+            background: rgba(15, 23, 42, .72);
             cursor: zoom-out;
             display: none;
             inset: 0;
@@ -178,7 +178,7 @@
         }
         .button {
             align-items: center;
-            background: #be476f;
+            background: #2563eb;
             border: 0;
             border-radius: 8px;
             color: #fff;
@@ -188,10 +188,10 @@
             min-height: 44px;
             padding: 10px 16px;
         }
-        .button.secondary { background: #fff; border: 1px solid #ebc5d2; color: #8b2f4d; }
+        .button.secondary { background: #fff; border: 1px solid #c3d4ed; color: #1e40af; }
         .flash {
             background: #fff;
-            border: 1px solid #f0c7d3;
+            border: 1px solid #cbdcf5;
             border-left: 5px solid #b4233f;
             border-radius: 8px;
             color: #b4233f;
