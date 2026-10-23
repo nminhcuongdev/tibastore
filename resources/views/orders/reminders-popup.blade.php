@@ -143,7 +143,7 @@
                 @endif
                 @foreach ($sameDayReminders ?? [] as $reminder)
                     <article class="reminder-item">
-                        <div class="reminder-title" style="color:#b4233f">Cảnh báo thiếu hàng nếu đồ chưa về kịp</div>
+                        <div class="reminder-title" style="color:#b4233f">{{ ($reminder['size_pending'] ?? false) ? 'Cần xác nhận size và đòi đồ về sớm' : 'Cảnh báo thiếu hàng nếu đồ chưa về kịp' }}</div>
                         <div class="reminder-name">
                             <a href="{{ route('orders.show', $reminder['order']) }}">{{ $reminder['order']->order_name }}</a>
                             — lấy {{ $reminder['order']->pickup_date->format('d/m/Y') }}
@@ -157,12 +157,19 @@
                                 @else
                                     <span class="reminder-product-photo reminder-product-empty">Chưa có ảnh</span>
                                 @endif
-                                <div>Mã <strong>{{ $reminder['product']?->code }}</strong> — size {{ $reminder['product']?->size }}: cần đòi về sớm <strong>{{ number_format($reminder['shortage']) }}</strong> cái.</div>
+                                <div>
+                                    Mã <strong>{{ $reminder['product']?->code }}</strong>
+                                    @if ($reminder['size_pending'] ?? false)
+                                        — có dòng chưa chốt size. Đơn mới cần {{ number_format($reminder['needed_quantity']) }} cái theo mã; cần xác nhận size và đòi đồ về sớm. Chưa xác định số thiếu theo từng size.
+                                    @else
+                                        — size {{ $reminder['product']?->size }}: cần đòi về sớm <strong>{{ number_format($reminder['shortage']) }}</strong> cái.
+                                    @endif
+                                </div>
                             </div>
                             @foreach ($reminder['returns'] as $returnItem)
                                 <div>
                                     Đòi đồ từ <a href="{{ route('orders.show', $returnItem->order) }}">{{ $returnItem->order->order_name }}</a>
-                                    — {{ number_format($returnItem->quantity) }} cái, trả {{ $returnItem->order->return_date->format('d/m/Y') }}.
+                                    — {{ number_format($returnItem->quantity) }} cái, size {{ $returnItem->displaySize() }}, trả {{ $returnItem->order->return_date->format('d/m/Y') }}.
                                     @if ($returnItem->order->phone) Điện thoại: {{ $returnItem->order->phone }}. @endif
                                 </div>
                             @endforeach

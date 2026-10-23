@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Product;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -13,12 +14,16 @@ class OrderTurnaroundService
     {
     }
 
-    public function returns(array $productIds, string $pickupDate, ?int $excludeOrderId = null): Collection
+    public function returns(array $productIds, string $pickupDate, ?int $excludeOrderId = null, array $pendingCodes = []): Collection
     {
+        $codes = Product::whereIn('id', $productIds)->pluck('code')->all();
         return OrderItem::query()
             ->with(['order', 'product'])
-            ->whereIn('product_id', $productIds)
-            ->where('size_pending', false)
+            ->where(function ($query) use ($productIds, $codes, $pendingCodes) {
+                $query->whereIn('product_id', $productIds)
+                    ->orWhere(fn ($q) => $q->where('size_pending', true)->whereHas('product', fn ($p) => $p->whereIn('code', $codes)))
+                    ->orWhereHas('product', fn ($p) => $p->whereIn('code', $pendingCodes));
+            })
             ->whereHas('order', function ($query) use ($pickupDate, $excludeOrderId) {
                 $query->whereDate('return_date', $pickupDate)
                     ->whereDate('pickup_date', '<', $pickupDate)
@@ -38,9 +43,24 @@ class OrderTurnaroundService
         $reminders = collect();
 
         foreach ($orders as $order) {
-            $items = $order->items->reject(fn ($item) => $item->size_pending);
+            $items = $order->items;
             $ids = $items->pluck('product_id')->unique()->all();
-            $returns = $this->returns($ids, $order->pickup_date->toDateString(), $order->id)->groupBy('product_id');
+            $pendingCodes = $items->filter(fn ($item) => $item->size_pending)->map(fn ($item) => $item->product?->code)->filter()->all();
+            $returnItems = $this->returns($ids, $order->pickup_date->toDateString(), $order->id, $pendingCodes);
+            $returns = $returnItems->reject(fn ($item) => $item->size_pending)->groupBy('product_id');
+            foreach ($items->groupBy(fn ($item) => $item->product?->code) as $code => $lines) {
+                $matching = $returnItems->filter(fn ($item) => $item->product?->code === $code);
+                $uncertain = $lines->contains(fn ($item) => $item->size_pending)
+                    ? $matching : $matching->filter(fn ($item) => $item->size_pending);
+                if ($uncertain->isNotEmpty()) {
+                    $reminders->push([
+                        'order' => $order, 'product' => $lines->first()->product,
+                        'shortage' => null, 'size_pending' => true,
+                        'needed_quantity' => $lines->sum('quantity'),
+                        'returns' => $uncertain,
+                    ]);
+                }
+            }
             if ($returns->isEmpty()) {
                 continue;
             }
@@ -48,6 +68,10 @@ class OrderTurnaroundService
                 $ids, $order->pickup_date->toDateString(), $order->return_date->toDateString(), $order->id, false
             );
             foreach ($items->groupBy('product_id') as $productId => $lines) {
+                $lines = $lines->reject(fn ($item) => $item->size_pending);
+                if ($lines->isEmpty()) {
+                    continue;
+                }
                 $shortage = max(0, $lines->sum('quantity') - ($strict[$productId] ?? 0));
                 if ($shortage === 0 || ! $returns->has($productId)) {
                     continue;

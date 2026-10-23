@@ -178,4 +178,53 @@ class OrderTurnaroundTest extends TestCase
             Carbon::setTestNow();
         }
     }
+
+    public function test_pending_return_matches_other_sizes_by_code_without_changing_inventory(): void
+    {
+        $product = $this->product();
+        $otherSize = $product->replicate();
+        $otherSize->size = 'XL';
+        $otherSize->save();
+        $incoming = $this->booking($product, '2030-10-23', '2030-10-24', 3);
+        $incoming->items()->update(['size_pending' => true]);
+        $incoming->update(['status' => 'da_gui']);
+        app(OrderInventoryService::class)->syncOrder($incoming);
+        $outgoing = $this->booking($otherSize, '2030-10-24', '2030-10-24', 1);
+        $outgoing->items()->create(['product_id' => $product->id, 'quantity' => 1]);
+        $service = app(OrderTurnaroundService::class);
+        $rows = $service->reminders(Carbon::parse('2030-10-23'))
+            ->filter(fn ($row) => $row['order']->id === $outgoing->id)->values();
+        $this->assertCount(1, $rows);
+        $this->assertTrue($rows[0]['size_pending']);
+        $this->assertNull($rows[0]['shortage']);
+        $this->assertSame(2, $rows[0]['needed_quantity']);
+        $this->assertSame(3, $rows[0]['returns']->sum('quantity'));
+        $this->assertCount(1, $service->returns([$otherSize->id], '2030-10-24'));
+        $this->assertSame(2, $product->fresh()->stock_quantity);
+        $this->assertSame(2, $otherSize->fresh()->stock_quantity);
+        $this->assertSame(0, $incoming->fresh()->items->sum('stock_held'));
+        $this->assertSame(2, app(OrderInventoryService::class)->projectedAvailableQuantities(
+            [$otherSize->id], '2030-10-24', '2030-10-24', $outgoing->id
+        )[$otherSize->id]);
+        $incoming->update(['status' => 'huy_don']);
+        $this->assertCount(0, $service->reminders(Carbon::parse('2030-10-23'))
+            ->filter(fn ($row) => $row['order']->id === $outgoing->id));
+    }
+
+    public function test_pending_outgoing_matches_known_return_sizes_by_code(): void
+    {
+        $product = $this->product();
+        $otherSize = $product->replicate();
+        $otherSize->size = 'XL';
+        $otherSize->save();
+        $incoming = $this->booking($otherSize, '2030-10-23', '2030-10-24', 1);
+        $outgoing = $this->booking($product, '2030-10-24', '2030-10-25', 1);
+        $outgoing->items()->update(['size_pending' => true]);
+        $rows = app(OrderTurnaroundService::class)->reminders(Carbon::parse('2030-10-23'))
+            ->filter(fn ($row) => $row['order']->id === $outgoing->id)->values();
+        $this->assertCount(1, $rows);
+        $this->assertTrue($rows[0]['size_pending']);
+        $this->assertSame($incoming->id, $rows[0]['returns']->first()->order_id);
+        $this->assertSame(2, $product->fresh()->stock_quantity);
+    }
 }

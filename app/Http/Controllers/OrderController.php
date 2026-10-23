@@ -258,6 +258,8 @@ class OrderController extends Controller
         )->groupBy('product_id')->map(fn ($items) => $items->map(fn ($item) => [
             'order_name' => $item->order->order_name,
             'quantity' => (int) $item->quantity,
+            'size_pending' => (bool) $item->size_pending,
+            'code' => $item->product?->code,
         ])->values());
 
         return response()->json([

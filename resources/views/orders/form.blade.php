@@ -691,16 +691,34 @@
             if (!box) return;
             box.replaceChildren();
             const quantities = new Map();
+            const pendingCodes = new Set();
             itemsContainer.querySelectorAll('.size-row').forEach(row => {
-                if (isPendingRow(row)) return;
                 const id = Number(row.querySelector('[data-product-id]').value);
+                if (isPendingRow(row)) {
+                    const selected = findProductById(id);
+                    if (selected) pendingCodes.add(selected.group.code);
+                }
                 quantities.set(id, (quantities.get(id) || 0) + Number(row.querySelector('[data-quantity]').value || 0));
             });
+            const warnings = [];
+            const warnedCodes = new Set();
+            const allReturns = Object.values(sameDayReturns).flat();
             quantities.forEach((quantity, id) => {
-                const returns = sameDayReturns[id] || [];
-                const shortage = quantity - (strictAvailability.get(id) || 0);
                 const selected = findProductById(id);
-                if (shortage <= 0 || !returns.length || !selected || orderStatus.value === 'huy_don') return;
+                if (!selected || quantity <= 0 || orderStatus.value === 'huy_don') return;
+                const code = selected.group.code;
+                const uncertain = allReturns.filter(item => item.code === code && (item.size_pending || pendingCodes.has(code)));
+                if (uncertain.length && !warnedCodes.has(code)) {
+                    warnedCodes.add(code);
+                    warnings.push({ selected, message: `⚠ Mã ${code} có đơn chưa chốt size trùng ngày trả–lấy ${pickupDateInput.value}. Cần xác nhận size và đòi đồ về sớm từ: ${uncertain.map(item => `${item.order_name} (${item.quantity} cái${item.size_pending ? ', chưa chốt size' : ''})`).join('; ')}. Đây là cảnh báo theo mã, chưa xác định số thiếu theo size và không thay đổi tồn kho.` });
+                }
+                if (pendingCodes.has(code)) return;
+                const returns = (sameDayReturns[id] || []).filter(item => !item.size_pending);
+                const shortage = quantity - (strictAvailability.get(id) || 0);
+                if (shortage <= 0 || !returns.length) return;
+                warnings.push({ selected, message: `⚠ Thiếu ${shortage.toLocaleString('vi-VN')} cái mã ${code} — size ${selected.item.size} nếu đồ chưa về kịp ngày lấy ${pickupDateInput.value}. Cần đòi về sớm từ: ${returns.map(item => `${item.order_name} (${item.quantity} cái)`).join('; ')}. Bạn vẫn có thể lưu đơn; hệ thống nhắc khi mở website trước ngày lấy 1 ngày.` });
+            });
+            warnings.forEach(({ selected, message }) => {
                 const line = document.createElement('div');
                 line.style.cssText = 'display:flex;align-items:center;gap:12px;margin:8px 0';
                 const imageUrl = selected.item.image_url || (selected.group.items.find(item => item.image_url) || {}).image_url;
@@ -723,7 +741,7 @@
                     line.appendChild(placeholder);
                 }
                 const text = document.createElement('span');
-                text.textContent = `⚠ Thiếu ${shortage.toLocaleString('vi-VN')} cái mã ${selected.group.code} — size ${selected.item.size} nếu đồ chưa về kịp ngày lấy ${pickupDateInput.value}. Cần đòi về sớm từ: ${returns.map(item => `${item.order_name} (${item.quantity} cái)`).join('; ')}. Bạn vẫn có thể lưu đơn; hệ thống nhắc khi mở website trước ngày lấy 1 ngày.`;
+                text.textContent = message;
                 line.appendChild(text);
                 box.appendChild(line);
             });
