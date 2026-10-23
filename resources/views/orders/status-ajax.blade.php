@@ -48,6 +48,10 @@
                 select.dataset.current = order.status;
                 select.dataset.currentlyOut = order.currently_out ? '1' : '0';
                 select.className = 'status-select status-' + order.color_key;
+                const checkedOption = select.querySelector('option[value="thanh_cong"]');
+                if (checkedOption) {
+                    checkedOption.className = 'status-' + (order.color_key === 'thanh_cong_thieu' ? 'thanh_cong_thieu' : 'thanh_cong');
+                }
             }
 
             [row, panel].forEach(function (el) {

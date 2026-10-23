@@ -346,6 +346,7 @@
             }
         }
     </style>
+    @include('orders.status-colors')
     @include('partials.compact')
 </head>
 <body>
@@ -377,7 +378,7 @@
                     data-items="{{ json_encode($checkItems, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}"
                     aria-label="Cập nhật trạng thái đơn">
                     @foreach ($statuses as $value => $label)
-                        <option value="{{ $value }}" @selected($order->status === $value)>{{ $label }}</option>
+                        <option value="{{ $value }}" class="status-{{ $value === \App\Models\Order::CHECKED_STATUS && $order->hasShortage() ? 'thanh_cong_thieu' : $value }}" @selected($order->status === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
             </form>

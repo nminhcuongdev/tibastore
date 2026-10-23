@@ -396,6 +396,7 @@
             color: #fff;
         }
     </style>
+    @include('orders.status-colors')
     @include('partials.compact')
 </head>
 <body>
@@ -543,7 +544,7 @@
                 <label for="status">Trạng thái</label>
                 <select id="status" name="status" required>
                     @foreach ($statuses as $value => $label)
-                        <option value="{{ $value }}" @selected(old('status', $order->status ?? \App\Models\Order::DEFAULT_STATUS) === $value)>{{ $label }}</option>
+                        <option value="{{ $value }}" class="status-{{ $value === \App\Models\Order::CHECKED_STATUS && $order->hasShortage() ? 'thanh_cong_thieu' : $value }}" @selected(old('status', $order->status ?? \App\Models\Order::DEFAULT_STATUS) === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
                 @error('status') <div class="error">{{ $message }}</div> @enderror

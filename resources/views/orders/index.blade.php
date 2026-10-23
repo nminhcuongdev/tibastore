@@ -570,6 +570,7 @@
             .nav a, .logout, .button { justify-content: center; width: 100%; }
         }
     </style>
+    @include('orders.status-colors')
     @include('partials.compact')
 </head>
 <body>
@@ -848,7 +849,7 @@
                                         data-order-id="{{ $order->id }}"
                                         aria-label="Cập nhật trạng thái đơn">
                                         @foreach ($statuses as $value => $label)
-                                            <option value="{{ $value }}" @selected($order->status === $value)>{{ $label }}</option>
+                                            <option value="{{ $value }}" class="status-{{ $value === \App\Models\Order::CHECKED_STATUS && $order->hasShortage() ? 'thanh_cong_thieu' : $value }}" @selected($order->status === $value)>{{ $label }}</option>
                                         @endforeach
                                     </select>
                                 </form>
