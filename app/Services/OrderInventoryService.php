@@ -206,11 +206,17 @@ class OrderInventoryService
         }
     }
 
+    /**
+     * Cho phép trả buổi sáng và lấy tiếp cùng ngày khi lên đơn. Chế độ strict
+     * vẫn tính cả ngày trả để phát hiện hàng cần đòi về sớm. Đơn lấy/trả trong
+     * một ngày vẫn giữ hàng cả ngày; lúc gửi luôn kiểm tra tồn thực tế.
+     */
     public function projectedAvailableQuantities(
         array $productIds,
         string $pickupDate,
         string $returnDate,
-        ?int $excludeOrderId = null
+        ?int $excludeOrderId = null,
+        bool $allowSameDayTurnaround = true
     ): array {
         $productIds = collect($productIds)
             ->filter()
@@ -230,6 +236,9 @@ class OrderInventoryService
         }
 
         $endExclusive = $end->copy()->addDay();
+        if ($allowSameDayTurnaround && $end->gt($start)) {
+            $endExclusive = $end->copy();
+        }
         $products = Product::whereIn('id', $productIds->all())
             ->get(['id', 'stock_quantity'])
             ->keyBy('id');
@@ -239,7 +248,8 @@ class OrderInventoryService
             $productIds->all(),
             $start,
             $endExclusive,
-            $excludeOrderId
+            $excludeOrderId,
+            $allowSameDayTurnaround
         );
         $availability = [];
 
@@ -297,6 +307,7 @@ class OrderInventoryService
         $reserved = [];
         $bookings = OrderItem::query()
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->whereNotIn('orders.status', ['huy_don', Order::RETURNED_STATUS, Order::CHECKED_STATUS])
             ->whereIn('order_items.product_id', $productIds)
             ->where('order_items.size_pending', false)
             ->whereDate('orders.pickup_date', '<=', $to->toDateString())
@@ -515,10 +526,12 @@ class OrderInventoryService
         array $productIds,
         Carbon $start,
         Carbon $endExclusive,
-        ?int $excludeOrderId = null
+        ?int $excludeOrderId = null,
+        bool $allowSameDayTurnaround = true
     ): array {
         $rows = OrderItem::query()
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->whereNotIn('orders.status', ['huy_don', Order::RETURNED_STATUS, Order::CHECKED_STATUS])
             ->whereIn('order_items.product_id', $productIds)
             ->where('order_items.size_pending', false)
             ->when($excludeOrderId !== null, fn ($query) => $query->where('orders.id', '!=', $excludeOrderId))
@@ -539,6 +552,9 @@ class OrderInventoryService
             $quantity = (int) $row->quantity;
             $bookingStart = $this->date($row->pickup_date);
             $bookingEndExclusive = $this->date($row->return_date)->addDay();
+            if ($allowSameDayTurnaround && $this->date($row->return_date)->gt($bookingStart)) {
+                $bookingEndExclusive = $this->date($row->return_date);
+            }
 
             if ($bookingStart->lt($start) && $bookingEndExclusive->gt($start)) {
                 $initialReserved[$productId] += $quantity;

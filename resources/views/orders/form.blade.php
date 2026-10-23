@@ -578,6 +578,7 @@
             <div class="field full">
                 <label>Sản phẩm trong đơn</label>
                 <div id="stock_conflict" class="stock-conflict" style="display:none"></div>
+                <div id="turnaround_warning" class="stock-conflict" role="alert" style="display:none"></div>
                 <div id="order_items" class="order-items"></div>
                 <div class="items-actions">
                     <button id="add_item_button" class="button secondary" type="button">+ Thêm sản phẩm</button>
@@ -610,6 +611,8 @@
         const returnDateInput = document.getElementById('return_date');
         const csrfToken = orderForm.querySelector('input[name="_token"]').value;
         const productAvailability = new Map();
+        const strictAvailability = new Map();
+        let sameDayReturns = {};
         let availabilityRequestId = 0;
         let itemIndex = 0;
 
@@ -680,6 +683,51 @@
             if (totalDisplay) {
                 totalDisplay.textContent = (orderStatus.value === 'huy_don' ? 0 : total).toLocaleString('vi-VN');
             }
+            updateTurnaroundWarning();
+        }
+
+        function updateTurnaroundWarning() {
+            const box = document.getElementById('turnaround_warning');
+            if (!box) return;
+            box.replaceChildren();
+            const quantities = new Map();
+            itemsContainer.querySelectorAll('.size-row').forEach(row => {
+                if (isPendingRow(row)) return;
+                const id = Number(row.querySelector('[data-product-id]').value);
+                quantities.set(id, (quantities.get(id) || 0) + Number(row.querySelector('[data-quantity]').value || 0));
+            });
+            quantities.forEach((quantity, id) => {
+                const returns = sameDayReturns[id] || [];
+                const shortage = quantity - (strictAvailability.get(id) || 0);
+                const selected = findProductById(id);
+                if (shortage <= 0 || !returns.length || !selected || orderStatus.value === 'huy_don') return;
+                const line = document.createElement('div');
+                line.style.cssText = 'display:flex;align-items:center;gap:12px;margin:8px 0';
+                const imageUrl = selected.item.image_url || (selected.group.items.find(item => item.image_url) || {}).image_url;
+                if (imageUrl) {
+                    const link = document.createElement('a');
+                    link.href = imageUrl;
+                    link.target = '_blank';
+                    link.rel = 'noopener';
+                    link.setAttribute('aria-label', `Xem ảnh mã ${selected.group.code}`);
+                    const image = document.createElement('img');
+                    image.src = imageUrl;
+                    image.alt = `Mã ${selected.group.code} — size ${selected.item.size}`;
+                    image.style.cssText = 'width:72px;height:88px;object-fit:cover;border-radius:8px';
+                    link.appendChild(image);
+                    line.appendChild(link);
+                } else {
+                    const placeholder = document.createElement('span');
+                    placeholder.textContent = 'Chưa có ảnh';
+                    placeholder.style.cssText = 'min-width:72px;font-size:12px';
+                    line.appendChild(placeholder);
+                }
+                const text = document.createElement('span');
+                text.textContent = `⚠ Thiếu ${shortage.toLocaleString('vi-VN')} cái mã ${selected.group.code} — size ${selected.item.size} nếu đồ chưa về kịp ngày lấy ${pickupDateInput.value}. Cần đòi về sớm từ: ${returns.map(item => `${item.order_name} (${item.quantity} cái)`).join('; ')}. Bạn vẫn có thể lưu đơn; hệ thống nhắc khi mở website trước ngày lấy 1 ngày.`;
+                line.appendChild(text);
+                box.appendChild(line);
+            });
+            box.style.display = box.childElementCount ? 'block' : 'none';
         }
 
         function stockLimit(product) {
@@ -728,6 +776,9 @@
             const requestId = ++availabilityRequestId;
 
             if (! datesReadyForAvailability()) {
+                strictAvailability.clear();
+                sameDayReturns = {};
+                updateTurnaroundWarning();
                 resetAvailabilityToCurrentStock();
                 refreshProductChoices();
                 return;
@@ -761,11 +812,15 @@
                 }
 
                 productAvailability.clear();
+                strictAvailability.clear();
+                Object.entries(data.strict_availability || {}).forEach(([id, quantity]) => strictAvailability.set(Number(id), Number(quantity)));
+                sameDayReturns = data.same_day_returns || {};
                 Object.entries(data.availability || {}).forEach(([productId, quantity]) => {
                     productAvailability.set(Number(productId), Number(quantity || 0));
                 });
                 refreshProductChoices();
                 itemsContainer.querySelectorAll('.size-row').forEach(validateSizeRow);
+                updateTurnaroundWarning();
 
                 // Khi người dùng đổi ngày: nếu tồn dự kiến mới làm dòng nào vượt (gối đơn khác),
                 // tự điều chỉnh về tối đa và tổng hợp cảnh báo. Không đụng lúc mới mở form.
@@ -807,6 +862,9 @@
                     return;
                 }
 
+                strictAvailability.clear();
+                sameDayReturns = {};
+                updateTurnaroundWarning();
                 resetAvailabilityToCurrentStock();
                 refreshProductChoices();
             }

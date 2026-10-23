@@ -76,6 +76,9 @@ Giao diện tông xanh dương sapphire, điều hướng bằng **sidebar bên 
 - Lọc theo loại (đơn/sản phẩm), hành động (tạo mới/cập nhật), mã, người thực hiện và khoảng ngày.
 
 ### Nhắc đơn đến ngày
+- Cho phép lên đơn có ngày lấy trùng ngày trả của đơn trước nếu số hàng trả về đủ bù phần thiếu. Biểu mẫu cảnh báo rõ mã–size, số lượng cần đòi về sớm và đơn trả liên quan.
+- Khi mở website trước ngày lấy **1 ngày** và trong ngày lấy, hiện lời nhắc đòi đồ về sớm, kèm liên kết đơn trả và số điện thoại nếu có. Nhắc tự hết khi hàng đã được cập nhật **Đã trả về** hoặc đơn mới đã gửi/hủy.
+- Khi gửi đơn mới vẫn kiểm tra tồn kho thực tế: phải nhận hàng và cập nhật đơn trước sang **Đã trả về** trước khi gửi. Bảng tồn theo ngày vẫn tính cả ngày trả để thể hiện rủi ro giao nhận trong ngày.
 - Khi đăng nhập, hệ thống nhắc:
   - Đơn đến **ngày lấy** → gợi ý chuyển trạng thái xử lý tiếp.
   - Đơn đến **ngày trả** → gợi ý tất toán.

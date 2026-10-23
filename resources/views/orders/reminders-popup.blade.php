@@ -1,4 +1,9 @@
-@if (($orderReminders ?? collect())->isNotEmpty())
+@if (($orderReminders ?? collect())->isNotEmpty() || ($sameDayReminders ?? collect())->isNotEmpty())
+    <style>
+        .reminder-product { display: flex; align-items: center; gap: 12px; margin: 10px 0; }
+        .reminder-product-photo { width: 72px; height: 88px; object-fit: cover; border-radius: 8px; border: 1px solid #d8e4f5; flex-shrink: 0; }
+        .reminder-product-empty { display: grid; place-items: center; background: #eff6ff; color: #64748b; font-size: 12px; text-align: center; }
+    </style>
     <style>
         .reminder-backdrop {
             align-items: center;
@@ -128,11 +133,40 @@
     <div class="reminder-backdrop" id="order-reminder-popup">
         <section class="reminder-modal" role="dialog" aria-modal="true" aria-labelledby="order-reminder-title">
             <div class="reminder-head">
-                <h2 id="order-reminder-title">Thông báo đơn hàng đến ngày</h2>
-                <p>Cập nhật từng đơn một. Nếu chưa muốn xử lý, bạn có thể chọn không nhắc lại cho lần nhắc đó.</p>
+                <h2 id="order-reminder-title">Nhắc đòi đồ về sớm</h2>
+                <p>Đơn lấy hôm nay hoặc ngày mai cần hàng từ đơn trả cùng ngày. Hãy liên hệ khách để nhận đồ sớm trước giờ giao đơn mới.</p>
             </div>
 
             <div class="reminder-list">
+                @foreach ($sameDayReminders ?? [] as $reminder)
+                    <article class="reminder-item">
+                        <div class="reminder-title" style="color:#b4233f">Cảnh báo thiếu hàng nếu đồ chưa về kịp</div>
+                        <div class="reminder-name">
+                            <a href="{{ route('orders.show', $reminder['order']) }}">{{ $reminder['order']->order_name }}</a>
+                            — lấy {{ $reminder['order']->pickup_date->format('d/m/Y') }}
+                        </div>
+                        <div class="reminder-meta">
+                            <div class="reminder-product">
+                                @if ($reminder['product']?->image_path)
+                                    <a href="{{ asset('storage/' . $reminder['product']->image_path) }}" target="_blank" rel="noopener" aria-label="Xem ảnh mã {{ $reminder['product']->code }}">
+                                        <img class="reminder-product-photo" src="{{ asset('storage/' . $reminder['product']->image_path) }}" alt="{{ $reminder['product']->name }} — mã {{ $reminder['product']->code }}" loading="lazy">
+                                    </a>
+                                @else
+                                    <span class="reminder-product-photo reminder-product-empty">Chưa có ảnh</span>
+                                @endif
+                                <div>Mã <strong>{{ $reminder['product']?->code }}</strong> — size {{ $reminder['product']?->size }}: cần đòi về sớm <strong>{{ number_format($reminder['shortage']) }}</strong> cái.</div>
+                            </div>
+                            @foreach ($reminder['returns'] as $returnItem)
+                                <div>
+                                    Đòi đồ từ <a href="{{ route('orders.show', $returnItem->order) }}">{{ $returnItem->order->order_name }}</a>
+                                    — {{ number_format($returnItem->quantity) }} cái, trả {{ $returnItem->order->return_date->format('d/m/Y') }}.
+                                    @if ($returnItem->order->phone) Điện thoại: {{ $returnItem->order->phone }}. @endif
+                                </div>
+                            @endforeach
+                            <div>Sau khi nhận đủ đồ, chuyển đơn trả sang “Đã trả về” trước khi gửi đơn mới.</div>
+                        </div>
+                    </article>
+                @endforeach
                 @foreach ($orderReminders as $reminder)
                     @php($order = $reminder['order'])
                     <article class="reminder-item">

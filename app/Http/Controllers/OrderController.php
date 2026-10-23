@@ -247,7 +247,23 @@ class OrderController extends Controller
             isset($data['exclude_order_id']) ? (int) $data['exclude_order_id'] : null
         );
 
-        return response()->json(['availability' => $availability]);
+        $strictAvailability = $this->inventory->projectedAvailableQuantities(
+            $productIds->all(), $data['pickup_date'], $data['return_date'],
+            isset($data['exclude_order_id']) ? (int) $data['exclude_order_id'] : null, false
+        );
+        $returns = app(\App\Services\OrderTurnaroundService::class)->returns(
+            $productIds->all(), $data['pickup_date'],
+            isset($data['exclude_order_id']) ? (int) $data['exclude_order_id'] : null
+        )->groupBy('product_id')->map(fn ($items) => $items->map(fn ($item) => [
+            'order_name' => $item->order->order_name,
+            'quantity' => (int) $item->quantity,
+        ])->values());
+
+        return response()->json([
+            'availability' => $availability,
+            'strict_availability' => $strictAvailability,
+            'same_day_returns' => $returns,
+        ]);
     }
 
     public function create(): View
