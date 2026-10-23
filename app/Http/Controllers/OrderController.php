@@ -88,7 +88,8 @@ class OrderController extends Controller
         // Cong thuc "con lai" dung chung cho ca loc va cong tong, giong het
         // Order::getRemainingAttribute(). COALESCE vi cot tien de trong la NULL,
         // ma NULL tham gia phep tinh se lam ca bieu thuc thanh NULL.
-        $remainingExpression = '(COALESCE(orders.total_amount, 0) + COALESCE(orders.compensation_amount, 0)'
+        $remainingExpression = "((CASE WHEN orders.status = 'huy_don' THEN 0"
+            . ' ELSE COALESCE(orders.total_amount, 0) + COALESCE(orders.compensation_amount, 0) END)'
             . ' + COALESCE(orders.shipping_fee, 0) - COALESCE(orders.payment_1, 0)'
             . ' - COALESCE(orders.payment_2, 0))';
 

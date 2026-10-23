@@ -276,6 +276,10 @@ class Order extends Model
      */
     public function getTotalWithCompensationAttribute(): int
     {
+        if ($this->status === 'huy_don') {
+            return 0;
+        }
+
         return (int) $this->total_amount + (int) $this->compensation_amount;
     }
 

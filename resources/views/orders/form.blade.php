@@ -639,6 +639,8 @@
         }
 
         const totalDisplay = document.querySelector('[data-total-display]');
+        const orderStatus = document.getElementById('status');
+        orderStatus.addEventListener('change', updateComputedTotal);
 
         // Giá thuê nhập tại mã hàng áp cho mọi size của mã đó.
         // Thành tiền mỗi mã = giá thuê × tổng số lượng các size; tổng đơn = cộng dồn các mã.
@@ -676,7 +678,7 @@
             });
 
             if (totalDisplay) {
-                totalDisplay.textContent = total.toLocaleString('vi-VN');
+                totalDisplay.textContent = (orderStatus.value === 'huy_don' ? 0 : total).toLocaleString('vi-VN');
             }
         }
 
