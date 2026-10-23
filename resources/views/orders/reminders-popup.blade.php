@@ -1,4 +1,4 @@
-@if (($orderReminders ?? collect())->isNotEmpty() || ($sameDayReminders ?? collect())->isNotEmpty())
+@if (($showEmptyReminders ?? false) || ($orderReminders ?? collect())->isNotEmpty() || ($sameDayReminders ?? collect())->isNotEmpty())
     <style>
         .reminder-product { display: flex; align-items: center; gap: 12px; margin: 10px 0; }
         .reminder-product-photo { width: 72px; height: 88px; object-fit: cover; border-radius: 8px; border: 1px solid #d8e4f5; flex-shrink: 0; }
@@ -130,14 +130,17 @@
         }
     </style>
 
-    <div class="reminder-backdrop" id="order-reminder-popup">
+    <div class="reminder-backdrop" id="order-reminder-popup" @if (! ($reminderInitiallyOpen ?? true)) style="display:none" @endif>
         <section class="reminder-modal" role="dialog" aria-modal="true" aria-labelledby="order-reminder-title">
             <div class="reminder-head">
                 <h2 id="order-reminder-title">Nhắc đòi đồ về sớm</h2>
-                <p>Đơn lấy hôm nay hoặc ngày mai cần hàng từ đơn trả cùng ngày. Hãy liên hệ khách để nhận đồ sớm trước giờ giao đơn mới.</p>
+                <p>{{ ($showAllUpcomingReminders ?? false) ? 'Toàn bộ đơn sắp tới cần hàng từ đơn trả cùng ngày, không phụ thuộc bộ lọc danh sách. Lời nhắc tự hiện trước ngày lấy 1 ngày.' : 'Đơn lấy hôm nay hoặc ngày mai cần hàng từ đơn trả cùng ngày.' }} Hãy liên hệ khách để nhận đồ sớm trước giờ giao đơn mới.</p>
             </div>
 
             <div class="reminder-list">
+                @if (($sameDayReminders ?? collect())->isEmpty() && ($orderReminders ?? collect())->isEmpty())
+                    <p>Hiện không có đơn cần đòi đồ về sớm.</p>
+                @endif
                 @foreach ($sameDayReminders ?? [] as $reminder)
                     <article class="reminder-item">
                         <div class="reminder-title" style="color:#b4233f">Cảnh báo thiếu hàng nếu đồ chưa về kịp</div>
@@ -209,7 +212,7 @@
 
                 <div class="reminder-actions">
                     <button class="reminder-close" type="button" onclick="document.getElementById('order-reminder-popup').style.display='none'">
-                        Để sau
+                        Đóng
                     </button>
                 </div>
             </div>

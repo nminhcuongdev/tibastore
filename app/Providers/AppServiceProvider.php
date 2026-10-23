@@ -29,9 +29,11 @@ class AppServiceProvider extends ServiceProvider
         // gio thuoc ve controller, composer chi con cap bien cho view.
         View::composer('orders.reminders-popup', function ($view) {
             $view->with('orderReminders', collect());
-            $view->with('sameDayReminders', auth()->check()
-                ? app(\App\Services\OrderTurnaroundService::class)->reminders()
-                : collect());
+            if (! array_key_exists('sameDayReminders', $view->getData())) {
+                $view->with('sameDayReminders', auth()->check()
+                    ? app(\App\Services\OrderTurnaroundService::class)->reminders()
+                    : collect());
+            }
         });
     }
 }

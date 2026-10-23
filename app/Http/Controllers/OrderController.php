@@ -165,6 +165,7 @@ class OrderController extends Controller
 
         return view('orders.index', [
             'orders' => $orders,
+            'returnReminders' => app(\App\Services\OrderTurnaroundService::class)->reminders(null, true),
             'remainingTotal' => (int) ($totals->remaining_total ?? 0),
             'orderTotal' => (int) ($totals->order_total ?? 0),
             'collectedTotal' => (int) ($totals->order_total ?? 0) - (int) ($totals->remaining_total ?? 0),

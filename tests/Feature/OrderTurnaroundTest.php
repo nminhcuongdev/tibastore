@@ -150,4 +150,32 @@ class OrderTurnaroundTest extends TestCase
             Carbon::setTestNow();
         }
     }
+
+    public function test_reminder_button_lists_future_returns_even_when_orders_are_filtered_out(): void
+    {
+        $this->actingAs(\App\Models\User::create([
+            'code' => 'rem-'.bin2hex(random_bytes(5)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false,
+        ]));
+        $product = $this->product();
+        $incoming = $this->booking($product, '2030-10-24', '2030-10-26');
+        $outgoing = $this->booking($product, '2030-10-26', '2030-10-28');
+        try {
+            Carbon::setTestNow(Carbon::parse('2030-10-22 12:00:00', 'Asia/Ho_Chi_Minh'));
+            $service = app(OrderTurnaroundService::class);
+            $this->assertCount(0, $service->reminders());
+            $this->assertCount(1, $service->reminders(null, true));
+            $this->get('/orders?closer=nonexistent-'.bin2hex(random_bytes(5)))
+                ->assertOk()->assertSee('Nhắc đòi đồ (1)')
+                ->assertSee('data-open-return-reminders', false)
+                ->assertSee('Toàn bộ đơn sắp tới')
+                ->assertViewHas('returnReminders', fn ($rows) => $rows->contains(fn ($r) => $r['order']->id === $outgoing->id))
+                ->assertViewHas('orders', fn ($orders) => $orders->total() === 0);
+            $incoming->update(['status' => Order::RETURNED_STATUS]);
+            $this->get('/orders')->assertOk()->assertSee('Nhắc đòi đồ (0)')
+                ->assertSee('Hiện không có đơn cần đòi đồ về sớm.');
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
 }

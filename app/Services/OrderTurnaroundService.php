@@ -27,12 +27,12 @@ class OrderTurnaroundService
             })->get();
     }
 
-    public function reminders(?Carbon $today = null): Collection
+    public function reminders(?Carbon $today = null, bool $allUpcoming = false): Collection
     {
         $today = ($today ?? now('Asia/Ho_Chi_Minh'))->copy()->startOfDay();
         $orders = Order::with('items.product')
             ->whereDate('pickup_date', '>=', $today->toDateString())
-            ->whereDate('pickup_date', '<=', $today->copy()->addDay()->toDateString())
+            ->when(! $allUpcoming, fn ($query) => $query->whereDate('pickup_date', '<=', $today->copy()->addDay()->toDateString()))
             ->whereNotIn('status', ['huy_don', 'da_gui', Order::RETURNED_STATUS, Order::CHECKED_STATUS])
             ->orderBy('pickup_date')->orderBy('id')->get();
         $reminders = collect();

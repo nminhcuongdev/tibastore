@@ -601,6 +601,7 @@
                 || $selectedStatuses !== []
                 || $selectedRegions !== []
                 || collect($filters)->contains(fn ($value) => $value !== null && $value !== '');
+            $returnReminderCount = $returnReminders->pluck('returns')->flatten(1)->pluck('order_id')->unique()->count();
         @endphp
         <div class="toolbar">
             <div class="toolbar-head">
@@ -616,6 +617,10 @@
                     aria-expanded="false">
                     <span class="codes-caret" aria-hidden="true">▸</span>
                     <span data-codes-toggle-all-label>Sổ hết tất cả</span>
+                </button>
+                <button type="button" class="button secondary" data-open-return-reminders
+                    aria-haspopup="dialog" aria-controls="order-reminder-popup">
+                    Nhắc đòi đồ ({{ number_format($returnReminderCount) }})
                 </button>
                 <a class="button" href="{{ route('orders.create') }}">+ Tạo đơn hàng</a>
             </div>
@@ -1003,7 +1008,29 @@
     @include('orders.codes-modal')
     @include('orders.status-confirm-modal')
     @include('orders.check-modal')
-    @include('orders.reminders-popup')
+    @include('orders.reminders-popup', [
+        'sameDayReminders' => $returnReminders,
+        'showEmptyReminders' => true,
+        'reminderInitiallyOpen' => $returnReminders->contains(fn ($reminder) => $reminder['order']->pickup_date->toDateString() <= now('Asia/Ho_Chi_Minh')->addDay()->toDateString()),
+        'showAllUpcomingReminders' => true,
+    ])
+    <script>
+        (function () {
+            const trigger = document.querySelector('[data-open-return-reminders]');
+            const popup = document.getElementById('order-reminder-popup');
+            if (!trigger || !popup) return;
+            trigger.addEventListener('click', function () {
+                popup.style.display = 'flex';
+                popup.querySelector('.reminder-close').focus();
+            });
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && popup.style.display !== 'none') {
+                    popup.style.display = 'none';
+                    trigger.focus();
+                }
+            });
+        })();
+    </script>
     </div>
 </div>
 </body>
