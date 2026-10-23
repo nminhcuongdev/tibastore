@@ -257,6 +257,7 @@ class Order extends Model
             'da_gui' => 'Đã gửi',
             'da_tra_ve' => 'Đã trả về',
             'thanh_cong' => 'Đã kiểm',
+            'huy_don' => 'Hủy đơn',
         ];
     }
 

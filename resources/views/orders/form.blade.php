@@ -390,6 +390,11 @@
             border-left-color: #b4233f;
             color: #b4233f;
         }
+        #status:has(option[value="huy_don"]:checked) {
+            background: #b4233f;
+            border-color: #b4233f;
+            color: #fff;
+        }
     </style>
     @include('partials.compact')
 </head>

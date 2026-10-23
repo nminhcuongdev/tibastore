@@ -276,6 +276,7 @@
         .row-da_tra_ve { background: #ffeede; }
         .row-thanh_cong { background: #e8f7ef; }
         .row-thanh_cong_thieu { background: #fdecec; }
+        .row-huy_don { background: #fdecec; }
         .code {
             color: #1e40af;
             font-weight: 800;
@@ -492,6 +493,7 @@
         .status-da_tra_ve { background: #a85a18; color: #fff; }
         .status-thanh_cong { background: #247857; color: #fff; }
         .status-thanh_cong_thieu { background: #b4233f; color: #fff; }
+        .status-huy_don { background: #b4233f; color: #fff; }
         /* Chua chon thi giu nen trang; chi to mau khi da tick. */
         .status-check:not(:has(input:checked)) { background: #fff; color: #1e40af; }
         .pay-coc { background: #f1f5f9; color: #64748b; }

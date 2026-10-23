@@ -121,6 +121,7 @@
         .status-da_tra_ve { background: #ffeede; color: #a85a18; }
         .status-thanh_cong { background: #e8f7ef; color: #247857; }
         .status-thanh_cong_thieu { background: #fdecec; color: #b4233f; }
+        .status-huy_don { background: #b4233f; color: #fff; }
         .pay-coc { background: #f1f5f9; color: #64748b; }
         .pay-thanh_toan_1 { background: #eaf2fd; color: #2f5fa6; }
         .pay-thanh_toan_2 { background: #f6ecfb; color: #7d3aa3; }
