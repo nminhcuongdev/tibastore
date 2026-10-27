@@ -36,6 +36,8 @@ Route::middleware('auth')->group(function () {
         return redirect()->route('products.index');
     })->name('dashboard');
 
+    Route::get('/products/image-search', [\App\Http\Controllers\ProductImageSearchController::class, 'index'])->name('products.image-search');
+    Route::get('/products/image-search/catalog', [\App\Http\Controllers\ProductImageSearchController::class, 'catalog'])->name('products.image-search.catalog');
     Route::get('/products/daily-stock', [ProductController::class, 'inventoryCalendar'])->name('products.daily-stock');
     Route::get('/products/{product}/track', [ProductController::class, 'track'])->name('products.track');
     // Phai dat truoc Route::resource de khong bi nuot boi products/{product}.
