@@ -536,8 +536,8 @@
                                     $code = $product?->code ?? 'N/A';
                                     $sizeQuantities = $items->groupBy(fn ($item) => method_exists($item, 'displaySize') ? $item->displaySize() : ($item->product?->size ?? 'N/A'));
                                     $lineRental = (int) ($firstItem->rental_price ?? 0);
-                                    $lineDays = (int) ($firstItem->rental_days ?? 1);
-                                    $lineTotal = $lineRental * $items->sum('quantity') * $lineDays;
+                                    $lineDays = (float) ($firstItem->rental_days ?? 1);
+                                    $lineTotal = $items->sum(fn ($item) => (int) round($lineRental * $item->quantity * (float) ($item->rental_days ?? 1)));
                                 @endphp
                                 <tr>
                                     <td>
@@ -575,7 +575,7 @@
                                         @endif
                                     </td>
                                     <td data-sort-value="{{ $lineRental }}">{{ number_format($lineRental) }} VND</td>
-                                    <td data-sort-value="{{ $lineDays }}">{{ $lineDays }}</td>
+                                    <td data-sort-value="{{ $lineDays }}">{{ str_replace('.', ',', (string) $lineDays) }}</td>
                                     <td data-sort-value="{{ $lineTotal }}">{{ number_format($lineTotal) }} VND</td>
                                 </tr>
                             @endforeach

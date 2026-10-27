@@ -682,7 +682,11 @@
             itemsContainer.querySelectorAll('.order-item').forEach(block => {
                 const rentalInput = block.querySelector('[data-block-rental]');
                 const rental = Number(rentalInput ? rentalInput.value || 0 : 0);
-                const days = Number(block.querySelector('[data-block-days]').value || 1);
+                const daysInput = block.querySelector('[data-block-days]');
+                const daysText = daysInput.value.trim().replace(',', '.');
+                const days = Number(daysText || 1);
+                daysInput.setCustomValidity(/^\d+(\.\d{1,2})?$/.test(daysText) && days > 0 && days <= 3650 ? '' : 'Nhập số ngày lớn hơn 0, tối đa 3650; ví dụ 1,5 hoặc 2,5 (tối đa 2 chữ số thập phân).');
+                let blockAmount = 0;
                 let blockQuantity = 0;
 
                 block.querySelectorAll('.size-row').forEach(sizeRow => {
@@ -698,10 +702,11 @@
 
                     if (productId && quantity > 0) {
                         blockQuantity += quantity;
+                        blockAmount += Math.round(rental * quantity * days);
                     }
                 });
 
-                const subtotal = rental * blockQuantity * days;
+                const subtotal = blockAmount;
                 const subtotalEl = block.querySelector('[data-block-subtotal]');
 
                 if (subtotalEl) {
@@ -1531,7 +1536,7 @@
                     </div>
                     <div class="field">
                         <label>Số ngày</label>
-                        <input data-block-days type="number" min="1" max="3650" step="1" value="1" required aria-label="Số ngày thuê mã hàng">
+                        <input data-block-days type="text" inputmode="decimal" value="1" required aria-label="Số ngày thuê mã hàng" placeholder="VD: 1,5">
                     </div>
                     <div class="block-subtotal">Thành tiền: <span data-block-subtotal>0</span></div>
                 </div>

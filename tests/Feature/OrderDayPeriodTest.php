@@ -62,7 +62,7 @@ class OrderDayPeriodTest extends TestCase
         $this->assertSame(5000, $order->fresh()->discount_amount);
         $data['items'][0]['rental_days'] = 3;
         $this->put('/orders/'.$order->id, $data)->assertSessionHasNoErrors();
-        $this->assertSame(3, $order->fresh()->items->first()->rental_days);
+        $this->assertSame('3.00', $order->fresh()->items->first()->rental_days);
         $this->assertSame(600000, $order->fresh()->total_amount);
         $this->assertSame(595000, $order->fresh()->remaining);
         $this->get('/orders/'.$order->id)->assertOk()->assertSee('Số ngày')->assertSee('600,000 VND');
@@ -70,6 +70,15 @@ class OrderDayPeriodTest extends TestCase
         $data['items'][0]['rental_days'] = 0;
         $this->postJson('/orders', $data)->assertUnprocessable()->assertJsonValidationErrors('items.0.rental_days');
         $data['items'][0]['rental_days'] = 1.5;
+        $this->put('/orders/'.$order->id, $data)->assertSessionHasNoErrors();
+        $this->assertSame('1.50', $order->fresh()->items->first()->rental_days);
+        $this->assertSame(300000, $order->fresh()->total_amount);
+        $data['items'][0]['rental_days'] = '2,5';
+        $this->put('/orders/'.$order->id, $data)->assertSessionHasNoErrors();
+        $this->assertSame('2.50', $order->fresh()->items->first()->rental_days);
+        $this->assertSame(500000, $order->fresh()->total_amount);
+        $this->get('/orders/'.$order->id)->assertOk()->assertSee('2,5');
+        $data['items'][0]['rental_days'] = '1.555';
         $this->postJson('/orders', $data)->assertUnprocessable()->assertJsonValidationErrors('items.0.rental_days');
     }
 }

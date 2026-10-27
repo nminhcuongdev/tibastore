@@ -337,7 +337,7 @@ class OrderController extends Controller
             'size_pending' => (bool) $item->size_pending,
             'stock' => (int) ($item->product?->stock_quantity ?? 0),
             'rental_price' => (int) $item->rental_price,
-            'rental_days' => (int) ($item->rental_days ?? 1),
+            'rental_days' => (float) ($item->rental_days ?? 1),
             'image' => $item->product?->image_path
                 ? asset('storage/' . $item->product->image_path)
                 : null,
@@ -553,6 +553,14 @@ class OrderController extends Controller
 
     private function validatedData(Request $request, ?Order $order = null): array
     {
+        if (is_array($request->input('items'))) {
+            $request->merge(['items' => array_map(function ($item) {
+                if (is_array($item) && isset($item['rental_days']) && is_string($item['rental_days'])) {
+                    $item['rental_days'] = str_replace(',', '.', trim($item['rental_days']));
+                }
+                return $item;
+            }, $request->input('items'))]);
+        }
         $data = $request->validate([
             'closer_name' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
@@ -580,7 +588,7 @@ class OrderController extends Controller
             'items.*.size_pending' => ['nullable', 'boolean'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.rental_price' => ['nullable', 'integer', 'min:0'],
-            'items.*.rental_days' => ['nullable', 'integer', 'min:1', 'max:3650'],
+            'items.*.rental_days' => ['nullable', 'numeric', 'min:0.01', 'max:3650', 'regex:/^\d+(\.\d{1,2})?$/'],
             'items.*.note' => ['nullable', 'string', 'max:500'],
         ], [
             'closer_name.required' => 'Vui lòng nhập người chốt.',
@@ -613,8 +621,9 @@ class OrderController extends Controller
             'items.*.quantity.min' => 'Số lượng phải lớn hơn 0.',
             'items.*.rental_price.integer' => 'Giá thuê phải là số.',
             'items.*.rental_price.min' => 'Giá thuê không được nhỏ hơn 0.',
-            'items.*.rental_days.integer' => 'Số ngày phải là số nguyên.',
-            'items.*.rental_days.min' => 'Số ngày phải từ 1 trở lên.',
+            'items.*.rental_days.numeric' => 'Số ngày phải là số, ví dụ 1,5 hoặc 2,5.',
+            'items.*.rental_days.regex' => 'Số ngày tối đa 2 chữ số thập phân.',
+            'items.*.rental_days.min' => 'Số ngày phải lớn hơn 0.',
             'items.*.rental_days.max' => 'Số ngày tối đa là 3650.',
         ]);
 
@@ -625,7 +634,7 @@ class OrderController extends Controller
 
         $data['items'] = collect($data['items'])->map(function ($item) use ($productRentals) {
             $item['size_pending'] = ! empty($item['size_pending']);
-            $item['rental_days'] = (int) ($item['rental_days'] ?? 1);
+            $item['rental_days'] = (float) ($item['rental_days'] ?? 1);
             $item['rental_price'] = array_key_exists('rental_price', $item) && $item['rental_price'] !== null && $item['rental_price'] !== ''
                 ? (int) $item['rental_price']
                 : (int) ($productRentals[$item['product_id']] ?? 0);
@@ -667,12 +676,12 @@ class OrderController extends Controller
     {
         return $order->items
             ->map(fn ($item) => sprintf(
-                '%s - size %s x%d @%s x%d ngày',
+                '%s - size %s x%d @%s x%s ngày',
                 $item->product?->code ?? 'N/A',
                 $item->displaySize(),
                 (int) $item->quantity,
                 number_format((int) $item->rental_price),
-                (int) ($item->rental_days ?? 1)
+                (float) ($item->rental_days ?? 1)
             ))
             ->sort()
             ->values()
@@ -731,7 +740,7 @@ class OrderController extends Controller
     private function calculateItemsTotal(array $items): int
     {
         return collect($items)->reduce(function (int $total, array $item) {
-            return $total + (int) ($item['rental_price'] ?? 0) * (int) $item['quantity'] * (int) ($item['rental_days'] ?? 1);
+            return $total + (int) round((int) ($item['rental_price'] ?? 0) * (int) $item['quantity'] * (float) ($item['rental_days'] ?? 1));
         }, 0);
     }
 
