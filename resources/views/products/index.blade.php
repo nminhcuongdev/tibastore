@@ -537,7 +537,6 @@
             </form>
 
             <div class="actions">
-                <a class="button secondary" href="{{ route('products.image-search') }}">Tìm mã bằng ảnh</a>
                 <a class="button secondary" href="{{ route('products.index') }}">Làm mới</a>
                 <a class="button" href="{{ route('products.create') }}">+ Thêm sản phẩm</a>
             </div>

@@ -40,12 +40,6 @@ Giao diện tông xanh dương sapphire, điều hướng bằng **sidebar bên 
 - Sửa thông tin theo **toàn mã** hoặc **riêng từng size**.
 - Tìm kiếm theo mã/tên, sắp xếp, phân trang.
 
-### Tìm mã bằng ảnh
-- Trong **Kho hàng**, chọn **Tìm mã bằng ảnh**, tải ảnh JPG/PNG/WebP (tối đa 10 MB) hoặc dán ảnh bằng Ctrl+V, rồi bấm tìm.
-- AI CLIP chạy trong trình duyệt bằng Transformers.js; không yêu cầu API key và không tải ảnh truy vấn lên dịch vụ AI. Lần đầu tải thư viện, mô hình từ jsDelivr/Hugging Face và phân tích các ảnh kho; cần Internet và có thể mất vài phút. Ảnh cần tìm được thu nhỏ trên thiết bị trước khi phân tích.
-- So khớp các ảnh sản phẩm đang dùng, gom kết quả theo mã và hiển thị tối đa 8 gợi ý, kèm ảnh, tên, danh mục và tồn kho. Sản phẩm chưa có ảnh không được tìm theo ảnh.
-- Dữ liệu nhận diện được lưu bằng IndexedDB trên từng trình duyệt, được làm mới khi ảnh hoặc sản phẩm được cập nhật. Có thể dừng quá trình tìm. Nên dùng Chrome/Edge hiện đại; kết quả chỉ là gợi ý để đối chiếu, không bảo đảm nhận diện đúng những mẫu gần giống nhau.
-
 ### Chi tiết & theo dõi sản phẩm
 - Xem các đơn hàng liên quan tới một mã–size.
 - Biểu đồ biến động tồn kho dự kiến theo thời gian.
