@@ -18,6 +18,8 @@
         .controls { flex: 1; min-width: min(280px, 100%); }
         label { display: block; font-weight: 700; margin-bottom: 8px; }
         input { width: 100%; padding: 12px; border: 1px solid #c3d4ed; border-radius: 8px; }
+        .paste-area { display: block; width: 100%; margin-top: 12px; padding: 16px; border: 2px dashed #b4c8ee; border-radius: 10px; background: #f5f8ff; font: inherit; resize: vertical; }
+        .paste-area:focus { outline: 2px solid #1d4ed8; }
         button, .back { display: inline-block; padding: 11px 17px; border: 1px solid #c3d4ed; border-radius: 9px; font: inherit; font-weight: 700; cursor: pointer; text-decoration: none; background: white; color: #1e40af; }
         button.primary { background: #1d4ed8; color: white; border-color: #1d4ed8; }
         button:disabled { opacity: .55; cursor: wait; }
@@ -50,8 +52,11 @@
                 <div class="controls">
                     <label for="search-image">Ảnh chụp thực tế hoặc ảnh mẫu</label>
                     <input id="search-image" type="file" accept="image/jpeg,image/png,image/webp">
+                    <textarea class="paste-area" data-paste-area aria-label="Dán ảnh tìm kiếm" placeholder="Bấm vào đây rồi nhấn Ctrl+V để dán ảnh, hoặc kéo ảnh vào đây." rows="2"></textarea>
+                    <p class="hint" data-selection>Chưa chọn ảnh.</p>
                     <p class="hint">JPG, PNG hoặc WebP, tối đa 10 MB. Ảnh rõ trang phục, ít vật che và nền đơn giản sẽ dễ tìm hơn.</p>
                     <div class="actions">
+                        <button type="button" data-paste>Dán ảnh đã sao chép</button>
                         <button class="primary" type="button" data-search disabled>Tìm mã bằng ảnh</button>
                         <button type="button" data-cancel hidden>Dừng tìm</button>
                         <a class="back" href="{{ route('products.index') }}">Về kho hàng</a>
@@ -68,6 +73,6 @@
         <noscript>Cần bật JavaScript để sử dụng tìm kiếm bằng ảnh.</noscript>
     </main></div>
 </div>
-<script type="module" src="{{ asset('js/product-image-search.js') }}"></script>
+<script type="module" src="{{ asset('js/product-image-search.js') }}?v={{ filemtime(public_path('js/product-image-search.js')) }}"></script>
 </body>
 </html>

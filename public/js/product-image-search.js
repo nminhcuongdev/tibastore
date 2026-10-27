@@ -3,6 +3,9 @@ const input = document.getElementById('search-image');
 const preview = root.querySelector('[data-preview]');
 const search = root.querySelector('[data-search]');
 const cancel = root.querySelector('[data-cancel]');
+const paste = root.querySelector('[data-paste]');
+const pasteArea = root.querySelector('[data-paste-area]');
+const selection = root.querySelector('[data-selection]');
 const status = root.querySelector('[data-status]');
 const progress = root.querySelector('[data-progress]');
 const progressBox = root.querySelector('[data-progress-box]');
@@ -22,6 +25,8 @@ function message(text, error = false) {
 function setBusy(value) {
     busy = value;
     input.disabled = value;
+    paste.disabled = value;
+    pasteArea.disabled = value;
     search.disabled = value || !selected;
     cancel.hidden = !value;
     progressBox.hidden = !value;
@@ -33,13 +38,25 @@ async function choose(file) {
     selected = null;
     search.disabled = true;
     preview.hidden = true;
+    selection.textContent = 'Đang đọc ảnh…';
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 10 * 1024 * 1024) {
         message('Chọn ảnh JPG, PNG hoặc WebP không quá 10 MB.', true);
+        selection.textContent = 'Ảnh chưa hợp lệ.';
         return;
     }
     try {
-        const bitmap = await createImageBitmap(file);
-        if (choice !== choiceId) { bitmap.close(); return; }
+        let bitmap;
+        try {
+            bitmap = await createImageBitmap(file);
+        } catch {
+            const url = URL.createObjectURL(file);
+            try {
+                bitmap = new Image();
+                bitmap.src = url;
+                await bitmap.decode();
+            } finally { URL.revokeObjectURL(url); }
+        }
+        if (choice !== choiceId) { bitmap.close?.(); return; }
         const scale = Math.min(1, 1024 / Math.max(bitmap.width, bitmap.height));
         const canvas = document.createElement('canvas');
         canvas.width = Math.max(1, Math.round(bitmap.width * scale));
@@ -48,7 +65,7 @@ async function choose(file) {
         context.fillStyle = '#fff';
         context.fillRect(0, 0, canvas.width, canvas.height);
         context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-        bitmap.close();
+        bitmap.close?.();
         const converted = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', .92));
         if (choice !== choiceId) return;
         if (!converted) throw new Error('Invalid image');
@@ -57,18 +74,45 @@ async function choose(file) {
         previewUrl = URL.createObjectURL(selected);
         preview.src = previewUrl;
         preview.hidden = false;
+        selection.textContent = file.name ? `Đã chọn: ${file.name}` : 'Đã nhận ảnh từ bộ nhớ tạm.';
+        pasteArea.value = '';
         search.disabled = false;
         results.replaceChildren();
         root.querySelector('[data-result-title]').hidden = true;
         root.querySelector('[data-result-note]').hidden = true;
         message('Ảnh đã sẵn sàng. Bấm “Tìm mã bằng ảnh” để bắt đầu.');
-    } catch { if (choice === choiceId) message('Không đọc được ảnh. Hãy chọn ảnh khác.', true); }
+    } catch { if (choice === choiceId) { selection.textContent = 'Chưa đọc được ảnh.'; message('Không đọc được ảnh. Hãy chọn ảnh khác.', true); } }
 }
 
 input.addEventListener('change', () => choose(input.files[0]));
+pasteArea.addEventListener('dragover', event => event.preventDefault());
+pasteArea.addEventListener('drop', event => {
+    event.preventDefault();
+    if (!busy) choose(Array.from(event.dataTransfer?.files || []).find(file => file.type.startsWith('image/')));
+});
 document.addEventListener('paste', event => {
+    if (busy) return;
     const item = Array.from(event.clipboardData?.items || []).find(item => item.type.startsWith('image/'));
-    if (item && !busy) { event.preventDefault(); choose(item.getAsFile()); }
+    const file = item?.getAsFile() || Array.from(event.clipboardData?.files || []).find(file => file.type.startsWith('image/'));
+    if (file) { event.preventDefault(); choose(file); }
+    else message('Chưa có ảnh trong bộ nhớ tạm. Hãy sao chép ảnh hoặc chụp màn hình rồi dán lại; sao chép đường dẫn ảnh sẽ không dán được.', true);
+});
+paste.addEventListener('click', async () => {
+    if (busy) return;
+    if (!navigator.clipboard?.read) {
+        message('Trình duyệt chưa hỗ trợ nút dán ảnh. Bấm vào trang rồi nhấn Ctrl+V hoặc dùng “Chọn tệp”.', true);
+        return;
+    }
+    try {
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+            const type = item.types.find(type => ['image/png', 'image/jpeg', 'image/webp'].includes(type));
+            if (type) { await choose(await item.getType(type)); return; }
+        }
+        message('Bộ nhớ tạm chưa có ảnh. Hãy chọn “Sao chép hình ảnh” hoặc chụp màn hình, sau đó bấm dán lại.', true);
+    } catch {
+        message('Chưa được phép đọc ảnh đã sao chép. Bấm vào trang rồi nhấn Ctrl+V hoặc dùng “Chọn tệp”.', true);
+    }
 });
 
 search.addEventListener('click', async () => {
