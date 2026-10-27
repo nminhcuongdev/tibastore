@@ -894,7 +894,8 @@
                             <td>{{ $order->event_date?->format('d/m/Y') }}</td>
                             <td>{{ $order->return_date?->format('d/m/Y') }} {{ $order->periodLabel($order->return_period) }}</td>
                             <td>
-                                <div class="name">{{ $order->order_name }}</div>
+                                <button type="button" class="name copy-order-name" data-copy-order-name="{{ $order->order_name }}"
+                                    title="Bấm để sao chép tên đơn" aria-label="Sao chép tên đơn {{ $order->order_name }}">{{ $order->order_name }}</button>
                                 <div class="muted">Tạo: {{ $order->created_at?->format('d/m/Y') }}</div>
                             </td>
                             <td>
@@ -1143,6 +1144,55 @@
         headers.forEach(header => observer.observe(header));
         observer.observe(table.parentElement);
         updateFrozenColumns();
+    })();
+</script>
+<style>
+    .copy-order-name {
+        background: transparent; border: 0; padding: 0; margin: 0;
+        color: inherit; font: inherit; font-weight: 800; cursor: pointer;
+        max-width: 100%; white-space: normal; overflow-wrap: anywhere; text-align: inherit;
+    }
+    .copy-order-name:hover { text-decoration: underline; text-underline-offset: 3px; }
+    .copy-order-name:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; border-radius: 3px; }
+    .copy-order-toast {
+        position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+        background: #172f60; color: #fff; border-radius: 10px;
+        padding: 12px 18px; z-index: 100; pointer-events: none;
+    }
+</style>
+<div class="copy-order-toast" data-copy-order-toast role="status" aria-live="polite" hidden></div>
+<script>
+    (function () {
+        const toast = document.querySelector('[data-copy-order-toast]');
+        let hideTimer;
+        document.addEventListener('click', async function (event) {
+            const button = event.target.closest('[data-copy-order-name]');
+            if (!button) return;
+            const name = button.dataset.copyOrderName;
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(name);
+                } else {
+                    const input = document.createElement('textarea');
+                    input.value = name;
+                    input.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+                    document.body.appendChild(input);
+                    try {
+                        input.select();
+                        if (!document.execCommand('copy')) throw new Error('Copy failed');
+                    } finally {
+                        input.remove();
+                        button.focus({ preventScroll: true });
+                    }
+                }
+                toast.textContent = 'Đã sao chép tên đơn';
+            } catch (error) {
+                toast.textContent = 'Chưa sao chép được. Bạn vui lòng thử lại.';
+            }
+            toast.hidden = false;
+            clearTimeout(hideTimer);
+            hideTimer = setTimeout(function () { toast.hidden = true; }, 2200);
+        });
     })();
 </script>
 </body>
