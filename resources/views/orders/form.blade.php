@@ -1998,5 +1998,6 @@
     </script>
     </div>
 </div>
+@include('orders.list-position')
 </body>
 </html>

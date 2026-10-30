@@ -1093,7 +1093,6 @@
             });
         })();
     </script>
-    @include('orders.list-position')
     @include('orders.modal-data')
     @include('orders.status-ajax')
     @include('orders.codes-panel')
@@ -1196,6 +1195,7 @@
         });
     })();
 </script>
+@include('orders.list-position')
 </body>
 </html>
 
