@@ -22,7 +22,9 @@
                 }, 4000);
             }
 
-            box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            // Keep feedback visible without moving the order being edited.
+            box.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:100;max-width:90vw';
+            box.setAttribute('role', isError ? 'alert' : 'status');
         }
 
         function messagesFrom(payload) {

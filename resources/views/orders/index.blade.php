@@ -986,7 +986,7 @@
                             <td>
                                 <div class="row-actions">
                                     <a class="link-action" href="{{ route('orders.show', $order) }}">Xem</a>
-                                    <a class="link-action" href="{{ route('orders.edit', $order) }}">Sửa</a>
+                                    <a class="link-action" href="{{ route('orders.edit', ['order' => $order, 'return_query' => request()->getQueryString()]) }}">Sửa</a>
                                     <form method="POST" action="{{ route('orders.destroy', $order) }}" onsubmit="return confirm('Xóa đơn hàng này?')">
                                         @csrf
                                         @method('DELETE')
@@ -1093,6 +1093,7 @@
             });
         })();
     </script>
+    @include('orders.list-position')
     @include('orders.modal-data')
     @include('orders.status-ajax')
     @include('orders.codes-panel')

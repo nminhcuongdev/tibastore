@@ -466,6 +466,9 @@
         <form id="order_form" class="form-shell" method="POST" action="{{ $mode === 'create' ? route('orders.store') : route('orders.update', $order) }}">
             @csrf
             @if ($mode === 'edit')
+                <input type="hidden" name="return_query" value="{{ old('return_query', request('return_query', '')) }}">
+            @endif
+            @if ($mode === 'edit')
                 @method('PUT')
             @endif
 
@@ -614,7 +617,7 @@
             </div>
 
             <div class="actions">
-                <a class="button secondary" href="{{ route('orders.index') }}">Hủy</a>
+                <a class="button secondary" href="{{ route('orders.index') . ($mode === 'edit' && request('return_query') ? '?' . request('return_query') : '') }}">Hủy</a>
                 <button class="button" type="submit">{{ $mode === 'create' ? 'Tạo đơn hàng' : 'Lưu thay đổi' }}</button>
             </div>
         </form>

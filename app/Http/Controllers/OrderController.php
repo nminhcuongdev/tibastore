@@ -398,6 +398,9 @@ class OrderController extends Controller
 
     public function update(Request $request, Order $order): RedirectResponse
     {
+        $request->validate(['return_query' => ['nullable', 'string', 'max:4096']]);
+        parse_str($request->input('return_query') ?? '', $returnParameters);
+
         $this->inventory->syncDueOrders();
 
         $data = $this->validatedData($request, $order);
@@ -436,7 +439,7 @@ class OrderController extends Controller
         });
 
         return redirect()
-            ->route('orders.index')
+            ->route('orders.index', $returnParameters)
             ->with('status', 'Đã cập nhật đơn hàng.');
     }
 
