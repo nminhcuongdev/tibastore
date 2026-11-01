@@ -29,6 +29,11 @@ class OrderDayPeriodTest extends TestCase
         $this->assertSame(10000, $order->discount_amount);
         $this->assertSame(90000, $order->total_with_compensation);
         $this->assertSame(90000, $order->remaining);
+        $this->get('/orders?'.http_build_query(['q' => 'Buổi diễn thử']))->assertOk()
+            ->assertDontSee('order-information-table', false)
+            ->assertSee('Chi tiết sản phẩm đơn Buổi diễn thử')
+            ->assertSee('Mã / Ảnh')->assertSee('Thanh toán lần 1')
+            ->assertSee('data-expanded-remaining', false)->assertSee('90.000 đ');
         $this->get('/orders/'.$order->id)->assertOk()->assertSee('24/10/2031')->assertSee('25/10/2031 Sáng');
         $this->get('/orders/'.$order->id.'/edit')->assertOk()->assertDontSee('name="event_period"', false)->assertSee('Buổi trả');
         $data['return_period'] = 'chieu';

@@ -655,6 +655,7 @@
         }
         .orders-scroll .code-card__meta { flex-wrap: wrap; }
     </style>
+    @include('orders.expanded-invoice-styles')
 </head>
 <body>
 <div class="layout">
@@ -1006,30 +1007,7 @@
                                             <span class="codes-panel__title">{{ $order->order_name }}</span>
                                             <span class="muted">{{ $codeSummary->count() }} mã · tổng {{ number_format($codeTotal) }} cái</span>
                                         </div>
-                                        <div class="codes-grid">
-                                            @foreach ($codeSummary as $code)
-                                                <div class="code-card">
-                                                    @if ($code['image'])
-                                                        <button type="button" class="code-thumb has-image"
-                                                            data-zoom-src="{{ $code['image'] }}"
-                                                            data-zoom-alt="{{ $code['code'] }} - {{ $code['name'] }}"
-                                                            aria-label="Phóng to ảnh {{ $code['code'] }}">
-                                                            <img src="{{ $code['image'] }}" alt="{{ $code['code'] }}" loading="lazy">
-                                                        </button>
-                                                    @else
-                                                        <div class="code-thumb">CHƯA CÓ ẢNH</div>
-                                                    @endif
-                                                    <div class="code-card__info">
-                                                        <div class="code-card__code">{{ $code['code'] }}</div>
-                                                        <div class="code-card__name">{{ $code['name'] ?: '—' }}</div>
-                                                        <div class="code-card__meta">
-                                                            <span class="code-card__size">{{ $code['size'] }}</span>
-                                                            <span class="code-card__qty">×{{ number_format($code['quantity']) }}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            @endforeach
-                                        </div>
+                                        @include('orders.expanded-invoice')
                                     </div>
                                 </td>
                             </tr>

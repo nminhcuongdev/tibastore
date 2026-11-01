@@ -80,6 +80,20 @@
             }
 
             // So ton va so nhan lai trong cache modal khong con dung nua.
+            if (panel) {
+                const status = panel.querySelector('[data-expanded-status]');
+                if (status) status.textContent = order.status_label;
+                const expandedRemaining = panel.querySelector('[data-expanded-remaining]');
+                if (expandedRemaining && order.expanded_remaining) expandedRemaining.textContent = order.expanded_remaining;
+                const total = panel.querySelector('[data-cell="expanded-total"]');
+                if (total && order.expanded_total) total.textContent = order.expanded_total;
+                const compensationRow = panel.querySelector('[data-expanded-compensation-row]');
+                if (compensationRow && order.compensation_amount !== undefined) {
+                    compensationRow.hidden = !order.compensation_amount;
+                    compensationRow.querySelector('[data-expanded-compensation]').textContent =
+                        new Intl.NumberFormat('vi-VN').format(order.compensation_amount) + ' đ';
+                }
+            }
             if (typeof window.clearOrderModalData === 'function') {
                 window.clearOrderModalData(order.id);
             }

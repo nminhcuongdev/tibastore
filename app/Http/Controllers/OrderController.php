@@ -102,7 +102,7 @@ class OrderController extends Controller
             // Danh sach ma hang duoc so ngay tren bang nen can ca san pham cua
             // tung dong; hai truy van eager-load van re hon moi dong mot request.
             ->with([
-                'items:id,order_id,product_id,quantity,returned_quantity,size_pending',
+                'items:id,order_id,product_id,quantity,returned_quantity,size_pending,rental_price,rental_days,note',
                 'items.product:id,code,name,size,image_path',
             ])
             ->join('products', 'products.id', '=', 'orders.product_id')
@@ -514,6 +514,9 @@ class OrderController extends Controller
                     'currently_out' => $order->stock_decreased_at !== null && $order->stock_returned_at === null,
                     'total_with_compensation' => number_format($order->total_with_compensation),
                     'remaining' => number_format($order->remaining),
+                    'expanded_total' => number_format($order->total_with_compensation, 0, ',', '.').' đ',
+                    'expanded_remaining' => number_format($order->remaining, 0, ',', '.').' đ',
+                    'compensation_amount' => (int) $order->compensation_amount,
                 ],
             ]);
         }
