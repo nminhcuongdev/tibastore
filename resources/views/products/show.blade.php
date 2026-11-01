@@ -336,7 +336,6 @@
                         </th>
                         <th>Đang cho thuê</th>
                         <th>Tổng số hàng</th>
-                        <th>Vải</th>
                         <th>Danh mục</th>
                         <th>Ngày dự kiến nhận</th>
                         <th>SL nhận dự kiến</th>
@@ -375,7 +374,6 @@
                             </td>
                             <td>{{ number_format($rentedByProduct[$variant->id] ?? 0) }}</td>
                             <td>{{ number_format($variant->stock_quantity + ($rentedByProduct[$variant->id] ?? 0)) }}</td>
-                            <td>{{ $variant->fabric }}</td>
                             <td>{{ $variant->category ?: 'N/A' }}</td>
                             <td>
                                 @forelse ($variant->expectedReceipts->whereNull('received_at') as $receipt)
@@ -406,7 +404,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td class="empty" colspan="12">Chưa có sản phẩm phù hợp.</td>
+                            <td class="empty" colspan="11">Chưa có sản phẩm phù hợp.</td>
                         </tr>
                     @endforelse
                 </tbody>
