@@ -12,6 +12,19 @@
             'price' => null, 'days' => 1, 'amount' => $order->total_amount, 'note' => null,
         ]));
     }
+    $invoiceLines = $invoiceLines->groupBy('code')->map(function ($lines) {
+        $line = $lines->first();
+        $line['image'] = $lines->firstWhere('image', '!=', null)['image'] ?? null;
+        $line['sizes'] = $lines->groupBy('size')->map(fn ($sizes, $size) => [
+            'size' => $size, 'quantity' => $sizes->sum('quantity'),
+        ])->values();
+        $line['quantity'] = $lines->sum('quantity');
+        $line['amount'] = $lines->sum('amount');
+        $line['prices'] = $lines->pluck('price')->unique()->values();
+        $line['day_values'] = $lines->pluck('days')->unique()->values();
+        $line['note'] = $lines->pluck('note')->filter()->unique()->implode('; ');
+        return $line;
+    })->values();
 @endphp
 <div class="order-invoice-wrap">
     <table class="order-invoice-table" aria-label="Chi tiết sản phẩm đơn {{ $order->order_name }}">
@@ -23,7 +36,7 @@
                 @if($line['image'])
                     <button type="button" class="code-thumb has-image" data-zoom-src="{{ $line['image'] }}" data-zoom-alt="{{ $line['code'] }} - {{ $line['name'] }}" aria-label="Phóng to ảnh {{ $line['code'] }}"><img src="{{ $line['image'] }}" alt="{{ $line['code'] }}" loading="lazy"></button>
                 @else <span class="order-invoice-no-image">Chưa có ảnh</span> @endif
-            </td><td>{{ $line['name'] }}</td><td>{{ $line['size'] }}</td><td class="order-invoice-number">{{ number_format($line['quantity']) }}</td><td class="order-invoice-number">{{ rtrim(rtrim(number_format($line['days'], 2, '.', ''), '0'), '.') }}</td><td class="order-invoice-money">{{ $line['price'] === null ? '—' : number_format($line['price'], 0, ',', '.') }}</td><td class="order-invoice-money"><strong>{{ number_format($line['amount'], 0, ',', '.') }}</strong></td><td>{{ $line['note'] ?: '—' }}</td></tr>
+            </td><td>{{ $line['name'] }}</td><td>@foreach($line['sizes'] as $size)<div class="order-invoice-size">{{ $size['size'] }}: {{ number_format($size['quantity']) }}</div>@endforeach</td><td class="order-invoice-number">{{ number_format($line['quantity']) }}</td><td class="order-invoice-number">@foreach($line['day_values'] as $days)<div>{{ rtrim(rtrim(number_format($days, 2, '.', ''), '0'), '.') }}</div>@endforeach</td><td class="order-invoice-money">@foreach($line['prices'] as $price)<div>{{ $price === null ? '—' : number_format($price, 0, ',', '.') }}</div>@endforeach</td><td class="order-invoice-money"><strong>{{ number_format($line['amount'], 0, ',', '.') }}</strong></td><td>{{ $line['note'] ?: '—' }}</td></tr>
         @endforeach
         </tbody>
         <tfoot>

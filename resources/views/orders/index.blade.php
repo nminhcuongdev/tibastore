@@ -912,7 +912,7 @@
                                         <button type="button" class="button secondary codes-toggle" data-codes-toggle="{{ $order->id }}"
                                             aria-expanded="false" aria-controls="codes-panel-{{ $order->id }}">
                                             <span class="codes-caret" aria-hidden="true">▸</span>
-                                            Sổ {{ $codeSummary->count() }} mã
+                                            Sổ {{ $codeSummary->pluck('code')->unique()->count() }} mã
                                         </button>
                                     </div>
                                 @endif
@@ -997,7 +997,7 @@
                                     <div class="codes-panel">
                                         <div class="codes-panel__head">
                                             <span class="codes-panel__title">{{ $order->order_name }}</span>
-                                            <span class="muted">{{ $codeSummary->count() }} mã · tổng {{ number_format($codeTotal) }} cái</span>
+                                            <span class="muted">{{ $codeSummary->pluck('code')->unique()->count() }} mã · tổng {{ number_format($codeTotal) }} cái</span>
                                         </div>
                                         @include('orders.expanded-invoice')
                                     </div>
