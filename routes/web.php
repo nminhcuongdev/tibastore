@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CarrierDirectoryController;
 use App\Http\Controllers\DraftInvoiceController;
 use App\Http\Controllers\ChangeLogController;
 use App\Http\Controllers\OrderController;
@@ -33,6 +34,7 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
+    Route::get('/carrier-directory', [CarrierDirectoryController::class, 'index'])->name('carrier-directory.index');
     Route::resource('draft-invoices', DraftInvoiceController::class)->except(['show']);
     Route::get('/dashboard', function () {
         return redirect()->route('products.index');
