@@ -996,7 +996,7 @@
                                 <td colspan="18">
                                     <div class="codes-panel">
                                         <div class="codes-panel__head">
-                                            <span class="codes-panel__title">{{ $order->order_name }}</span>
+                                            <span class="codes-panel__title"><span class="click-copy" data-copy-value="{{ $order->order_name }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $order->order_name }}</span></span>
                                             <span class="muted">{{ $codeSummary->pluck('code')->unique()->count() }} mã · tổng {{ number_format($codeTotal) }} cái</span>
                                         </div>
                                         @include('orders.expanded-invoice')

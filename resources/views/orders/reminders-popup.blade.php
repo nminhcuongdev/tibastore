@@ -145,7 +145,7 @@
                     <article class="reminder-item">
                         <div class="reminder-title" style="color:#b4233f">{{ ($reminder['size_pending'] ?? false) ? 'Cần xác nhận size và đòi đồ về sớm' : 'Cảnh báo thiếu hàng nếu đồ chưa về kịp' }}</div>
                         <div class="reminder-name">
-                            <a href="{{ route('orders.show', $reminder['order']) }}">{{ $reminder['order']->order_name }}</a>
+                            <a href="{{ route('orders.show', $reminder['order']) }}"><span class="click-copy" data-copy-value="{{ $reminder['order']->order_name }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $reminder['order']->order_name }}</span></a>
                             — lấy {{ $reminder['order']->pickup_date->format('d/m/Y') }}
                         </div>
                         <div class="reminder-meta">
@@ -158,7 +158,7 @@
                                     <span class="reminder-product-photo reminder-product-empty">Chưa có ảnh</span>
                                 @endif
                                 <div>
-                                    Mã <strong>{{ $reminder['product']?->code }}</strong>
+                                    Mã <strong><span class="click-copy" data-copy-value="{{ $reminder['product']?->code }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $reminder['product']?->code }}</span></strong>
                                     @if ($reminder['size_pending'] ?? false)
                                         — có dòng chưa chốt size. Đơn mới cần {{ number_format($reminder['needed_quantity']) }} cái theo mã; cần xác nhận size và đòi đồ về sớm. Chưa xác định số thiếu theo từng size.
                                     @else
@@ -168,7 +168,7 @@
                             </div>
                             @foreach ($reminder['returns'] as $returnItem)
                                 <div>
-                                    Đòi đồ từ <a href="{{ route('orders.show', $returnItem->order) }}">{{ $returnItem->order->order_name }}</a>
+                                    Đòi đồ từ <a href="{{ route('orders.show', $returnItem->order) }}"><span class="click-copy" data-copy-value="{{ $returnItem->order->order_name }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $returnItem->order->order_name }}</span></a>
                                     — {{ number_format($returnItem->quantity) }} cái, size {{ $returnItem->displaySize() }}, trả {{ $returnItem->order->return_date->format('d/m/Y') }} {{ $returnItem->order->periodLabel($returnItem->order->return_period) }}.
                                     @if ($returnItem->order->phone) Điện thoại: {{ $returnItem->order->phone }}. @endif
                                 </div>
@@ -182,14 +182,14 @@
                     <article class="reminder-item">
                         <div>
                             <div class="reminder-title">{{ $reminder['title'] }} - {{ $reminder['date']?->format('d/m/Y') }}</div>
-                            <div class="reminder-name">{{ $order->order_name }}</div>
+                            <div class="reminder-name"><span class="click-copy" data-copy-value="{{ $order->order_name }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $order->order_name }}</span></div>
                         </div>
 
                         <div class="reminder-meta">
                             @forelse ($order->items as $item)
-                                <div>Mã hàng: <strong>{{ $item->product->code }}</strong> - {{ $item->product->name }} | Size: {{ $item->product->size }} | SL: {{ number_format($item->quantity) }}</div>
+                                <div>Mã hàng: <strong><span class="click-copy" data-copy-value="{{ $item->product->code }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $item->product->code }}</span></strong> - {{ $item->product->name }} | Size: {{ $item->product->size }} | SL: {{ number_format($item->quantity) }}</div>
                             @empty
-                                <div>Mã hàng: <strong>{{ $order->product->code }}</strong> - {{ $order->product->name }} | Size: {{ $order->product->size }}</div>
+                                <div>Mã hàng: <strong><span class="click-copy" data-copy-value="{{ $order->product->code }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $order->product->code }}</span></strong> - {{ $order->product->name }} | Size: {{ $order->product->size }}</div>
                             @endforelse
                             <div>Số lượng: <strong>{{ number_format($order->items->sum('quantity') ?: $order->quantity) }}</strong> | Trạng thái hiện tại: {{ $order->statusLabel() }}</div>
                             <div>{{ $reminder['message'] }}</div>

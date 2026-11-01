@@ -3,7 +3,7 @@
     <p>Số lượng khả dụng theo từng size, tổng hợp riêng cho mỗi mã trong kết quả tìm kiếm. Số âm thể hiện lượng đang vượt tồn.</p>
     @foreach($products->groupBy('code') as $code => $variants)
         <div class="stock-summary-card">
-            <h3>{{ $code }} <span>{{ $variants->first()->name }}</span></h3>
+            <h3><span class="click-copy" data-copy-value="{{ $code }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $code }}</span> <span>{{ $variants->first()->name }}</span></h3>
             <div class="stock-summary-scroll">
                 <table class="stock-summary-table">
                     <thead><tr>@foreach($dates as $date)<th scope="col">Ngày {{ $date->format('d/m') }}<span>{{ $date->format('Y') }}</span></th>@endforeach</tr></thead>

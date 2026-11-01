@@ -221,7 +221,7 @@
                             <td>
                                 <div class="name">{{ $history->created_at?->format('d/m/Y H:i') }}</div>
                             </td>
-                            <td class="code">{{ $history->product->code }}</td>
+                            <td class="code"><span class="click-copy" data-copy-value="{{ $history->product->code }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $history->product->code }}</span></td>
                             <td>{{ $history->product->name }}</td>
                             <td>{{ $history->product->size }}</td>
                             <td>{{ $history->user?->name ?? 'Hệ thống' }}</td>

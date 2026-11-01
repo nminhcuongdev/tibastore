@@ -611,7 +611,7 @@
                                     </td>
                                     <td class="code">
                                         <div class="code-line">
-                                            <a href="{{ route('products.show', $product) }}">{{ $product->code }}</a>
+                                            <a href="{{ route('products.show', $product) }}"><span class="click-copy" data-copy-value="{{ $product->code }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $product->code }}</span></a>
                                             <button class="copy-code" type="button" data-copy-code="{{ $product->code }}">copy</button>
                                         </div>
                                     </td>

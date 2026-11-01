@@ -382,7 +382,7 @@
 <div class="page">
 
 <main class="content">
-        <h1>{{ $product->code }} - {{ $product->name }}</h1>
+        <h1><span class="click-copy" data-copy-value="{{ $product->code }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $product->code }}</span> - {{ $product->name }}</h1>
         <div class="summary">
             <div class="metric">
                 <div class="metric-label">Tồn hiện tại</div>
@@ -470,7 +470,7 @@
                         <div class="event">
                             <div class="code">{{ $point['display_date'] }}</div>
                             <div>
-                                <div class="name">{{ $point['label'] }} - {{ $point['order_name'] }}</div>
+                                <div class="name">{{ $point['label'] }} - <span class="click-copy" data-copy-value="{{ $point['order_name'] }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $point['order_name'] }}</span></div>
                                 <div class="muted">Trạng thái hiện tại: {{ $point['status'] }}</div>
                             </div>
                             <div class="event-change {{ $point['quantity_change'] >= 0 ? 'positive' : 'negative' }}">
@@ -543,7 +543,7 @@
                                         <div class="day-events">
                                             @foreach ($row['events'] as $event)
                                                 <div class="day-event">
-                                                    <strong>{{ $event['label'] }}</strong> - {{ $event['order_name'] }}
+                                                    <strong>{{ $event['label'] }}</strong> - <span class="click-copy" data-copy-value="{{ $event['order_name'] }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $event['order_name'] }}</span>
                                                     @if ($event['quantity_change'] !== 0)
                                                         ({{ $event['quantity_change'] > 0 ? '+' : '' }}{{ number_format($event['quantity_change']) }})
                                                     @else
@@ -591,7 +591,7 @@
                                 <td>{{ $order->pickup_date?->format('d/m/Y') }}</td>
                                 <td>{{ $order->event_date?->format('d/m/Y') }}</td>
                                 <td>{{ $order->return_date?->format('d/m/Y') }}</td>
-                                <td>{{ $order->order_name }}</td>
+                                <td><span class="click-copy" data-copy-value="{{ $order->order_name }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $order->order_name }}</span></td>
                                 <td>{{ number_format($order->tracked_quantity ?? $order->quantity) }}</td>
                                 <td>
                                     <span class="status-badge status-{{ $order->status }}">{{ $order->statusLabel() }}</span>

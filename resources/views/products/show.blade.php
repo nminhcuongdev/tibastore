@@ -254,7 +254,7 @@
 
 <main class="content">
         <h1>
-            {{ $product->code }} - {{ $product->name }}
+            <span class="click-copy" data-copy-value="{{ $product->code }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $product->code }}</span> - {{ $product->name }}
             @if ($product->isDiscontinued())
                 <span class="off-badge">Đã ngừng dùng</span>
             @endif
@@ -283,7 +283,7 @@
             </div>
             <div class="metric">
                 <div class="metric-label">Mã hàng</div>
-                <div class="metric-value">{{ $product->code }}</div>
+                <div class="metric-value"><span class="click-copy" data-copy-value="{{ $product->code }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $product->code }}</span></div>
             </div>
         </div>
 
@@ -349,7 +349,7 @@
                                     @endif
                                 </div>
                             </td>
-                            <td class="code">{{ $variant->code }}</td>
+                            <td class="code"><span class="click-copy" data-copy-value="{{ $variant->code }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $variant->code }}</span></td>
                             <td>
                                 <div class="name">{{ $variant->name }}</div>
                                 <div class="muted">Cập nhật: {{ $variant->updated_at?->format('d/m/Y') }}</div>

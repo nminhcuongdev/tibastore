@@ -117,6 +117,7 @@
         .app-sidebar .logout { width: auto; }
     }
 </style>
+@include('partials.click-copy')
 <aside class="app-sidebar" data-sidebar>
     <button class="sidebar-toggle" type="button" data-sidebar-toggle
         aria-label="Thu gọn / mở rộng menu" aria-expanded="true" title="Thu gọn menu">

@@ -32,7 +32,7 @@
         <thead><tr><th>STT</th><th>Mã / Ảnh</th><th>Tên sản phẩm</th><th>Size / ĐVT</th><th>SL</th><th>Số ngày</th><th>Đơn giá</th><th>Thành tiền</th><th>Ghi chú</th></tr></thead>
         <tbody>
         @foreach($invoiceLines as $line)
-            <tr><td>{{ $loop->iteration }}</td><td><strong class="order-invoice-code">{{ $line['code'] }}</strong>
+            <tr><td>{{ $loop->iteration }}</td><td><strong class="order-invoice-code"><span class="click-copy" data-copy-value="{{ $line['code'] }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $line['code'] }}</span></strong>
                 @if($line['image'])
                     <button type="button" class="code-thumb has-image" data-zoom-src="{{ $line['image'] }}" data-zoom-alt="{{ $line['code'] }} - {{ $line['name'] }}" aria-label="Phóng to ảnh {{ $line['code'] }}"><img src="{{ $line['image'] }}" alt="{{ $line['code'] }}" loading="lazy"></button>
                 @else <span class="order-invoice-no-image">Chưa có ảnh</span> @endif

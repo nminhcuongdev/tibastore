@@ -235,7 +235,7 @@
                                     <div class="thumb">CHƯA CÓ ẢNH</div>
                                 @endif
                                 <div class="prod-info">
-                                    <div><span class="code">{{ $product->code }}</span> — size {{ $product->size }}</div>
+                                    <div><span class="code"><span class="click-copy" data-copy-value="{{ $product->code }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $product->code }}</span></span> — size {{ $product->size }}</div>
                                     <div class="muted">{{ $product->name }} · tồn hiện tại: {{ number_format($product->stock_quantity) }}</div>
                                     @if (! empty($pendingInspection[$product->id]))
                                         <div class="pending-check" title="Đã về kho, chưa kiểm">

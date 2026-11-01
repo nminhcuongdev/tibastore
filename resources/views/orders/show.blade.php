@@ -417,7 +417,7 @@
                 <div class="receipt-brand"><img src="{{ route('brand.logo', [], false) }}?v={{ filemtime(resource_path('images/tiba-invoice-logo.png')) }}" alt="Logo Tiba Store" fetchpriority="high"><div><strong>TIBA STORE</strong><span>TRANG PHỤC BIỂU DIỄN</span></div></div>
                 <div class="receipt-heading">
                     <p class="eyebrow">Thông tin đơn hàng</p>
-                    <h1>{{ $order->order_name }}</h1>
+                    <h1><span class="click-copy" data-copy-value="{{ $order->order_name }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $order->order_name }}</span></h1>
                 </div>
                 <div class="order-id">
                     <div>Mã đơn: #{{ $order->id }}</div>
@@ -553,7 +553,7 @@
                                             </div>
                                         @endif
                                     </td>
-                                    <td class="code">{{ $code }}</td>
+                                    <td class="code"><span class="click-copy" data-copy-value="{{ $code }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $code }}</span></td>
                                     <td data-sort-value="{{ $product?->name ?? '' }}">
                                         <div class="value">{{ $product?->name ?? 'Sản phẩm không còn tồn tại' }}</div>
                                         <div class="muted">Tồn hiện tại: {{ number_format($items->unique(fn ($item) => $item->product?->id)->sum(fn ($item) => $item->product?->stock_quantity ?? 0)) }}</div>
@@ -614,7 +614,7 @@
                                         $missing = $item->quantity - $returned;
                                     @endphp
                                     <tr>
-                                        <td class="code">{{ $item->product?->code ?? 'N/A' }}</td>
+                                        <td class="code"><span class="click-copy" data-copy-value="{{ $item->product?->code ?? 'N/A' }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $item->product?->code ?? 'N/A' }}</span></td>
                                         <td>{{ $item->displaySize() }}</td>
                                         <td>{{ number_format($item->quantity) }}</td>
                                         <td>{{ number_format($returned) }}</td>
