@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\DraftInvoice;
+use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
@@ -25,14 +26,46 @@ class DraftInvoiceTest extends TestCase
                 ['name' => 'Quạt', 'unit' => 'Cái', 'quantity' => 7, 'unit_price' => 35000],
             ]];
         $this->get('/draft-invoices/create')->assertOk()->assertSee('invoice-items', false);
+        $code = 'INV-'.bin2hex(random_bytes(5));
+        Product::create(['code' => $code, 'name' => 'Áo mẫu', 'size' => 'M', 'fabric' => 'Lụa', 'category' => 'Áo biểu diễn', 'stock_quantity' => 5]);
+        Product::create(['code' => $code, 'name' => 'Áo mẫu', 'size' => 'L', 'fabric' => 'Lụa', 'stock_quantity' => 5,
+            'image_path' => 'products/invoice-test.jpg']);
+        $this->get('/draft-invoices/create')->assertOk()->assertViewHas('productCodes', function ($codes) use ($code) {
+            $matches = array_values(array_filter($codes, fn ($product) => $product['code'] === $code));
+            return count($matches) === 1 && $matches[0]['category'] === 'Áo biểu diễn'
+                && str_ends_with($matches[0]['image'], '/storage/products/invoice-test.jpg');
+        })->assertSee('invoice-product-picker', false)->assertSee('tiba-invoice-logo.png');
+        $data['items'][0]['code'] = $code;
         $this->post('/draft-invoices', $data)->assertSessionHasNoErrors()->assertRedirect();
         $invoice = DraftInvoice::where('customer_name', $data['customer_name'])->firstOrFail();
         $this->assertEquals(2965000, $invoice->total);
+        $this->assertSame($code, $invoice->items[0]['code']);
         $this->get('/draft-invoices/'.$invoice->id.'/edit')->assertOk()->assertSee('Chau test invoice')->assertSee('invoice-items', false);
         $this->get('/draft-invoices?q=0901122456')->assertOk()->assertSee('Chau test invoice');
         $data['items'] = [['name' => 'Quạt', 'quantity' => 1.5, 'unit_price' => 35000]];
         $this->put('/draft-invoices/'.$invoice->id, $data)->assertSessionHasNoErrors();
         $this->assertEquals(52500, $invoice->fresh()->total);
+        $data['discount_type'] = 'percent';
+        $data['discount_value'] = 12.5;
+        $this->put('/draft-invoices/'.$invoice->id, $data)->assertSessionHasNoErrors();
+        $this->assertEquals(6563, $invoice->fresh()->discount_amount);
+        $this->assertEquals(45937, $invoice->fresh()->total);
+        $data['discount_type'] = 'fixed';
+        $data['discount_value'] = 5000;
+        $this->put('/draft-invoices/'.$invoice->id, $data)->assertSessionHasNoErrors();
+        $this->assertEquals(47500, $invoice->fresh()->total);
+        $this->get('/draft-invoices?q=0901122456')->assertOk()->assertSee('47.500');
+        $data['discount_value'] = 52501;
+        $this->postJson('/draft-invoices', $data)->assertUnprocessable()->assertJsonValidationErrors('discount_value');
+        $data['discount_type'] = 'percent';
+        $data['discount_value'] = 101;
+        $this->postJson('/draft-invoices', $data)->assertUnprocessable()->assertJsonValidationErrors('discount_value');
+        $data['discount_value'] = -1;
+        $this->postJson('/draft-invoices', $data)->assertUnprocessable()->assertJsonValidationErrors('discount_value');
+        $data['discount_value'] = 100;
+        $this->put('/draft-invoices/'.$invoice->id, $data)->assertSessionHasNoErrors();
+        $this->assertEquals(0, $invoice->fresh()->total);
+        $this->get('/draft-invoices/'.$invoice->id.'/edit')->assertOk();
         $data['items'][0]['unit_price'] = -1;
         $this->postJson('/draft-invoices', $data)->assertUnprocessable()->assertJsonValidationErrors('items.0.unit_price');
         $data['items'] = [];
