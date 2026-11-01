@@ -34,7 +34,7 @@ class DraftInvoiceTest extends TestCase
             $matches = array_values(array_filter($codes, fn ($product) => $product['code'] === $code));
             return count($matches) === 1 && $matches[0]['category'] === 'Áo biểu diễn'
                 && str_ends_with($matches[0]['image'], '/storage/products/invoice-test.jpg');
-        })->assertSee('invoice-product-picker', false)->assertSee('/draft-invoices/logo?v=');
+        })->assertSee('invoice-product-picker', false)->assertSee('/brand/tiba-logo?v=');
         $this->get('/draft-invoices/logo')->assertOk()->assertHeader('Content-Type', 'image/png');
         $data['items'][0]['code'] = $code;
         $this->post('/draft-invoices', $data)->assertSessionHasNoErrors()->assertRedirect();
@@ -77,6 +77,7 @@ class DraftInvoiceTest extends TestCase
 
     public function test_guest_cannot_access_draft_invoices(): void
     {
+        $this->get('/brand/tiba-logo')->assertOk()->assertHeader('Content-Type', 'image/png');
         $this->get('/draft-invoices')->assertRedirect('/login');
         $this->post('/draft-invoices', [])->assertRedirect('/login');
     }

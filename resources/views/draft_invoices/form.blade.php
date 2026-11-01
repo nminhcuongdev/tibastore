@@ -8,7 +8,7 @@
 @if($errors->any())<div class="errors" role="alert">@foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach</div>@endif
 <div class="editor-wrap"><section class="paper">
 <header class="invoice-header">
-<div class="invoice-brand"><div class="invoice-logo"><img src="{{ route('draft-invoices.logo', [], false) }}?v={{ filemtime(base_path('public/images/tiba-invoice-logo.png')) }}" alt="Logo Tiba Store" loading="eager" fetchpriority="high"></div><div><h2>TIBA STORE</h2><p>TRANG PHỤC BIỂU DIỄN</p></div></div>
+<div class="invoice-brand"><div class="invoice-logo"><img src="{{ route('brand.logo', [], false) }}?v={{ filemtime(resource_path('images/tiba-invoice-logo.png')) }}" alt="Logo Tiba Store" loading="eager" fetchpriority="high"></div><div><h2>TIBA STORE</h2><p>TRANG PHỤC BIỂU DIỄN</p></div></div>
 <div class="invoice-heading"><span class="invoice-eyebrow">PHIẾU BÁN HÀNG</span><h3>HÓA ĐƠN</h3>@if($invoice->exists)<span class="invoice-reference">Số phiếu: #{{ str_pad($invoice->id, 5, '0', STR_PAD_LEFT) }}</span>@endif</div>
 </header>
 <div class="invoice-meta"><span>THÔNG TIN KHÁCH HÀNG</span><div class="invoice-date">Ngày lập <input type="date" name="invoice_date" aria-label="Ngày hóa đơn" required value="{{ old('invoice_date', $invoice->invoice_date?->format('Y-m-d')) }}"></div></div>

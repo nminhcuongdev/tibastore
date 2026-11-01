@@ -400,16 +400,22 @@
     @include('orders.status-colors')
     @include('partials.compact')
     @include('orders.entry-table-styles')
+    @include('orders.editor-theme')
 </head>
-<body>
+<body class="order-editor">
 <div class="layout">
 @include('partials.sidebar', ['active' => 'orders'])
 <div class="page">
 
     <main class="content">
-        <div class="heading">
+        <div class="heading order-editor-header">
+            <div class="order-editor-brand"><img src="{{ route('brand.logo', [], false) }}?v={{ filemtime(resource_path('images/tiba-invoice-logo.png')) }}" alt="Logo Tiba Store" fetchpriority="high"><div><span class="order-editor-eyebrow">TIBA STORE</span><span class="order-editor-tagline">TRANG PHỤC BIỂU DIỄN</span></div></div>
+            <div class="order-editor-title">
+            <span class="order-editor-kicker">QUẢN LÝ ĐƠN HÀNG @if($mode === 'edit') · #{{ $order->id }} @endif</span>
             <h1>{{ $mode === 'create' ? 'Tạo đơn hàng mới' : 'Sửa thông tin đơn hàng' }}</h1>
             <p>Chọn nhiều sản phẩm từ kho, cập nhật lịch lấy, lịch diễn, lịch trả và trạng thái xử lý đơn.</p>
+            </div>
+            <a class="order-editor-back" href="{{ route('orders.index') }}">Về danh sách <span aria-hidden="true">↗</span></a>
         </div>
 
         @if (session('status'))
@@ -465,6 +471,7 @@
         @endphp
 
         <form id="order_form" class="form-shell" method="POST" action="{{ $mode === 'create' ? route('orders.store') : route('orders.update', $order) }}">
+            <div class="order-editor-section"><span>01</span><div><h2>Thông tin khách hàng</h2><p>Người đặt, liên hệ và ghi chú cho đơn hàng</p></div></div>
             @csrf
             @if ($mode === 'edit')
                 <input type="hidden" name="return_query" value="{{ old('return_query', request('return_query', '')) }}">
@@ -521,6 +528,7 @@
                 @error('carrier') <div class="error">{{ $message }}</div> @enderror
             </div>
 
+            <div class="order-editor-section"><span>02</span><div><h2>Lịch thuê & xử lý</h2><p>Ngày lấy, ngày diễn, ngày trả và trạng thái đơn</p></div></div>
             <div class="field">
                 <label for="pickup_date">Ngày lấy</label>
                 <input id="pickup_date" name="pickup_date" type="date" value="{{ old('pickup_date', $order->pickup_date?->format('Y-m-d')) }}" required>
@@ -557,6 +565,7 @@
                 @error('status') <div class="error">{{ $message }}</div> @enderror
             </div>
 
+            <div class="order-editor-section"><span>03</span><div><h2>Thanh toán & chiết khấu</h2><p>Theo dõi tiền hàng, vận chuyển và các lần thanh toán</p></div></div>
             <div class="field">
                 <label for="source">Nguồn hàng</label>
                 <select id="source" name="source" required>
@@ -604,8 +613,8 @@
                 @error('discount_amount') <div class="error">{{ $message }}</div> @enderror
             </div>
 
+            <div class="order-editor-section"><span>04</span><div><h2>Sản phẩm trong đơn</h2><p>Chọn mã, size và số lượng trực tiếp trong bảng</p></div></div>
             <div class="field full">
-                <label>Sản phẩm trong đơn</label>
                 <div id="stock_conflict" class="stock-conflict" style="display:none"></div>
                 <div id="turnaround_warning" class="stock-conflict" role="alert" style="display:none"></div>
                 <div class="order-entry-wrap"><table class="order-entry-table"><colgroup><col style="width:4%"><col style="width:17%"><col style="width:11%"><col style="width:37%"><col style="width:10%"><col style="width:7%"><col style="width:10%"><col style="width:4%"></colgroup><thead><tr><th>STT</th><th>Mã / Ảnh</th><th>Tên sản phẩm</th><th>Size · Số lượng · Ghi chú</th><th>Giá thuê</th><th>Số ngày</th><th>Thành tiền</th><th></th></tr></thead><tbody id="order_items" class="order-items"></tbody></table></div>
