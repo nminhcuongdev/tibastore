@@ -399,6 +399,7 @@
     </style>
     @include('orders.status-colors')
     @include('partials.compact')
+    @include('orders.entry-table-styles')
 </head>
 <body>
 <div class="layout">
@@ -607,7 +608,7 @@
                 <label>Sản phẩm trong đơn</label>
                 <div id="stock_conflict" class="stock-conflict" style="display:none"></div>
                 <div id="turnaround_warning" class="stock-conflict" role="alert" style="display:none"></div>
-                <div id="order_items" class="order-items"></div>
+                <div class="order-entry-wrap"><table class="order-entry-table"><colgroup><col style="width:4%"><col style="width:17%"><col style="width:16%"><col style="width:32%"><col style="width:10%"><col style="width:7%"><col style="width:10%"><col style="width:4%"></colgroup><thead><tr><th>STT</th><th>Mã / Ảnh</th><th>Tên sản phẩm</th><th>Size · Số lượng · Ghi chú</th><th>Giá thuê</th><th>Số ngày</th><th>Thành tiền</th><th></th></tr></thead><tbody id="order_items" class="order-items"></tbody></table></div>
                 <div class="items-actions">
                     <button id="add_item_button" class="button secondary" type="button">+ Thêm sản phẩm</button>
                 </div>
@@ -1142,6 +1143,7 @@
 
         function renumberRows() {
             let index = 0;
+            itemsContainer.querySelectorAll('[data-block-number]').forEach((number, i) => number.textContent = i + 1);
 
             itemsContainer.querySelectorAll('.size-row').forEach(sizeRow => {
                 sizeRow.querySelector('[data-product-id]').name = `items[${index}][product_id]`;
@@ -1187,15 +1189,17 @@
 
         function renderSuggestions(block, keyword = '') {
             const suggestions = block.querySelector('[data-suggestions]');
-            const normalizedKeyword = keyword.trim().toLowerCase();
+            const normalizeSearch = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').toLowerCase().trim();
+            const normalizedKeyword = normalizeSearch(keyword);
+            const category = block.querySelector('[data-category]').value;
             const matches = productOptions.filter(group => {
-                const hasKeyword = group.code.toLowerCase().includes(normalizedKeyword)
-                    || group.name.toLowerCase().includes(normalizedKeyword);
+                const hasKeyword = normalizeSearch(group.code + ' ' + group.name + ' ' + group.items.map(item => item.category || '').join(' ')).includes(normalizedKeyword);
+                const hasCategory = !category || group.items.some(item => item.category === category);
 
                 // Cho phép chọn lại mã đã có (thêm khối cùng mã với giá khác).
                 const hasStock = group.items.some(product => stockLimit(product) > 0);
 
-                return hasKeyword && hasStock;
+                return hasKeyword && hasStock && hasCategory;
             }).slice(0, 20);
 
             suggestions.innerHTML = '';
@@ -1228,6 +1232,14 @@
             });
 
             suggestions.style.display = 'block';
+            const rect = block.querySelector('[data-search]').getBoundingClientRect();
+            const width = Math.min(360, window.innerWidth - 20);
+            suggestions.style.width = width + 'px';
+            suggestions.style.left = Math.max(10, Math.min(rect.left, window.innerWidth - width - 10)) + 'px';
+            const below = window.innerHeight - rect.bottom;
+            const above = below < 250 && rect.top > below;
+            suggestions.style.maxHeight = Math.max(120, Math.min(320, (above ? rect.top : below) - 20)) + 'px';
+            suggestions.style.top = (above ? Math.max(10, rect.top - suggestions.offsetHeight - 6) : rect.bottom + 6) + 'px';
         }
 
         function clearSizeRows(block) {
@@ -1256,7 +1268,7 @@
             availableProducts.forEach(product => {
                 const option = document.createElement('option');
                 option.value = product.id;
-                option.textContent = `${product.size} | Tồn dự kiến: ${stockLimit(product)} | Vải: ${product.fabric}`;
+                option.textContent = `${product.size} | Tồn dự kiến: ${stockLimit(product)}`;
                 option.selected = ! isPending && Number(product.id) === Number(currentSelection);
                 sizeSelect.appendChild(option);
             });
@@ -1327,32 +1339,22 @@
             }
 
             updateAddSizeButton(block);
+            renderSelectedInfo(block);
             updateComputedTotal();
         }
 
         function renderSelectedInfo(block) {
             const selectedInfo = block.querySelector('[data-selected-info]');
-            const lines = Array.from(block.querySelectorAll('.size-row'))
-                .map(sizeRow => findProductById(sizeRow.querySelector('[data-product-id]').value))
-                .filter(Boolean)
-                .map(selected => `${selected.group.code} - ${selected.item.name} | Size: ${selected.item.size} | Tồn dự kiến: ${stockLimit(selected.item)} | Vải: ${selected.item.fabric}`);
-
-            selectedInfo.textContent = '';
-
-            if (lines.length === 0) {
-                selectedInfo.style.display = 'none';
-                return;
-            }
-
-            lines.forEach((line, index) => {
-                if (index > 0) {
-                    selectedInfo.appendChild(document.createElement('br'));
-                }
-
-                selectedInfo.appendChild(document.createTextNode(line));
-            });
-
+            const group = productOptions.find(item => item.code === block.dataset.productCode);
+            selectedInfo.textContent = group ? group.name : 'Chưa chọn sản phẩm';
             selectedInfo.style.display = 'block';
+            const image = block.querySelector('[data-code-preview]');
+            const product = group && group.items.find(item => item.image_url);
+            image.hidden = !product;
+            const thumb = image.closest('button');
+            thumb.disabled = !product;
+            if (product) { image.src = product.image_url; image.alt = group.name; thumb.dataset.fullImage = product.image_url; }
+            else { image.removeAttribute('src'); delete thumb.dataset.fullImage; }
         }
 
         function refreshProductChoices() {
@@ -1518,42 +1520,27 @@
         }
 
         function addItemBlock(blockData = {}) {
-            const block = document.createElement('div');
+            const block = document.createElement('tr');
             block.className = 'order-item';
             block.dataset.index = itemIndex;
             const searchId = `product_search_${itemIndex}`;
             block.innerHTML = `
-                <div class="drag-handle" data-drag-handle title="Kéo để đổi vị trí thẻ mã hàng">
-                    &#8942;&#8942;<span class="hint">Kéo để sắp xếp</span>
-                </div>
-                <div class="field product-picker-cell">
-                    <label for="${searchId}">Mã hàng</label>
-                    <input id="${searchId}" data-search type="search" autocomplete="off" placeholder="Nhập mã hàng hoặc tên hàng..." required>
-                    <div data-suggestions class="product-suggestions"></div>
-                </div>
-                <div data-size-rows class="size-rows"></div>
-                <div class="rental-row">
-                    <div class="field rental-field">
-                        <label>Giá thuê (mã này)</label>
-                        <input data-block-rental type="number" min="0" step="1000" value="0">
-                    </div>
-                    <div class="field">
-                        <label>Số ngày</label>
-                        <input data-block-days type="text" inputmode="decimal" value="1" required aria-label="Số ngày thuê mã hàng" placeholder="VD: 1,5">
-                    </div>
-                    <div class="block-subtotal">Thành tiền: <span data-block-subtotal>0</span></div>
-                </div>
-                <div class="product-actions">
-                    <button class="button secondary" data-add-size type="button" disabled>+ Thêm size</button>
-                    <button class="button danger" data-remove-block type="button">Xóa mã hàng</button>
-                </div>
-                <div data-selected-info class="selected-product-info"></div>
-                <div data-row-error class="error row-error"></div>
+                <td class="entry-number"><span data-block-number></span><div class="drag-handle" data-drag-handle title="Kéo để sắp xếp">&#8942;&#8942;</div></td>
+                <td class="product-picker-cell"><label class="entry-sr-only" for="${searchId}">Mã hàng</label><select data-category aria-label="Lọc danh mục"><option value="">Tất cả danh mục</option></select><input id="${searchId}" data-search type="search" autocomplete="off" placeholder="Nhập mã hoặc tên…" required><button class="entry-code-thumb" data-size-thumb type="button" disabled aria-label="Phóng to ảnh sản phẩm"><img data-code-preview alt="" hidden></button><div data-suggestions class="product-suggestions"></div><div data-row-error class="error row-error"></div></td>
+                <td><div data-selected-info class="selected-product-info"></div></td>
+                <td><div data-size-rows class="size-rows"></div><button class="button secondary" data-add-size type="button" disabled>+ Thêm size</button></td>
+                <td><label class="entry-sr-only">Giá thuê</label><input data-block-rental type="number" min="0" step="1000" value="0" aria-label="Giá thuê mã hàng"></td>
+                <td><input data-block-days type="text" inputmode="decimal" value="1" required aria-label="Số ngày thuê mã hàng" placeholder="1,5"></td>
+                <td class="entry-amount"><span data-block-subtotal>0</span></td>
+                <td><button class="button danger" data-remove-block type="button" aria-label="Xóa mã hàng" title="Xóa mã hàng">×</button></td>
             `;
             itemIndex += 1;
 
             const searchInput = block.querySelector('[data-search]');
             const selectedInfo = block.querySelector('[data-selected-info]');
+            const categorySelect = block.querySelector('[data-category]');
+            [...new Set(productOptions.flatMap(group => group.items.map(item => item.category)).filter(Boolean))].sort((a,b) => a.localeCompare(b,'vi')).forEach(category => { const option = document.createElement('option'); option.value = category; option.textContent = category; categorySelect.appendChild(option); });
+            categorySelect.addEventListener('change', () => renderSuggestions(block, ''));
 
             block.querySelector('[data-block-rental]').addEventListener('input', updateComputedTotal);
             block.querySelector('[data-block-days]').addEventListener('input', updateComputedTotal);
@@ -1566,7 +1553,7 @@
                     addSizeRow(block);
                 }
 
-                selectedInfo.style.display = 'none';
+                renderSelectedInfo(block);
                 clearRowError(block);
                 updateAddSizeButton(block);
                 renderSuggestions(block, searchInput.value);
@@ -1630,6 +1617,11 @@
             });
         });
 
+        window.addEventListener('scroll', event => {
+            if (event.target instanceof Element && event.target.closest('.product-suggestions')) return;
+            itemsContainer.querySelectorAll('[data-suggestions]').forEach(box => box.style.display = 'none');
+        }, true);
+        window.addEventListener('resize', () => itemsContainer.querySelectorAll('[data-suggestions]').forEach(box => box.style.display = 'none'));
         const lightbox = document.querySelector('[data-image-lightbox]');
         const lightboxImage = document.querySelector('[data-lightbox-image]');
 
