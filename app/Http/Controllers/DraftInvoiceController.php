@@ -8,6 +8,14 @@ use Illuminate\Http\Request;
 
 class DraftInvoiceController extends Controller
 {
+    public function logo()
+    {
+        return response()->file(base_path('public/images/tiba-invoice-logo.png'), [
+            'Content-Type' => 'image/png',
+            'Cache-Control' => 'private, max-age=86400',
+        ]);
+    }
+
     public function index(Request $request)
     {
         $query = trim((string) $request->query('q', ''));

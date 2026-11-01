@@ -34,7 +34,8 @@ class DraftInvoiceTest extends TestCase
             $matches = array_values(array_filter($codes, fn ($product) => $product['code'] === $code));
             return count($matches) === 1 && $matches[0]['category'] === 'Áo biểu diễn'
                 && str_ends_with($matches[0]['image'], '/storage/products/invoice-test.jpg');
-        })->assertSee('invoice-product-picker', false)->assertSee('tiba-invoice-logo.png');
+        })->assertSee('invoice-product-picker', false)->assertSee('/draft-invoices/logo?v=');
+        $this->get('/draft-invoices/logo')->assertOk()->assertHeader('Content-Type', 'image/png');
         $data['items'][0]['code'] = $code;
         $this->post('/draft-invoices', $data)->assertSessionHasNoErrors()->assertRedirect();
         $invoice = DraftInvoice::where('customer_name', $data['customer_name'])->firstOrFail();

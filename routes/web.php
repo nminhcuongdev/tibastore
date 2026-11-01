@@ -35,6 +35,7 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/carrier-directory', [CarrierDirectoryController::class, 'index'])->name('carrier-directory.index');
+    Route::get('/draft-invoices/logo', [DraftInvoiceController::class, 'logo'])->name('draft-invoices.logo');
     Route::resource('draft-invoices', DraftInvoiceController::class)->except(['show']);
     Route::get('/dashboard', function () {
         return redirect()->route('products.index');
