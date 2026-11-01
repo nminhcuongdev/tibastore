@@ -579,9 +579,12 @@
             width: 220px; min-width: 200px; max-width: 280px;
             white-space: normal; overflow-wrap: anywhere;
         }
-        .table-shell th:nth-child(6), tr[data-order-row] > td:nth-child(6) {
-            width: 200px; min-width: 180px;
+        .orders-scroll > table > thead > tr > th:nth-child(6), tr[data-order-row] > td:nth-child(6) {
+            width: 130px; min-width: 120px; max-width: 145px;
+            text-align: center; vertical-align: middle;
         }
+        tr[data-order-row] > td:nth-child(6) .code-buttons { justify-content: center; }
+        tr[data-order-row] > td:nth-child(6) .codes-toggle { width: auto; margin-inline: auto; }
         .table-shell thead th {
             text-align: center; vertical-align: middle;
             background: #dbeafe; color: #172f60;
@@ -590,9 +593,11 @@
         .table-shell thead th a { color: inherit; }
         .table-shell thead th a { justify-content: center; width: 100%; }
         .table-shell th:nth-child(8), tr[data-order-row] > td:nth-child(8),
-        .table-shell th:nth-child(10), tr[data-order-row] > td:nth-child(10),
-        .table-shell th:nth-child(11), tr[data-order-row] > td:nth-child(11) {
+        .table-shell th:nth-child(10), tr[data-order-row] > td:nth-child(10) {
             width: 145px; min-width: 125px; max-width: 160px;
+        }
+        .orders-scroll > table > thead > tr > th:nth-child(11), tr[data-order-row] > td:nth-child(11) {
+            width: 190px; min-width: 175px; max-width: 240px;
         }
         .status-control { position: relative; width: 140px; max-width: 100%; }
         .status-display {
@@ -903,25 +908,12 @@
                                 @if ($codeSummary->isEmpty())
                                     <span class="muted">—</span>
                                 @else
-                                    {{-- Xem nhanh ngay trong cot; bam de so het ma + anh o hang duoi. --}}
-                                    <div class="code-peek">
-                                        @foreach ($codeSummary->take(2) as $code)
-                                            <span class="code-chip">{{ $code['code'] }}<span class="code-chip__size">{{ $code['size'] }}</span></span>
-                                        @endforeach
-                                        @if ($codeSummary->count() > 2)
-                                            <span class="code-chip is-more">+{{ $codeSummary->count() - 2 }}</span>
-                                        @endif
-                                    </div>
                                     <div class="code-buttons">
-                                        {{-- So ra tai cho (giong ben quan ly kho) hoac mo modal rieng. --}}
                                         <button type="button" class="button secondary codes-toggle" data-codes-toggle="{{ $order->id }}"
                                             aria-expanded="false" aria-controls="codes-panel-{{ $order->id }}">
                                             <span class="codes-caret" aria-hidden="true">▸</span>
                                             Sổ {{ $codeSummary->count() }} mã
                                         </button>
-                                        <button type="button" class="button secondary view-codes"
-                                            data-order-id="{{ $order->id }}"
-                                            data-order-name="{{ $order->order_name }}">Xem</button>
                                     </div>
                                 @endif
                             </td>
