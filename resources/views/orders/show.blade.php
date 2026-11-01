@@ -348,8 +348,9 @@
     </style>
     @include('orders.status-colors')
     @include('partials.compact')
+    @include('orders.receipt-theme')
 </head>
-<body>
+<body class="order-receipt-page">
 <div class="layout">
 @include('partials.sidebar', ['active' => 'orders'])
 <div class="page">
@@ -413,7 +414,8 @@
 
         <article class="receipt">
             <div class="receipt-head">
-                <div>
+                <div class="receipt-brand"><img src="{{ route('brand.logo', [], false) }}?v={{ filemtime(resource_path('images/tiba-invoice-logo.png')) }}" alt="Logo Tiba Store" fetchpriority="high"><div><strong>TIBA STORE</strong><span>TRANG PHỤC BIỂU DIỄN</span></div></div>
+                <div class="receipt-heading">
                     <p class="eyebrow">Thông tin đơn hàng</p>
                     <h1>{{ $order->order_name }}</h1>
                 </div>
@@ -477,7 +479,7 @@
                 </div>
             </section>
 
-            <section class="section">
+            <section class="section receipt-payment">
                 <h2 class="section-title">Thanh toán</h2>
                 <div class="details">
                     <div class="detail">
