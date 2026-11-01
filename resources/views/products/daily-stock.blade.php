@@ -32,7 +32,7 @@
         }
         .field { display: grid; gap: 6px; }
         label { color: #334e75; font-size: 13px; font-weight: 700; }
-        input {
+        input, .toolbar select {
             background: #fff;
             border: 1px solid #c3d4ed;
             border-radius: 8px;
@@ -156,6 +156,16 @@
         .empty { color: #64748b; padding: 36px; text-align: center; }
     </style>
     @include('partials.compact')
+    <style>
+        .stock-category th.stock-category-name { position: sticky; left: 0; z-index: 3; min-width: 320px; text-align: left; white-space: normal; padding: 14px 12px; background: #dcedfa; color: #285a7e; border-block: 1px solid #bdd7ec; }
+        .stock-category .stock-category-name span { display: block; margin-top: 5px; font-size: 11px; font-weight: normal; color: #69839b; }
+        .stock-category td { background: #dcedfa; border-block: 1px solid #bdd7ec; }
+        .stock-category-picker { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px; margin: 0 0 18px; background: white; border: 1px solid #d6e5f1; border-radius: 12px; }
+        .stock-category-picker button { border: 1px solid #d4e2ef; border-radius: 8px; padding: 9px 14px; background: #f7faff; color: #52718e; font: inherit; font-size: 12px; cursor: pointer; }
+        .stock-category-picker button:hover { background: #e8f4fc; border-color: #9dbed6; }
+        .stock-category-picker button[aria-pressed="true"] { background: #267fae; border-color: #267fae; color: white; box-shadow: 0 3px 8px #267fae20; }
+        .stock-category-picker button:focus-visible { outline: 2px solid #ba934f; outline-offset: 3px; }
+    </style>
 </head>
 <body>
 <div class="layout">
@@ -164,7 +174,7 @@
     <h1>Tồn kho theo ngày</h1>
     <p class="sub">Số lượng <strong>khả dụng</strong> của từng sản phẩm theo mỗi ngày = tồn hiện có + hàng nhập dự kiến về − số đang cho thuê (đơn phủ ngày đó).</p>
 
-    <form class="toolbar" method="GET" action="{{ route('products.daily-stock') }}">
+    <form class="toolbar" id="daily-stock-filters" method="GET" action="{{ route('products.daily-stock') }}">
         <div class="field">
             <label for="q">Tìm mã / tên sản phẩm</label>
             <input id="q" name="q" type="search" value="{{ $query }}" placeholder="VD: N20, váy...">
@@ -177,7 +187,7 @@
             <label for="to">Đến ngày</label>
             <input id="to" name="to" type="date" value="{{ $dateTo->format('Y-m-d') }}">
         </div>
-        <button class="button" type="submit">Xem</button>
+        <button class="button" type="submit" name="category" value="{{ $category }}">Xem</button>
         <a class="button secondary" href="{{ route('products.daily-stock') }}">Về hôm nay</a>
     </form>
 
@@ -189,6 +199,13 @@
     </div>
 
     @php $todayStr = now()->toDateString(); $dow = ['CN','T2','T3','T4','T5','T6','T7']; @endphp
+
+    <nav class="stock-category-picker" aria-label="Chọn danh mục tồn kho">
+        <button type="submit" form="daily-stock-filters" name="category" value="" aria-pressed="{{ $category === '' ? 'true' : 'false' }}">Hiển thị tất cả</button>
+        @foreach($categories as $name)
+            <button type="submit" form="daily-stock-filters" name="category" value="{{ $name }}" aria-pressed="{{ $category === $name ? 'true' : 'false' }}">{{ $name }}</button>
+        @endforeach
+    </nav>
 
     <div class="table-shell">
         <table>
@@ -204,7 +221,9 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse ($products as $product)
+                @forelse ($groupedProducts as $categoryName => $categoryProducts)
+                    <tr class="stock-category"><th class="stock-category-name" scope="rowgroup">{{ $categoryName }} <span>{{ $categoryProducts->pluck('code')->unique()->count() }} mã · {{ $categoryProducts->count() }} size</span></th><td colspan="{{ count($dates) }}"></td></tr>
+                    @foreach ($categoryProducts as $product)
                     <tr>
                         <td class="prod">
                             <div class="prod-cell">
@@ -235,6 +254,7 @@
                             <td class="cell {{ $cls }} {{ $isToday ? 'today' : '' }}">{{ $v }}</td>
                         @endforeach
                     </tr>
+                    @endforeach
                 @empty
                     <tr>
                         <td class="empty" colspan="{{ count($dates) + 1 }}">Không có sản phẩm phù hợp.</td>
@@ -243,6 +263,9 @@
             </tbody>
         </table>
     </div>
+    @if($query !== '' && $products->isNotEmpty())
+        @include('products.daily-stock-summary')
+    @endif
 </main>
 </div>
 <div class="image-lightbox" data-image-lightbox aria-hidden="true">

@@ -245,6 +245,10 @@ class ProductController extends Controller
      */
     public function inventoryCalendar(Request $request): View
     {
+        $request->validate(['category' => ['nullable', 'string', 'max:255']]);
+        $category = trim((string) $request->query('category', ''));
+        $categories = Product::query()->active()->pluck('category')
+            ->map(fn ($name) => trim($name ?? '') ?: 'Chưa phân loại')->unique()->sort()->values();
         $this->inventory->syncDueOrders();
 
         [$dateFrom, $dateTo] = $this->inventoryCalendarRange($request);
@@ -253,6 +257,8 @@ class ProductController extends Controller
         $products = Product::query()
             // Man nay de len don cho ngay toi, ma da ngung dung khong con can theo doi.
             ->active()
+            ->when($category !== '', fn ($builder) => $builder->whereRaw(
+                "COALESCE(NULLIF(TRIM(category), ''), 'Chưa phân loại') = ?", [$category]))
             ->when($query !== '', function ($builder) use ($query) {
                 $builder->where(function ($search) use ($query) {
                     $search->where('code', 'like', "%{$query}%")
@@ -261,7 +267,9 @@ class ProductController extends Controller
             })
             ->orderBy('code')
             ->orderBy('size')
-            ->get(['id', 'code', 'name', 'size', 'stock_quantity', 'image_path']);
+            ->get(['id', 'code', 'name', 'size', 'stock_quantity', 'image_path', 'category']);
+        $groupedProducts = $products->groupBy(fn ($product) => trim($product->category ?? '') ?: 'Chưa phân loại')
+            ->sortBy(fn ($items, $name) => $name === 'Chưa phân loại' ? 1 : 0);
 
         $availability = $this->inventory->dailyAvailability(
             $products->pluck('id')->all(),
@@ -275,6 +283,9 @@ class ProductController extends Controller
         }
 
         return view('products.daily-stock', [
+            'groupedProducts' => $groupedProducts,
+            'categories' => $categories,
+            'category' => $category,
             'products' => $products,
             'pendingInspection' => $this->inventory->pendingInspectionQuantities($products->pluck('id')->all()),
             'availability' => $availability,
