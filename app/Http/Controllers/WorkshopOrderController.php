@@ -199,7 +199,7 @@ class WorkshopOrderController extends Controller
     {
         return Product::query()
             ->active()
-            ->select('code', 'name', 'image_path')
+            ->select('code', 'name', 'image_path', 'category')
             ->orderBy('code')
             ->get()
             ->groupBy('code')
@@ -211,6 +211,7 @@ class WorkshopOrderController extends Controller
                 return [
                     'code' => $group->first()->code,
                     'name' => $group->first()->name,
+                    'category' => $group->pluck('category')->first(fn ($category) => filled($category)) ?: 'Chưa phân loại',
                     'image' => $withImage ? asset('storage/' . $withImage->image_path) : null,
                 ];
             })

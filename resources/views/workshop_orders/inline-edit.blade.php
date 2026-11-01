@@ -13,6 +13,9 @@
         row.querySelector('[data-product-label]').textContent = product ? product.name : 'Mã không còn trong kho';
     }
     function setupRow(row) {
+        const codeInput = row.querySelector('[name=product_code]');
+        const savedProduct = catalog.find(product => product.code.trim().toLowerCase() === codeInput.value.trim().toLowerCase());
+        if (savedProduct) previewImage(row, savedProduct);
         row.querySelector('[data-remove-new-row]')?.addEventListener('click', () => {
             if (!row.hasAttribute('data-new-row')) return;
             row.remove();
@@ -75,7 +78,9 @@
                 row.dataset.quantity = data.quantity; row.dataset.total = data.total;
                 row.querySelector('[data-row-total]').textContent = format(data.total);
                 row.querySelector('[name=status]').className = 'status-select st-' + row.querySelector('[name=status]').value;
-                previewImage(row, {name:data.product_name,image:data.image,code:row.querySelector('[name=product_code]').value});
+                const selectedCode = row.querySelector('[name=product_code]').value;
+                const selectedProduct = catalog.find(product => product.code.toLowerCase() === selectedCode.trim().toLowerCase());
+                previewImage(row, {name:data.product_name,image:data.image || selectedProduct?.image,code:selectedCode});
                 row.classList.remove('has-changes'); state.textContent = 'Đã lưu'; state.style.color = '';
             } catch (error) { state.textContent = 'Chưa lưu: ' + error.message; state.style.color = '#b42318'; }
             finally { inputs.forEach(input => input.disabled = false); button.disabled = false; }

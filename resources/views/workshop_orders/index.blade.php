@@ -228,6 +228,7 @@
     </style>
     @include('partials.compact')
 @include('workshop_orders.inline-edit-styles')
+@include('workshop_orders.product-picker-styles')
 </head>
 <body>
 <div class="layout">
@@ -335,7 +336,7 @@
                     @php $product = $item->product; @endphp
                     <tr data-edit-row class="{{ $item->hasArrived() ? 'is-arrived' : '' }}" data-quantity="{{ $item->quantity }}" data-total="{{ $item->total_amount }}">
                         <td>
-                            <input form="workshop-edit-{{ $item->id }}" name="product_code" value="{{ $item->product_code }}" list="workshop-product-codes" required maxlength="50" aria-label="Mã hàng">
+                            <input form="workshop-edit-{{ $item->id }}" name="product_code" value="{{ $item->product_code }}" required maxlength="50" aria-label="Mã hàng">
                             @if ($product)
                                 <div class="muted" data-product-label>{{ $product->name }}</div>
                             @else
@@ -460,5 +461,6 @@
 <datalist id="workshop-product-codes">@foreach($productCodes as $code)<option value="{{ $code['code'] }}">{{ $code['name'] }}</option>@endforeach</datalist>
 @include('workshop_orders.new-inline-row')
 @include('workshop_orders.inline-edit')
+@include('workshop_orders.product-picker')
 </body>
 </html>

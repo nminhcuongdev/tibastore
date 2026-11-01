@@ -1,6 +1,6 @@
 <template id="workshop-new-row">
 <tr data-edit-row data-new-row data-quantity="0" data-total="0">
-    <td><input form="workshop-new-__NEW__" name="product_code" list="workshop-product-codes" placeholder="Nhập mã hàng…" maxlength="50" aria-label="Mã hàng" required><div class="muted" data-product-label>Chọn mã để hiện tên và ảnh</div></td>
+    <td><input form="workshop-new-__NEW__" name="product_code" placeholder="Nhập mã hàng…" maxlength="50" aria-label="Mã hàng" required><div class="muted" data-product-label>Chọn mã để hiện tên và ảnh</div></td>
     <td data-product-image><span class="thumb">CHƯA CÓ ẢNH</span></td>
     <td><input form="workshop-new-__NEW__" name="size_note" maxlength="255" placeholder="Size…" aria-label="Size"></td>
     <td class="num"><input form="workshop-new-__NEW__" name="quantity" type="number" min="1" step="1" value="1" required aria-label="Số lượng"></td>
