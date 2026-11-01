@@ -608,7 +608,7 @@
                 <label>Sản phẩm trong đơn</label>
                 <div id="stock_conflict" class="stock-conflict" style="display:none"></div>
                 <div id="turnaround_warning" class="stock-conflict" role="alert" style="display:none"></div>
-                <div class="order-entry-wrap"><table class="order-entry-table"><colgroup><col style="width:4%"><col style="width:17%"><col style="width:16%"><col style="width:32%"><col style="width:10%"><col style="width:7%"><col style="width:10%"><col style="width:4%"></colgroup><thead><tr><th>STT</th><th>Mã / Ảnh</th><th>Tên sản phẩm</th><th>Size · Số lượng · Ghi chú</th><th>Giá thuê</th><th>Số ngày</th><th>Thành tiền</th><th></th></tr></thead><tbody id="order_items" class="order-items"></tbody></table></div>
+                <div class="order-entry-wrap"><table class="order-entry-table"><colgroup><col style="width:4%"><col style="width:17%"><col style="width:11%"><col style="width:37%"><col style="width:10%"><col style="width:7%"><col style="width:10%"><col style="width:4%"></colgroup><thead><tr><th>STT</th><th>Mã / Ảnh</th><th>Tên sản phẩm</th><th>Size · Số lượng · Ghi chú</th><th>Giá thuê</th><th>Số ngày</th><th>Thành tiền</th><th></th></tr></thead><tbody id="order_items" class="order-items"></tbody></table></div>
                 <div class="items-actions">
                     <button id="add_item_button" class="button secondary" type="button">+ Thêm sản phẩm</button>
                 </div>
@@ -1422,7 +1422,7 @@
                 <button class="button danger" data-remove-size type="button">Xóa size</button>
                 <div class="field size-note-field">
                     <label>Ghi chú (size này)</label>
-                    <input data-note type="text" maxlength="500" placeholder="VD: khách dặn giữ nếp, kèm phụ kiện...">
+                    <textarea data-note rows="1" maxlength="500" wrap="soft" aria-label="Ghi chú size này" placeholder="VD: khách dặn giữ nếp, kèm phụ kiện..."></textarea>
                 </div>
                 <div class="qty-warning" data-qty-warning style="display:none"></div>
             `;
@@ -1433,6 +1433,12 @@
             const quantityInput = sizeRow.querySelector('[data-quantity]');
             const noteInput = sizeRow.querySelector('[data-note]');
             noteInput.value = size.note != null ? size.note : '';
+            function resizeNote() {
+                noteInput.style.height = 'auto';
+                noteInput.style.height = noteInput.scrollHeight + 'px';
+            }
+            noteInput.addEventListener('input', resizeNote);
+            new ResizeObserver(resizeNote).observe(noteInput);
 
             // Rời ô số lượng: nếu vượt tồn dự kiến thì tự điều chỉnh về tối đa và báo.
             quantityInput.addEventListener('blur', () => {

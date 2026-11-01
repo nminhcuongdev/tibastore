@@ -227,6 +227,7 @@
         .page-current { background: #1d4ed8; color: #fff; }
     </style>
     @include('partials.compact')
+@include('workshop_orders.inline-edit-styles')
 </head>
 <body>
 <div class="layout">
@@ -278,7 +279,6 @@
         <a class="button secondary"
            href="{{ route('workshop-orders.index', ['supply_source' => $supplySource]) }}">Xoá lọc</a>
         <div class="spacer"></div>
-        <a class="button" href="{{ route('workshop-orders.create') }}">+ Thêm dòng</a>
     </form>
 
     {{-- Danh sách chỉ hiện một nguồn hàng; bấm để đổi qua lại. --}}
@@ -300,11 +300,11 @@
         </div>
         <div class="summary-item">
             <span class="summary-label">Tổng số lượng</span>
-            <span class="summary-value">{{ number_format($quantityTotal) }}</span>
+            <span class="summary-value" data-summary-quantity="{{ $quantityTotal }}">{{ number_format($quantityTotal) }}</span>
         </div>
         <div class="summary-item is-main">
             <span class="summary-label">Tổng tiền</span>
-            <span class="summary-value">{{ number_format($amountTotal) }}</span>
+            <span class="summary-value" data-summary-amount="{{ $amountTotal }}">{{ number_format($amountTotal) }}</span>
         </div>
     </div>
 
@@ -326,21 +326,23 @@
                     <th>Người mua hàng</th>
                     <th>Hàng đã về chưa</th>
                     <th>Thao tác</th>
+                    <th>Xóa dòng</th>
                 </tr>
             </thead>
-            <tbody>
+            <caption style="caption-side:top;text-align:left;padding:12px;color:#7386a0;font-size:12px">Sửa trực tiếp trong các ô, sau đó bấm Lưu ở cuối dòng. Thành tiền tự tính theo số lượng và đơn giá.</caption>
+            <tbody data-workshop-rows>
                 @forelse ($orders as $item)
                     @php $product = $item->product; @endphp
-                    <tr>
+                    <tr data-edit-row class="{{ $item->hasArrived() ? 'is-arrived' : '' }}" data-quantity="{{ $item->quantity }}" data-total="{{ $item->total_amount }}">
                         <td>
-                            <div class="code">{{ $item->product_code }}</div>
+                            <input form="workshop-edit-{{ $item->id }}" name="product_code" value="{{ $item->product_code }}" list="workshop-product-codes" required maxlength="50" aria-label="Mã hàng">
                             @if ($product)
-                                <div class="muted">{{ $product->name }}</div>
+                                <div class="muted" data-product-label>{{ $product->name }}</div>
                             @else
-                                <div class="muted">Mã không còn trong kho</div>
+                                <div class="muted" data-product-label>Mã không còn trong kho</div>
                             @endif
                         </td>
-                        <td>
+                        <td data-product-image>
                             @if ($product && $product->image_path)
                                 <button class="thumb has-image" type="button"
                                     data-full-image="{{ asset('storage/' . $product->image_path) }}"
@@ -351,48 +353,52 @@
                                 <span class="thumb">CHƯA CÓ ẢNH</span>
                             @endif
                         </td>
-                        <td class="wrap">{{ $item->size_note ?: '—' }}</td>
-                        <td class="num">{{ number_format($item->quantity) }}</td>
-                        <td class="num">{{ number_format($item->unit_price) }}</td>
-                        <td class="num strong">{{ number_format($item->total_amount) }}</td>
-                        <td class="wrap">{{ $item->order_name ?: '—' }}</td>
-                        <td class="wrap muted">{{ $item->buyer_note ?: '—' }}</td>
-                        <td>{{ $item->source ?: '—' }}</td>
-                        <td>{{ $item->ordered_date?->format('d/m/Y') ?: '—' }}</td>
-                        <td>{{ $item->returned_date?->format('d/m/Y') ?: '—' }}</td>
-                        <td>{{ $item->buyer ?: '—' }}</td>
+                        <td class="wrap"><input form="workshop-edit-{{ $item->id }}" name="size_note" type="text" value="{{ $item->size_note }}" aria-label="Size" maxlength="255"></td>
+                        <td class="num"><input form="workshop-edit-{{ $item->id }}" name="quantity" type="number" value="{{ $item->quantity }}" aria-label="Số lượng" min="1" step="1" required></td>
+                        <td class="num"><input form="workshop-edit-{{ $item->id }}" name="unit_price" type="number" value="{{ $item->unit_price ?? 0 }}" aria-label="Đơn giá" min="0" step="1"></td>
+                        <td class="num strong" data-row-total>{{ number_format($item->total_amount) }}</td>
+                        <td><textarea form="workshop-edit-{{ $item->id }}" name="order_name" rows="1" wrap="soft" aria-label="Tên đơn" maxlength="255">{{ $item->order_name }}</textarea></td>
+                        <td><textarea form="workshop-edit-{{ $item->id }}" name="buyer_note" rows="2" maxlength="2000" aria-label="Ghi chú">{{ $item->buyer_note }}</textarea></td>
+                        <td><textarea form="workshop-edit-{{ $item->id }}" name="source" rows="1" wrap="soft" aria-label="Tên nhà cung cấp" maxlength="255">{{ $item->source }}</textarea></td>
+                        <td><input form="workshop-edit-{{ $item->id }}" name="ordered_date" type="date" value="{{ $item->ordered_date?->format('Y-m-d') }}" aria-label="Ngày đặt hàng" ></td>
+                        <td><input form="workshop-edit-{{ $item->id }}" name="returned_date" type="date" value="{{ $item->returned_date?->format('Y-m-d') }}" aria-label="Ngày trả hàng" ></td>
+                        <td><input form="workshop-edit-{{ $item->id }}" name="buyer" type="text" value="{{ $item->buyer }}" aria-label="Người mua hàng" maxlength="255"></td>
                         <td>
-                            <form method="POST" action="{{ route('workshop-orders.status', $item) }}">
-                                @csrf
-                                @method('PATCH')
-                                <select name="status" class="status-select st-{{ $item->status }}"
-                                    onchange="this.form.submit()" aria-label="Đổi trạng thái">
+
+
+
+                                <select name="status" form="workshop-edit-{{ $item->id }}" class="status-select st-{{ $item->status }}"
+                                     aria-label="Đổi trạng thái">
                                     @foreach ($statuses as $value => $label)
                                         <option value="{{ $value }}" @selected($item->status === $value)>{{ $label }}</option>
                                     @endforeach
                                 </select>
-                            </form>
+
                         </td>
                         <td>
                             <div class="row-actions">
-                                <a class="link-action" href="{{ route('workshop-orders.edit', $item) }}">Sửa</a>
+                                <form id="workshop-edit-{{ $item->id }}" data-inline-edit method="POST" action="{{ route('workshop-orders.update', $item) }}">@csrf @method('PUT')<input type="hidden" name="supply_source" value="{{ $item->supply_source }}"><button type="submit" class="inline-save">Lưu</button></form><span data-save-state role="status"></span>
+                            </div>
+                        </td>
+                        <td data-delete-cell>
                                 <form method="POST" action="{{ route('workshop-orders.destroy', $item) }}"
                                     onsubmit="return confirm('Xoá dòng đặt hàng của mã {{ $item->product_code }}?');">
                                     @csrf
                                     @method('DELETE')
-                                    <button class="danger" type="submit">Xoá</button>
+                                    <button class="danger" type="submit">Xóa dòng</button>
                                 </form>
-                            </div>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="14">Chưa có dòng đặt hàng nào phù hợp.</td>
+                        <td class="empty" colspan="15">Nhập mã và thông tin vào dòng trống bên dưới để tạo đặt hàng mới.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
+
+    <div class="workshop-add-row-actions"><button type="button" data-add-inline-row>+ Thêm dòng sản phẩm</button></div>
 
     @if ($orders->hasPages())
         <nav class="pagination" aria-label="Phân trang">
@@ -451,5 +457,8 @@
         });
     })();
 </script>
+<datalist id="workshop-product-codes">@foreach($productCodes as $code)<option value="{{ $code['code'] }}">{{ $code['name'] }}</option>@endforeach</datalist>
+@include('workshop_orders.new-inline-row')
+@include('workshop_orders.inline-edit')
 </body>
 </html>

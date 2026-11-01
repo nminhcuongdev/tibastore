@@ -1,4 +1,5 @@
 <style>
+    .order-entry-table textarea[data-note] { display: block; box-sizing: border-box; width: 100%; min-width: 0; min-height: 34px; padding: 7px; font: inherit; font-size: 12px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; overflow: hidden; resize: none; border: 1px solid #cbd9ec; border-radius: 5px; background: white; color: inherit; }
     .order-entry-wrap { overflow-x: auto; margin-top: 8px; border: 1px solid #dce5f1; border-radius: 10px; background: white; }
     .order-entry-table { width: 100%; min-width: 1120px; table-layout: fixed; border-collapse: collapse; }
     .order-entry-table > thead > tr > th { background: #203b60; color: white; font-size: 11px; padding: 15px 9px; text-align: center; border: 0; }
@@ -13,7 +14,7 @@
     .order-entry-table .entry-code-thumb { display: block; width: 72px; height: 82px; border: 1px solid #e0e7ef; background: white; margin: 9px auto 0; padding: 3px; border-radius: 6px; }
     .order-entry-table .entry-code-thumb:disabled { display: none; }
     .order-entry-table .entry-code-thumb img { width: 100%; height: 100%; object-fit: contain; }
-    .order-entry-table .selected-product-info { margin: 0; padding: 7px 2px; border: 0; background: none; color: #203b60; font-size: 12px; line-height: 1.6; font-weight: 600; overflow-wrap: anywhere; }
+    .order-entry-table .selected-product-info { margin: 0; padding: 7px 2px; border: 0; background: none; color: #203b60; font-size: 11px; line-height: 1.6; font-weight: 600; white-space: normal; overflow-wrap: anywhere; word-break: normal; min-width: 0; max-width: 100%; }
     .order-entry-table [data-category] { margin-bottom: 7px; color: #6b7e96; font-size: 11px !important; background: #f4f7fb; }
     .order-entry-table .size-rows { gap: 10px; }
     .order-entry-table .size-row { display: grid; grid-template-columns: minmax(0, 1fr) 65px 28px; gap: 6px; align-items: end; padding: 0 0 10px; border-bottom: 1px dashed #dce4ef; }
@@ -21,7 +22,7 @@
     .order-entry-table .size-row .field { margin: 0; gap: 4px; }
     .order-entry-table .size-row label { font-size: 10px; color: #788ba2; margin: 0; }
     .order-entry-table .size-row .size-note-field { grid-column: 1 / -1; }
-    .order-entry-table .size-row .button.danger { min-width: 0; padding: 5px; font-size: 0; width: 28px; min-height: 32px; }
+    .order-entry-table .size-row .button.danger { min-width: 0; padding: 5px; font-size: 0 !important; width: 28px; min-height: 32px; overflow: hidden; }
     .order-entry-table .size-row .button.danger:after { content: '×'; font-size: 17px; }
     .order-entry-table [data-add-size] { padding: 6px 10px; margin-top: 10px; font-size: 11px; min-height: 30px; }
     .order-entry-table [data-remove-block] { padding: 4px; min-width: 25px; width: 100%; font-size: 19px; border: 0; background: none; }

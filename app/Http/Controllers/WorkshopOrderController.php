@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\WorkshopOrder;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -69,6 +70,7 @@ class WorkshopOrderController extends Controller
             'supplySources' => WorkshopOrder::supplySources(),
             'supplySource' => $supplySource,
             'query' => $query,
+            'productCodes' => $this->productCodes(),
             'status' => $status,
             'source' => $source,
             'buyer' => $buyer,
@@ -93,9 +95,20 @@ class WorkshopOrderController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
-        WorkshopOrder::create($this->validatedData($request));
+        $item = WorkshopOrder::create($this->validatedData($request));
+        if ($request->wantsJson()) {
+            $item->load('product');
+            return response()->json([
+                'message' => 'Đã thêm dòng đặt hàng.',
+                'update_url' => route('workshop-orders.update', $item),
+                'delete_url' => route('workshop-orders.destroy', $item),
+                'quantity' => $item->quantity, 'total' => $item->total_amount,
+                'product_name' => $item->product?->name ?? 'Mã không còn trong kho',
+                'image' => $item->product?->image_path ? asset('storage/'.$item->product->image_path) : null,
+            ], 201);
+        }
 
         return redirect()->route('workshop-orders.index')->with('status', 'Đã thêm dòng đặt hàng.');
     }
@@ -111,9 +124,20 @@ class WorkshopOrderController extends Controller
         ]);
     }
 
-    public function update(Request $request, WorkshopOrder $workshopOrder): RedirectResponse
+    public function update(Request $request, WorkshopOrder $workshopOrder): RedirectResponse|JsonResponse
     {
-        $workshopOrder->update($this->validatedData($request));
+        $workshopOrder->update($this->validatedData($request, $workshopOrder));
+        if ($request->wantsJson()) {
+            $workshopOrder->refresh()->load('product');
+            return response()->json([
+                'message' => 'Đã lưu dòng đặt hàng.',
+                'quantity' => $workshopOrder->quantity,
+                'total' => $workshopOrder->total_amount,
+                'product_name' => $workshopOrder->product?->name ?? 'Mã không còn trong kho',
+                'image' => $workshopOrder->product?->image_path
+                    ? asset('storage/'.$workshopOrder->product->image_path) : null,
+            ]);
+        }
 
         return redirect()->route('workshop-orders.index')->with('status', 'Đã cập nhật dòng đặt hàng.');
     }
@@ -139,10 +163,11 @@ class WorkshopOrderController extends Controller
         return back()->with('status', 'Đã xoá dòng đặt hàng.');
     }
 
-    private function validatedData(Request $request): array
+    private function validatedData(Request $request, ?WorkshopOrder $existing = null): array
     {
         return $request->validate([
-            'product_code' => ['required', 'string', 'max:50', Rule::exists('products', 'code')],
+            'product_code' => ['required', 'string', 'max:50',
+                Rule::when(!$existing || $request->input('product_code') !== $existing->product_code, Rule::exists('products', 'code'))],
             'supply_source' => ['required', Rule::in(array_keys(WorkshopOrder::supplySources()))],
             'size_note' => ['nullable', 'string', 'max:255'],
             'quantity' => ['required', 'integer', 'min:1'],
