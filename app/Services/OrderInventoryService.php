@@ -520,6 +520,18 @@ class OrderInventoryService
      *
      * @return array<string,int> code => số lượng
      */
+    public function rentedOutQuantitiesByProduct(array $productIds): array
+    {
+        return OrderItem::query()
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->whereIn('order_items.product_id', $productIds)
+            ->where('order_items.size_pending', false)
+            ->whereIn('orders.status', Order::STOCK_OUT_STATUSES)
+            ->selectRaw('order_items.product_id, SUM(order_items.stock_held) as rented_quantity')
+            ->groupBy('order_items.product_id')->pluck('rented_quantity', 'order_items.product_id')
+            ->map(fn ($quantity) => (int) $quantity)->all();
+    }
+
     public function rentedOutQuantitiesByCode(): array
     {
         return OrderItem::query()

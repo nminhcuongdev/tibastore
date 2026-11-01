@@ -200,12 +200,16 @@ class ProductController extends Controller
             ->withQueryString();
 
         $totalQuantity = Product::where('code', $product->code)->sum('stock_quantity');
+        $rentedByProduct = $this->inventory->rentedOutQuantitiesByProduct(
+            Product::where('code', $product->code)->pluck('id')->all());
 
         return view('products.show', [
             'product' => $product,
             'pendingInspection' => $this->inventory->pendingInspectionQuantities($variants->pluck('id')->all()),
             'variants' => $variants,
             'totalQuantity' => $totalQuantity,
+            'rentedByProduct' => $rentedByProduct,
+            'totalRented' => array_sum($rentedByProduct),
             'sort' => $sort,
             'direction' => $direction,
         ]);

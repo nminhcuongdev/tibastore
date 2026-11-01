@@ -274,7 +274,15 @@
 
         <div class="summary">
             <div class="metric">
-                <div class="metric-label">Tổng tồn</div>
+                <div class="metric-label">Tổng số hàng</div>
+                <div class="metric-value">{{ number_format($totalQuantity + $totalRented) }}</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Đang cho thuê</div>
+                <div class="metric-value">{{ number_format($totalRented) }}</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Còn trong kho</div>
                 <div class="metric-value">{{ number_format($totalQuantity) }}</div>
             </div>
             <div class="metric">
@@ -287,6 +295,7 @@
             </div>
         </div>
 
+        <p class="muted">Tổng số hàng = còn trong kho + đang cho thuê. Chưa cộng hàng nhập dự kiến; hàng mất/hỏng đã kiểm không nằm trong số đang cho thuê.</p>
         <div class="page-actions">
             <a class="link-action" href="{{ route('products.create', ['copy_from' => $product->id]) }}">Thêm size</a>
             @if ($product->isDiscontinued())
@@ -322,9 +331,11 @@
                         <th>Tên sản phẩm</th>
                         <th>
                             <a href="{{ route('products.show', array_merge(['product' => $product], request()->except('page'), ['sort' => 'quantity', 'direction' => $sort === 'quantity' && $direction === 'asc' ? 'desc' : 'asc'])) }}">
-                                Số lượng {{ $sort === 'quantity' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}
+                                Còn trong kho {{ $sort === 'quantity' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}
                             </a>
                         </th>
+                        <th>Đang cho thuê</th>
+                        <th>Tổng số hàng</th>
                         <th>Vải</th>
                         <th>Danh mục</th>
                         <th>Ngày dự kiến nhận</th>
@@ -362,6 +373,8 @@
                                     </div>
                                 @endif
                             </td>
+                            <td>{{ number_format($rentedByProduct[$variant->id] ?? 0) }}</td>
+                            <td>{{ number_format($variant->stock_quantity + ($rentedByProduct[$variant->id] ?? 0)) }}</td>
                             <td>{{ $variant->fabric }}</td>
                             <td>{{ $variant->category ?: 'N/A' }}</td>
                             <td>
@@ -393,7 +406,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td class="empty" colspan="10">Chưa có sản phẩm phù hợp.</td>
+                            <td class="empty" colspan="12">Chưa có sản phẩm phù hợp.</td>
                         </tr>
                     @endforelse
                 </tbody>
