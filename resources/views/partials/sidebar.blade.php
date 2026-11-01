@@ -136,6 +136,9 @@
         <a class="{{ $active === 'orders' ? 'active' : '' }}" href="{{ route('orders.index') }}" title="Đơn hàng">
             <span class="ico">&#129534;</span><span class="txt">Đơn hàng</span>
         </a>
+        <a class="{{ $active === 'draft-invoices' ? 'active' : '' }}" href="{{ route('draft-invoices.index') }}" title="Hóa đơn nháp">
+            <span class="ico">&#128221;</span><span class="txt">Hóa đơn nháp</span>
+        </a>
         <a class="{{ $active === 'stock' ? 'active' : '' }}" href="{{ route('stock-import-histories.index') }}" title="Lịch sử nhập">
             <span class="ico">&#128229;</span><span class="txt">Lịch sử nhập</span>
         </a>

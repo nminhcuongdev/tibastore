@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DraftInvoiceController;
 use App\Http\Controllers\ChangeLogController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrderReminderController;
@@ -32,6 +33,7 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
+    Route::resource('draft-invoices', DraftInvoiceController::class)->except(['show']);
     Route::get('/dashboard', function () {
         return redirect()->route('products.index');
     })->name('dashboard');
