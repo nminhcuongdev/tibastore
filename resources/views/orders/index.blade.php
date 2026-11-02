@@ -669,6 +669,7 @@
 
 <main class="content">
         <h1>Quản lí lên đơn hàng</h1>
+        @include('partials.workshop-duplicate-notice')
         @if (session('status'))
             <div class="status">{{ session('status') }}</div>
         @endif

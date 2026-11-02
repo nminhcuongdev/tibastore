@@ -390,6 +390,7 @@
     </header>
 
     <main class="content">
+        @include('partials.workshop-duplicate-notice')
         @if (session('status'))
             <div class="status">{{ session('status') }}</div>
         @endif

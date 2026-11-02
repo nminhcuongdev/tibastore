@@ -75,6 +75,7 @@ class WorkshopOrderController extends Controller
 
         return view('workshop_orders.index', [
             'orders' => $orders,
+            'duplicateRows' => app(\App\Services\WorkshopDuplicateService::class)->duplicates(),
             'focusedOrder' => $focusedOrder,
             'quantityTotal' => (int) ($totals->quantity_total ?? 0),
             'amountTotal' => (int) ($totals->amount_total ?? 0),
@@ -137,6 +138,8 @@ class WorkshopOrderController extends Controller
             $item->load('product');
             return response()->json([
                 'message' => 'Đã thêm dòng đặt hàng.',
+                'id' => $item->id,
+                'duplicate_rows' => app(\App\Services\WorkshopDuplicateService::class)->duplicates(),
                 'update_url' => route('workshop-orders.update', $item),
                 'delete_url' => route('workshop-orders.destroy', $item),
                 'stock_url' => route('workshop-orders.stock', $item),
@@ -173,6 +176,8 @@ class WorkshopOrderController extends Controller
             $workshopOrder->refresh()->load('product');
             return response()->json([
                 'message' => 'Đã lưu dòng đặt hàng.',
+                'id' => $workshopOrder->id,
+                'duplicate_rows' => app(\App\Services\WorkshopDuplicateService::class)->duplicates(),
                 'quantity' => $workshopOrder->quantity,
                 'size_note' => $workshopOrder->size_note,
                 'total' => $workshopOrder->total_amount,

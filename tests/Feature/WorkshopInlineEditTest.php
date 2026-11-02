@@ -91,7 +91,7 @@ class WorkshopInlineEditTest extends TestCase
         $this->putJson('/workshop-orders/'.$item->id, $data)->assertOk();
         $this->assertSame(WorkshopOrder::STATUS_ORDERED, $item->fresh()->status);
         $this->get('/workshop-orders?status=da_od')->assertOk()
-            ->assertSee('Đã od')->assertSee('class="is-ordered"', false)->assertSee($product->code);
+            ->assertSee('Đã od')->assertSee('class="is-duplicate is-ordered"', false)->assertSee($product->code);
         $data['status'] = WorkshopOrder::STATUS_ARRIVED;
         $this->putJson('/workshop-orders/'.$item->id, $data)->assertOk();
         $this->assertTrue($item->fresh()->hasArrived());

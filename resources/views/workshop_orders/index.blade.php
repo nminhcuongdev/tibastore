@@ -235,7 +235,14 @@
 <div class="layout">
 @include('partials.sidebar', ['active' => 'workshop'])
 <main class="content">
+
+                <style>
+                    tr[data-edit-row].is-duplicate > td { background:#ffe3e3!important;border-top:2px solid #e24a4a;border-bottom:2px solid #e24a4a; }
+                    [data-duplicate-warning] { display:block;max-width:260px;margin-top:8px;color:#a51220;font-size:12px;font-weight:700;white-space:normal; }
+                    [data-duplicate-warning][hidden] { display:none; }
+                </style>
     <h1>Đặt hàng</h1>
+    @include('partials.workshop-duplicate-notice')
     <p class="sub">Theo dõi mã hàng đã đặt: ai đặt, đặt ngày nào, hẹn về ngày nào và đã về chưa. Danh sách tách riêng hàng đặt xưởng và hàng mua ngoài.</p>
 
     @if (session('status'))
@@ -357,9 +364,10 @@
             </thead>
             <caption style="caption-side:top;text-align:left;padding:12px;color:#7386a0;font-size:12px">Các thay đổi được tự động lưu. Thành tiền tự tính theo số lượng và đơn giá.</caption>
             <tbody data-workshop-rows>
+
                 @forelse ($orders as $item)
                     @php $product = $item->product; @endphp
-                    <tr id="workshop-row-{{ $item->id }}" data-edit-row data-size-quantities="{{ json_encode($item->purchase_plan['lines'] ?? $item->size_quantities ?? []) }}" data-managed-plan="{{ $item->purchase_plan ? '1' : '0' }}" data-stocked="{{ $item->stocked_at ? '1' : '0' }}" data-stock-url="{{ route('workshop-orders.stock', $item) }}" data-custom-image="{{ $item->image_path ? $item->image_url : '' }}" class="{{ $item->hasArrived() ? 'is-arrived' : ($item->status === \App\Models\WorkshopOrder::STATUS_ORDERED ? 'is-ordered' : '') }}" data-quantity="{{ $item->quantity }}" data-total="{{ $item->total_amount }}">
+                    <tr id="workshop-row-{{ $item->id }}" data-edit-row data-order-id="{{ $item->id }}" data-size-quantities="{{ json_encode($item->purchase_plan['lines'] ?? $item->size_quantities ?? []) }}" data-managed-plan="{{ $item->purchase_plan ? '1' : '0' }}" data-stocked="{{ $item->stocked_at ? '1' : '0' }}" data-stock-url="{{ route('workshop-orders.stock', $item) }}" data-custom-image="{{ $item->image_path ? $item->image_url : '' }}" class="{{ isset($duplicateRows[$item->id]) ? 'is-duplicate ' : '' }}{{ $item->hasArrived() ? 'is-arrived' : ($item->status === \App\Models\WorkshopOrder::STATUS_ORDERED ? 'is-ordered' : '') }}" data-quantity="{{ $item->quantity }}" data-total="{{ $item->total_amount }}">
                         <td>
                             <input form="workshop-edit-{{ $item->id }}" name="product_code" value="{{ $item->product_code }}" required maxlength="50" aria-label="Mã hàng">
                             @if ($product)
@@ -367,6 +375,11 @@
                             @else
                                 <div class="muted" data-product-label>{{ $item->product_code === \App\Models\WorkshopOrder::NO_PRODUCT_CODE ? 'Chưa tạo mã' : 'Mã không còn trong kho' }}</div>
                             @endif
+                            <span data-duplicate-warning role="alert" @if (!isset($duplicateRows[$item->id])) hidden @endif>
+                                @if (isset($duplicateRows[$item->id]))
+                                    ⚠ Nghi trùng Tên đơn và Mã hàng với dòng #{{ implode(', #', $duplicateRows[$item->id]) }}. Kiểm tra để tránh od hai lần.
+                                @endif
+                            </span>
                         </td>
                         <td data-product-image>
                             @if ($item->image_url)

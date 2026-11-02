@@ -2,6 +2,19 @@
 (function () {
     const catalog = @json($productCodes);
     const format = value => Number(value || 0).toLocaleString('vi-VN');
+    function applyDuplicateWarnings(duplicates) {
+        document.querySelectorAll('[data-edit-row][data-order-id]').forEach(row => {
+            const peers = duplicates[row.dataset.orderId] || [];
+            row.classList.toggle('is-duplicate', peers.length > 0);
+            let warning = row.querySelector('[data-duplicate-warning]');
+            if (!warning) {
+                warning = document.createElement('span'); warning.dataset.duplicateWarning = '';
+                warning.setAttribute('role', 'alert'); row.querySelector('td').appendChild(warning);
+            }
+            warning.hidden = !peers.length;
+            warning.textContent = peers.length ? '⚠ Nghi trùng Tên đơn và Mã hàng với dòng #' + peers.join(', #') + '. Kiểm tra để tránh od hai lần.' : '';
+        });
+    }
     const scrollKey = 'workshop-scroll:' + location.pathname + location.search;
     function rememberScroll() {
         sessionStorage.setItem(scrollKey, JSON.stringify({x: window.scrollX, y: window.scrollY,
@@ -252,7 +265,13 @@
                     pendingImage = null; upload.value = '';
                     if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
                 }
-                if (revision === sentRevision) { row.classList.remove('has-changes'); state.textContent = 'Đã lưu'; state.style.color = ''; }
+                row.dataset.orderId = data.id;
+                applyDuplicateWarnings(data.duplicate_rows || {});
+                if (revision === sentRevision) {
+                    row.classList.remove('has-changes');
+                    state.textContent = row.classList.contains('is-duplicate') ? 'Đã lưu · ⚠ Cảnh báo trùng đặt hàng' : 'Đã lưu';
+                    state.style.color = row.classList.contains('is-duplicate') ? '#a51220' : '';
+                }
             } catch (error) { state.textContent = 'Chưa lưu: ' + error.message; state.style.color = '#b42318'; }
             finally {
                 saving = false;

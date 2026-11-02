@@ -80,6 +80,8 @@ class OrderPurchasePlanService
         if ($order->status !== 'huy_don') {
             app(OrderInventoryService::class)->assertItemsAvailable($order->items->toArray(),
                 $order->pickup_date->toDateString(), $order->return_date->toDateString(), $order->id, $order->return_period);
+            $warning = app(WorkshopDuplicateService::class)->warningForOrder($order->id);
+            if ($warning) session()->flash('workshop_duplicate_warning', $warning);
         }
     }
 }
