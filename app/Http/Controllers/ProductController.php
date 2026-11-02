@@ -212,6 +212,11 @@ class ProductController extends Controller
             'totalRented' => array_sum($rentedByProduct),
             'purchaseHistory' => \App\Models\WorkshopStockTransfer::with('user')->where('product_code', $product->code)
                 ->orderByDesc('id')->paginate(15, ['*'], 'purchase_page')->withQueryString(),
+            'productEditHistory' => \App\Models\ChangeLog::with('user')->where('loggable_type', Product::class)
+                ->where(function ($query) use ($product) {
+                    $query->whereIn('loggable_id', Product::where('code', $product->code)->select('id'))
+                        ->orWhere('subject_label', 'like', addcslashes($product->code, '\\%_').' - size %');
+                })->latest('id')->paginate(15, ['*'], 'edit_history_page')->withQueryString(),
             'sort' => $sort,
             'direction' => $direction,
         ]);

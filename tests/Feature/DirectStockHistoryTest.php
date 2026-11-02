@@ -12,6 +12,22 @@ class DirectStockHistoryTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_inline_edit_history_includes_old_and_deleted_sizes_but_not_similar_codes(): void
+    {
+        $this->actingAs(User::create(['code' => 'inline-history-'.bin2hex(random_bytes(4)), 'name' => 'Người sửa',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $code = 'HIST_'.bin2hex(random_bytes(4));
+        $product = Product::create(['code' => $code, 'name' => 'Test', 'size' => 'M', 'fabric' => '', 'stock_quantity' => 5]);
+        $product->update(['stock_quantity' => 2]);
+        $oldChange = $product->changeLogs()->where('event', 'updated')->firstOrFail();
+        $deleted = Product::create(['code' => $code, 'name' => 'Test', 'size' => 'SIZE-REMOVED', 'fabric' => '', 'stock_quantity' => 1]);
+        $deleted->delete();
+        Product::create(['code' => $code.'X', 'name' => 'Test', 'size' => 'UNRELATED-SIZE', 'fabric' => '', 'stock_quantity' => 1]);
+        $this->get('/products/'.$product->id)->assertOk()->assertSee('Lịch sử chỉnh sửa')->assertSee('Người sửa')
+            ->assertSee('SIZE-REMOVED')->assertDontSee('UNRELATED-SIZE')
+            ->assertViewHas('productEditHistory', fn ($history) => $history->contains('id', $oldChange->id));
+    }
+
     public function test_direct_initial_stock_and_increases_appear_in_purchase_history_without_duplicate_entries(): void
     {
         $user = User::create(['code' => 'direct-'.bin2hex(random_bytes(4)), 'name' => 'Người nhập thử',
@@ -42,7 +58,7 @@ class DirectStockHistoryTest extends TestCase
         $decrease = WorkshopStockTransfer::where('product_code', $code)->latest('id')->firstOrFail();
         $this->assertSame(-2, $decrease->lines[0]['quantity']);
         $this->get('/products/'.$product->id)->assertOk()->assertSee('-2')->assertSee('3 → 1')
-            ->assertSee('Xem lịch sử thay đổi trước đây');
+            ->assertSee('Lịch sử chỉnh sửa');
         $this->postJson(route('workshop-orders.undo-stock', $decrease))->assertOk();
         $this->assertSame(3, $product->fresh()->stock_quantity);
         $this->postJson(route('workshop-orders.undo-stock', $decrease))->assertOk();

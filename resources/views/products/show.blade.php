@@ -442,7 +442,6 @@
         <section id="purchase-history" style="margin-top:28px">
             <h2>Lịch sử mua</h2>
             <p>Gồm nhập hàng và điều chỉnh tăng/giảm trực tiếp tại Kho.
-                <a href="{{ route('change-logs.index', ['type' => \App\Models\Product::class, 'q' => $product->code]) }}">Xem lịch sử thay đổi trước đây của mã này</a>
             </p>
             @error('undo')<div class="status is-error" role="alert">{{ $message }}</div>@enderror
             <div class="table-shell" style="overflow-x:auto">
@@ -476,6 +475,7 @@
             </div>
             {{ $purchaseHistory->fragment('purchase-history')->links() }}
         </section>
+        @include('products.edit-history')
     </main>
     @include('orders.reminders-popup')
     <script>
