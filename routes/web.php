@@ -35,6 +35,8 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
+    Route::post('/personal-edits/{section}/{direction}', [\App\Http\Controllers\PersonalEditController::class, 'replay'])
+        ->name('personal-edits.replay');
     Route::get('/carrier-directory', [CarrierDirectoryController::class, 'index'])->name('carrier-directory.index');
     Route::get('/draft-invoices/logo', [DraftInvoiceController::class, 'logo'])->name('draft-invoices.logo');
     Route::resource('draft-invoices', DraftInvoiceController::class)->except(['show']);
