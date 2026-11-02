@@ -99,6 +99,8 @@ class OrderController extends Controller
 
         $ordersQuery = Order::query()
             ->select('orders.*')
+            ->withExists(['items as needs_purchase' => fn ($query) => $query
+                ->whereIn('fulfillment_source', ['xuong_may', 'mua_ngoai'])])
             // Danh sach ma hang duoc so ngay tren bang nen can ca san pham cua
             // tung dong; hai truy van eager-load van re hon moi dong mot request.
             ->with([

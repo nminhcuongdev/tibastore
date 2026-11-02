@@ -904,7 +904,10 @@
                             <td>{{ $order->pickup_date?->format('d/m/Y') }}</td>
                             <td>{{ $order->event_date?->format('d/m/Y') }}</td>
                             <td>{{ $order->return_date?->format('d/m/Y') }} {{ $order->periodLabel($order->return_period) }}</td>
-                            <td>
+                            <td class="order-name-cell">
+                                @if ($order->needs_purchase)
+                                    <span class="order-needs-purchase" data-purchase-needed="{{ $order->id }}" role="img" aria-label="Đơn có hàng cần đặt thêm" title="Có hàng chọn Cần od – Xưởng hoặc Mua ngoài">☀️</span>
+                                @endif
                                 <button type="button" class="name copy-order-name" data-copy-order-name="{{ $order->order_name }}"
                                     title="Bấm để sao chép tên đơn" aria-label="Sao chép tên đơn {{ $order->order_name }}">{{ $order->order_name }}</button>
                                 <div class="muted">Tạo: {{ $order->created_at?->format('d/m/Y') }}</div>
@@ -1123,6 +1126,8 @@
     })();
 </script>
 <style>
+    td.order-name-cell { position: relative; padding-left: 38px; padding-right: 38px; }
+    .order-needs-purchase { position: absolute; left: 10px; top: 12px; font-size: 19px; line-height: 1.3; }
     .copy-order-name {
         background: transparent; border: 0; padding: 0; margin: 0;
         color: inherit; font: inherit; font-weight: 800; cursor: pointer;
