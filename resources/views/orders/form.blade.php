@@ -432,7 +432,7 @@
                 <strong>Chưa lưu được — vui lòng kiểm tra:</strong>
                 <ul style="margin: 6px 0 0; padding-left: 18px;">
                     @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
+                        <li>@include('orders.stock-error-message', ['errorText' => $error])</li>
                     @endforeach
                 </ul>
             </div>
@@ -628,9 +628,9 @@
                 <div class="items-actions">
                     <button id="add_item_button" class="button secondary" type="button">+ Thêm sản phẩm</button>
                 </div>
-                @error('items') <div class="error">{{ $message }}</div> @enderror
-                @error('items.*.product_id') <div class="error">{{ $message }}</div> @enderror
-                @error('items.*.quantity') <div class="error">{{ $message }}</div> @enderror
+                @error('items') <div class="error">@include('orders.stock-error-message', ['errorText' => $message])</div> @enderror
+                @error('items.*.product_id') <div class="error">@include('orders.stock-error-message', ['errorText' => $message])</div> @enderror
+                @error('items.*.quantity') <div class="error">@include('orders.stock-error-message', ['errorText' => $message])</div> @enderror
             </div>
 
             <div class="actions">
