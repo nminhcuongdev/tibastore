@@ -247,6 +247,10 @@
 
     <form class="toolbar" method="GET" action="{{ route('workshop-orders.index') }}">
         <input type="hidden" name="supply_source" value="{{ $supplySource }}">
+        @if ($sort)
+            <input type="hidden" name="sort" value="{{ $sort }}">
+            <input type="hidden" name="direction" value="{{ $direction }}">
+        @endif
         <div class="field">
             <label for="q">Tìm mã / tên đơn / size / ghi chú</label>
             <input id="q" name="q" type="search" value="{{ $query }}" placeholder="VD: NA5414, 3xl...">
@@ -330,8 +334,18 @@
                     <th>Tên đơn</th>
                     <th>Người mua hàng ghi chú</th>
                     <th>Tên nhà cung cấp</th>
-                    <th>Ngày đặt hàng</th>
-                    <th>Ngày trả hàng</th>
+                    @foreach (['ordered_date' => 'Ngày đặt hàng', 'returned_date' => 'Ngày trả hàng'] as $column => $label)
+                        @php
+                            $activeSort = $sort === $column;
+                            $nextDirection = $activeSort && $direction === 'desc' ? 'asc' : 'desc';
+                        @endphp
+                        <th aria-sort="{{ $activeSort ? ($direction === 'asc' ? 'ascending' : 'descending') : 'none' }}">
+                            <a style="color:inherit;text-decoration:none;white-space:nowrap" href="{{ request()->fullUrlWithQuery(['sort' => $column, 'direction' => $nextDirection, 'page' => null]) }}"
+                               title="{{ $nextDirection === 'desc' ? 'Sắp xếp gần nhất trước' : 'Sắp xếp xa nhất trước' }}">
+                                {{ $label }} <span aria-hidden="true">{{ $activeSort ? ($direction === 'desc' ? '↓' : '↑') : '↕' }}</span>
+                            </a>
+                        </th>
+                    @endforeach
                     <th>Người mua hàng</th>
                     <th>Hàng đã về chưa</th>
                     <th>Thao tác</th>

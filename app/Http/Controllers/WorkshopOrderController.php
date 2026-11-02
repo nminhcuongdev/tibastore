@@ -35,6 +35,9 @@ class WorkshopOrderController extends Controller
         $buyer = trim((string) $request->query('buyer', ''));
         $orderedFrom = $this->filterDate($request->query('ordered_from'));
         $orderedTo = $this->filterDate($request->query('ordered_to'));
+        $sort = in_array($request->query('sort'), ['ordered_date', 'returned_date'], true)
+            ? $request->query('sort') : null;
+        $direction = $request->query('direction') === 'asc' ? 'asc' : 'desc';
 
         $ordersQuery = WorkshopOrder::query()
             ->with('product')
@@ -54,6 +57,7 @@ class WorkshopOrderController extends Controller
             ->when($buyer !== '', fn ($builder) => $builder->where('buyer', 'like', "%{$buyer}%"))
             ->when($orderedFrom, fn ($builder) => $builder->whereDate('ordered_date', '>=', $orderedFrom))
             ->when($orderedTo, fn ($builder) => $builder->whereDate('ordered_date', '<=', $orderedTo))
+            ->when($sort, fn ($builder) => $builder->orderByRaw($sort.' IS NULL')->orderBy($sort, $direction))
             ->orderByDesc('created_at')
             ->orderByDesc('id');
 
@@ -84,6 +88,8 @@ class WorkshopOrderController extends Controller
             'buyer' => $buyer,
             'orderedFrom' => $orderedFrom,
             'orderedTo' => $orderedTo,
+            'sort' => $sort,
+            'direction' => $direction,
         ]);
     }
 
