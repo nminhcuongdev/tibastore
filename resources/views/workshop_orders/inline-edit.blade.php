@@ -50,7 +50,12 @@
             row.remove();
             if (!document.querySelector('[data-new-row]')) appendNewRow();
         });
-        function colorRow() { row.classList.toggle('is-arrived', row.querySelector('[name=status]').value === 'da_ve'); }
+        function colorRow() {
+            const status = row.querySelector('[name=status]').value;
+            row.classList.toggle('is-arrived', status === 'da_ve');
+            row.classList.toggle('is-ordered', status === 'da_od');
+            row.querySelector('[name=status]').className = 'status-select st-' + status;
+        }
         colorRow();
         row.querySelector('[name=status]').addEventListener('change', colorRow);
         function resizeText(input) { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; }

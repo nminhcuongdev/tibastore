@@ -20,6 +20,8 @@ tr[data-edit-row] input[type=date]::-webkit-calendar-picker-indicator{opacity:1;
 <style>
 tr[data-edit-row].is-arrived,tr[data-edit-row].is-arrived td{background:#a8d9b5!important}
 tr[data-edit-row].is-arrived:hover td{background:#96cfa6!important}
+tr[data-edit-row].is-ordered,tr[data-edit-row].is-ordered td{background:#f6c9dc!important}
+tr[data-edit-row].is-ordered:hover td{background:#efb5cf!important}
 tr[data-edit-row] input:not([type=hidden]),tr[data-edit-row] textarea,tr[data-edit-row] select,
 tr[data-edit-row].is-arrived input:not([type=hidden]),tr[data-edit-row].is-arrived textarea,tr[data-edit-row].is-arrived select{
 background:#fff;border:1px solid #d4deea;border-radius:7px;box-shadow:0 2px 5px rgba(30,55,85,.08);color:#243b58;

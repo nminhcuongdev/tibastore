@@ -195,6 +195,7 @@
         }
         .st-chua_ve { background: #fff7d6; border-color: #e5c96a; color: #8a5a00; }
         .st-da_ve { background: #e8f7ef; border-color: #9bd9ba; color: #1f7d55; }
+        .st-da_od { background: #fce4ef; border-color: #e8a4c3; color: #96315e; }
         .row-actions { display: flex; gap: 8px; }
         .link-action, .danger {
             border-radius: 8px;
@@ -334,7 +335,7 @@
             <tbody data-workshop-rows>
                 @forelse ($orders as $item)
                     @php $product = $item->product; @endphp
-                    <tr data-edit-row data-custom-image="{{ $item->image_path ? $item->image_url : '' }}" class="{{ $item->hasArrived() ? 'is-arrived' : '' }}" data-quantity="{{ $item->quantity }}" data-total="{{ $item->total_amount }}">
+                    <tr data-edit-row data-custom-image="{{ $item->image_path ? $item->image_url : '' }}" class="{{ $item->hasArrived() ? 'is-arrived' : ($item->status === \App\Models\WorkshopOrder::STATUS_ORDERED ? 'is-ordered' : '') }}" data-quantity="{{ $item->quantity }}" data-total="{{ $item->total_amount }}">
                         <td>
                             <input form="workshop-edit-{{ $item->id }}" name="product_code" value="{{ $item->product_code }}" required maxlength="50" aria-label="Mã hàng">
                             @if ($product)

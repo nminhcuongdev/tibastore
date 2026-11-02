@@ -62,6 +62,14 @@ class WorkshopInlineEditTest extends TestCase
         $this->putJson('/workshop-orders/'.$item->id, $data)->assertOk()->assertJsonPath('total', 300000)
             ->assertJsonPath('product_name', 'Áo thử');
         $this->assertSame(3, $item->fresh()->quantity);
+        $data['status'] = WorkshopOrder::STATUS_ORDERED;
+        $this->putJson('/workshop-orders/'.$item->id, $data)->assertOk();
+        $this->assertSame(WorkshopOrder::STATUS_ORDERED, $item->fresh()->status);
+        $this->get('/workshop-orders?status=da_od')->assertOk()
+            ->assertSee('Đã od')->assertSee('class="is-ordered"', false)->assertSee($product->code);
+        $data['status'] = WorkshopOrder::STATUS_ARRIVED;
+        $this->putJson('/workshop-orders/'.$item->id, $data)->assertOk();
+        $this->assertTrue($item->fresh()->hasArrived());
         $data['returned_date'] = '2026-10-31';
         $this->putJson('/workshop-orders/'.$item->id, $data)->assertUnprocessable()->assertJsonValidationErrors('returned_date');
         $data['returned_date'] = null;

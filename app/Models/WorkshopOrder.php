@@ -16,6 +16,8 @@ class WorkshopOrder extends Model
 
     public const STATUS_ARRIVED = 'da_ve';
 
+    public const STATUS_ORDERED = 'da_od';
+
     public const DEFAULT_STATUS = self::STATUS_NOT_YET;
 
     public const SUPPLY_WORKSHOP = 'xuong_may';
@@ -83,6 +85,7 @@ class WorkshopOrder extends Model
     {
         return [
             self::STATUS_NOT_YET => 'Chưa về',
+            self::STATUS_ORDERED => 'Đã od',
             self::STATUS_ARRIVED => 'Hàng đã về',
         ];
     }
