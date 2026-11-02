@@ -88,6 +88,7 @@ class WorkshopOrderController extends Controller
                 'supply_source' => WorkshopOrder::DEFAULT_SUPPLY_SOURCE,
                 'quantity' => 1,
                 'unit_price' => 0,
+                'ordered_date' => now('Asia/Ho_Chi_Minh')->toDateString(),
             ]),
             'statuses' => WorkshopOrder::statuses(),
             'supplySources' => WorkshopOrder::supplySources(),
@@ -164,6 +165,10 @@ class WorkshopOrderController extends Controller
 
     private function validatedData(Request $request, ?WorkshopOrder $existing = null): array
     {
+        if (! $existing && ! $request->filled('ordered_date')) {
+            $request->merge(['ordered_date' => now('Asia/Ho_Chi_Minh')->toDateString()]);
+        }
+
         $data = $request->validate([
             'product_code' => ['required', 'string', 'max:50',
                 Rule::when($request->input('product_code') !== WorkshopOrder::NO_PRODUCT_CODE && (!$existing || $request->input('product_code') !== $existing->product_code), Rule::exists('products', 'code'))],

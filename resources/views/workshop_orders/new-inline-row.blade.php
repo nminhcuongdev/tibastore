@@ -9,7 +9,7 @@
     <td><textarea form="workshop-new-__NEW__" name="order_name" maxlength="255" placeholder="Tên đơn…" aria-label="Tên đơn" rows="1" wrap="soft"></textarea></td>
     <td><textarea form="workshop-new-__NEW__" name="buyer_note" maxlength="2000" rows="2" placeholder="Ghi chú…" aria-label="Ghi chú"></textarea></td>
     <td><textarea form="workshop-new-__NEW__" name="source" maxlength="255" placeholder="Nhà cung cấp…" aria-label="Nhà cung cấp" rows="1" wrap="soft"></textarea></td>
-    <td><input form="workshop-new-__NEW__" name="ordered_date" type="date" aria-label="Ngày đặt hàng"></td>
+    <td><input form="workshop-new-__NEW__" name="ordered_date" type="date" value="{{ now('Asia/Ho_Chi_Minh')->toDateString() }}" aria-label="Ngày đặt hàng"></td>
     <td><input form="workshop-new-__NEW__" name="returned_date" type="date" aria-label="Ngày trả hàng"></td>
     <td><input form="workshop-new-__NEW__" name="buyer" maxlength="255" placeholder="Người mua…" aria-label="Người mua hàng"></td>
     <td><select form="workshop-new-__NEW__" name="status" class="status-select" aria-label="Trạng thái">@foreach($statuses as $value => $label)<option value="{{ $value }}" @selected($value === \App\Models\WorkshopOrder::DEFAULT_STATUS)>{{ $label }}</option>@endforeach</select></td>

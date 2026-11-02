@@ -14,6 +14,29 @@ class WorkshopInlineEditTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_new_order_defaults_to_vietnam_date_and_preserves_manual_dates(): void
+    {
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-02 18:30:00', 'UTC'));
+        try {
+            $this->actingAs(User::create(['code' => 'date-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+                'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+            $data = ['product_code' => WorkshopOrder::NO_PRODUCT_CODE,
+                'supply_source' => WorkshopOrder::SUPPLY_OUTSIDE, 'quantity' => 1,
+                'status' => WorkshopOrder::DEFAULT_STATUS, 'ordered_date' => ''];
+            $this->postJson('/workshop-orders', $data)->assertCreated();
+            $item = WorkshopOrder::latest('id')->firstOrFail();
+            $this->assertSame('2026-11-03', $item->ordered_date->toDateString());
+            unset($data['ordered_date']);
+            $this->putJson('/workshop-orders/'.$item->id, $data)->assertOk();
+            $this->assertSame('2026-11-03', $item->fresh()->ordered_date->toDateString());
+            $data['ordered_date'] = '2026-10-31';
+            $this->postJson('/workshop-orders', $data)->assertCreated();
+            $this->assertSame('2026-10-31', WorkshopOrder::latest('id')->firstOrFail()->ordered_date->toDateString());
+        } finally {
+            $this->travelBack();
+        }
+    }
+
     public function test_order_without_code_keeps_its_uploaded_image_when_assigned_a_code(): void
     {
         Storage::fake('public');

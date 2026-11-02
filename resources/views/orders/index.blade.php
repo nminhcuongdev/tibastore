@@ -708,6 +708,9 @@
                     <span class="codes-caret" aria-hidden="true">▸</span>
                     <span data-codes-toggle-all-label>Sổ hết tất cả</span>
                 </button>
+                <button type="button" class="button secondary" data-open-arrival-reminders aria-haspopup="dialog" aria-controls="arrival-reminder-popup">
+                    Nhắc hàng chưa về ({{ number_format($arrivalReminders->pluck('item.id')->unique()->count()) }})
+                </button>
                 <button type="button" class="button secondary" data-open-return-reminders
                     aria-haspopup="dialog" aria-controls="order-reminder-popup">
                     Nhắc đòi đồ ({{ number_format($returnReminderCount) }})
@@ -1064,6 +1067,7 @@
         })();
     </script>
     @include('orders.modal-data')
+    @include('orders.arrival-reminders')
     @include('orders.status-ajax')
     @include('orders.codes-panel')
     @include('orders.codes-modal')

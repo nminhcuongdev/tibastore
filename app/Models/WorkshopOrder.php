@@ -84,7 +84,7 @@ class WorkshopOrder extends Model
     public static function statuses(): array
     {
         return [
-            self::STATUS_NOT_YET => 'Chưa về',
+            self::STATUS_NOT_YET => 'Chưa od',
             self::STATUS_ORDERED => 'Đã od',
             self::STATUS_ARRIVED => 'Hàng đã về',
         ];

@@ -13,6 +13,11 @@
         row.querySelector('[data-product-label]').textContent = product ? product.name : (row.querySelector('[name=product_code]').value === @json(\App\Models\WorkshopOrder::NO_PRODUCT_CODE) ? 'Chưa tạo mã' : 'Chọn mã để hiện tên và ảnh');
     }
     function setupRow(row) {
+        if (row.hasAttribute('data-new-row')) {
+            const parts = new Intl.DateTimeFormat('en-US', {timeZone:'Asia/Ho_Chi_Minh', year:'numeric', month:'2-digit', day:'2-digit'}).formatToParts(new Date());
+            const part = type => parts.find(item => item.type === type).value;
+            row.querySelector('[name=ordered_date]').value = `${part('year')}-${part('month')}-${part('day')}`;
+        }
         const codeInput = row.querySelector('[name=product_code]');
         const imageCell = row.querySelector('[data-product-image]');
         const preview = document.createElement('div'); preview.dataset.imagePreview = '';
