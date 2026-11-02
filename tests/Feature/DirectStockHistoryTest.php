@@ -37,6 +37,16 @@ class DirectStockHistoryTest extends TestCase
             ->assertSee('+5')->assertSee(route('workshop-orders.undo-stock', $entry));
         $this->postJson(route('workshop-orders.undo-stock', $entry))->assertOk();
         $this->assertSame(3, $product->fresh()->stock_quantity);
+        $data['stock_quantity'] = 1;
+        $this->put('/products/'.$product->id, $data)->assertSessionHasNoErrors()->assertRedirect();
+        $decrease = WorkshopStockTransfer::where('product_code', $code)->latest('id')->firstOrFail();
+        $this->assertSame(-2, $decrease->lines[0]['quantity']);
+        $this->get('/products/'.$product->id)->assertOk()->assertSee('-2')->assertSee('3 → 1')
+            ->assertSee('Xem lịch sử thay đổi trước đây');
+        $this->postJson(route('workshop-orders.undo-stock', $decrease))->assertOk();
+        $this->assertSame(3, $product->fresh()->stock_quantity);
+        $this->postJson(route('workshop-orders.undo-stock', $decrease))->assertOk();
+        $this->assertSame(3, $product->fresh()->stock_quantity);
         $this->postJson(route('workshop-orders.undo-stock', $entry))->assertOk();
         $this->assertSame(3, $product->fresh()->stock_quantity);
     }

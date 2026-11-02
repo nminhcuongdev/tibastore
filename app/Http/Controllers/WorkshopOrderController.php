@@ -261,7 +261,7 @@ class WorkshopOrderController extends Controller
                     ? WorkshopOrder::STATUS_ORDERED : $entry->previous_status]);
             }
             $entry->update(['undone_at' => now(), 'undone_by' => $request->user()->id]);
-            return 'Đã hoàn tác lần đẩy lên kho và trừ lại đúng số lượng từng size.';
+            return 'Đã hoàn tác và đảo lại đúng phần tăng hoặc giảm của từng size.';
         });
         return $request->wantsJson() ? response()->json(['message' => $message]) : back()->with('status', $message);
     }

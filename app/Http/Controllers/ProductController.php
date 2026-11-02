@@ -444,6 +444,8 @@ class ProductController extends Controller
                     $previousQuantity,
                     $newQuantity
                 );
+            } elseif ($newQuantity < $previousQuantity) {
+                $this->recordDirectStockChange($lockedProduct, $newQuantity - $previousQuantity, $previousQuantity, $newQuantity);
             }
         });
 
@@ -760,6 +762,11 @@ class ProductController extends Controller
             'previous_quantity' => $previousQuantity,
             'new_quantity' => $newQuantity,
         ]);
+        $this->recordDirectStockChange($product, $quantity, $previousQuantity, $newQuantity);
+    }
+
+    private function recordDirectStockChange(Product $product, int $quantity, int $previousQuantity, int $newQuantity): void
+    {
         \App\Models\WorkshopStockTransfer::create([
             'workshop_order_id' => null,
             'product_code' => $product->code,

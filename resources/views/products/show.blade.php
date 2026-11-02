@@ -441,23 +441,26 @@
         @endif
         <section id="purchase-history" style="margin-top:28px">
             <h2>Lịch sử mua</h2>
+            <p>Gồm nhập hàng và điều chỉnh tăng/giảm trực tiếp tại Kho.
+                <a href="{{ route('change-logs.index', ['type' => \App\Models\Product::class, 'q' => $product->code]) }}">Xem lịch sử thay đổi trước đây của mã này</a>
+            </p>
             @error('undo')<div class="status is-error" role="alert">{{ $message }}</div>@enderror
             <div class="table-shell" style="overflow-x:auto">
                 <table>
-                    <thead><tr><th>Ngày nhập kho</th><th>Nguồn mua / Nhà cung cấp</th><th>Tên đơn</th><th>Size · Số lượng đã nhập</th><th>Người nhập</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+                    <thead><tr><th>Ngày ghi nhận</th><th>Nguồn mua / Nhà cung cấp</th><th>Tên đơn</th><th>Size · Thay đổi số lượng</th><th>Người thực hiện</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
                     <tbody>
                     @forelse ($purchaseHistory as $entry)
                         <tr>
                             <td>{{ $entry->transferred_at->timezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i') }}</td>
                             <td>{{ $entry->supply_source === 'direct_stock' ? 'Nhập trực tiếp tại Kho' : (\App\Models\WorkshopOrder::supplySources()[$entry->supply_source] ?? $entry->supply_source) }}<br>{{ $entry->supplier }}</td>
                             <td>{{ $entry->order_name ?: '—' }}</td>
-                            <td>@foreach ($entry->lines as $line)<div>{{ $line['size'] }}: <strong>+{{ $line['quantity'] }}</strong>@if (isset($line['previous_quantity'])) <small>({{ $line['previous_quantity'] }} → {{ $line['new_quantity'] }})</small>@endif</div>@endforeach</td>
+                            <td>@foreach ($entry->lines as $line)<div>{{ $line['size'] }}: <strong>{{ $line['quantity'] > 0 ? '+' : '' }}{{ $line['quantity'] }}</strong>@if (isset($line['previous_quantity'])) <small>({{ $line['previous_quantity'] }} → {{ $line['new_quantity'] }})</small>@endif</div>@endforeach</td>
                             <td>{{ $entry->user?->name ?? '—' }}</td>
-                            <td>@if ($entry->undone_at)Đã hoàn tác<br>{{ $entry->undone_at->timezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i') }}@else Đã nhập kho @endif</td>
+                            <td>@if ($entry->undone_at)Đã hoàn tác<br>{{ $entry->undone_at->timezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i') }}@else {{ $entry->supply_source === 'direct_stock' ? 'Đã ghi nhận' : 'Đã nhập kho' }} @endif</td>
                             <td>
                                 @if ($entry->workshop_order_id)<a class="link-action" href="{{ route('workshop-orders.index', ['focus' => $entry->workshop_order_id]) }}">Xem đặt hàng</a>@endif
                                 @if (!$entry->undone_at && $entry->can_undo)
-                                    <form method="POST" action="{{ route('workshop-orders.undo-stock', $entry) }}" onsubmit="return confirm('Hoàn tác lần nhập này? Kho sẽ trừ lại đúng số lượng đã cộng của từng size.');" style="margin-top:8px">
+                                    <form method="POST" action="{{ route('workshop-orders.undo-stock', $entry) }}" onsubmit="return confirm('Hoàn tác lần ghi nhận này? Kho sẽ đảo lại đúng phần tăng hoặc giảm của từng size.');" style="margin-top:8px">
                                         @csrf<button class="link-action danger" type="submit">Hoàn tác</button>
                                     </form>
                                 @elseif (!$entry->undone_at)

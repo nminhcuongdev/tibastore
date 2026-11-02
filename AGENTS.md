@@ -1,4 +1,4 @@
 # Project workflow
 
-- Starting with the next session, push changes to GitHub only when the user explicitly authorizes the push. Do not automatically push after edits. This replaces the user's earlier automatic-push preference.
+- After completing and checking requested code changes, commit and push to GitHub automatically unless the user asks otherwise. This is the user's latest preference and replaces the earlier explicit-push-only rule.
 - Keep local runtime files, credentials, databases, and logs out of commits.
