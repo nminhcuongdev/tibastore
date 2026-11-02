@@ -210,6 +210,8 @@ class ProductController extends Controller
             'totalQuantity' => $totalQuantity,
             'rentedByProduct' => $rentedByProduct,
             'totalRented' => array_sum($rentedByProduct),
+            'purchaseHistory' => \App\Models\WorkshopStockTransfer::with('user')->where('product_code', $product->code)
+                ->orderByDesc('id')->paginate(15, ['*'], 'purchase_page')->withQueryString(),
             'sort' => $sort,
             'direction' => $direction,
         ]);

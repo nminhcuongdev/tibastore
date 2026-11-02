@@ -206,6 +206,7 @@ class WorkshopOrderController extends Controller
                 throw \Illuminate\Validation\ValidationException::withMessages(['size_quantities' => 'Hãy chọn mã hàng, nhập size và số lượng từng size rồi lưu dòng trước khi đẩy lên kho.']);
             }
             $quantities = collect($lines)->groupBy('product_id')->map(fn ($rows) => $rows->sum('quantity'))->sortKeys();
+            $snapshot = [];
             foreach ($quantities as $productId => $quantity) {
                 $product = Product::whereKey($productId)->lockForUpdate()->firstOrFail();
                 if ($product->code !== $item->product_code || $quantity < 1) {
@@ -219,13 +220,48 @@ class WorkshopOrderController extends Controller
                     $product->update(['stock_quantity' => $previous + $quantity]);
                     \App\Models\StockImportHistory::create(['product_id' => $productId, 'user_id' => $request->user()->id,
                         'quantity' => $quantity, 'previous_quantity' => $previous, 'new_quantity' => $previous + $quantity]);
+                    $snapshot[] = ['product_id' => (int) $productId, 'size' => $product->size, 'quantity' => (int) $quantity];
                 }
                 foreach ($receipts as $receipt) {
                     if (!$receipt->received_at) $receipt->update(['received_at' => now()]);
                 }
             }
-            $item->update(['stocked_at' => now(), 'status' => WorkshopOrder::STATUS_ARRIVED]);
+            $transferredAt = now();
+            \App\Models\WorkshopStockTransfer::create(['workshop_order_id' => $item->id, 'product_code' => $item->product_code,
+                'supply_source' => $item->supply_source, 'order_name' => $item->order_name, 'supplier' => $item->source,
+                'previous_status' => $item->status, 'lines' => $snapshot, 'user_id' => $request->user()->id,
+                'transferred_at' => $transferredAt, 'can_undo' => !empty($snapshot)]);
+            $item->update(['stocked_at' => $transferredAt, 'status' => WorkshopOrder::STATUS_ARRIVED]);
             return 'Đã cộng số lượng từng size vào kho.';
+        });
+        return $request->wantsJson() ? response()->json(['message' => $message]) : back()->with('status', $message);
+    }
+
+    public function undoStockTransfer(Request $request, \App\Models\WorkshopStockTransfer $transfer): RedirectResponse|JsonResponse
+    {
+        $message = DB::transaction(function () use ($request, $transfer) {
+            $order = WorkshopOrder::whereKey($transfer->workshop_order_id)->lockForUpdate()->first();
+            $entry = \App\Models\WorkshopStockTransfer::whereKey($transfer->id)->lockForUpdate()->firstOrFail();
+            if ($entry->undone_at) return 'Lần nhập này đã được hoàn tác, không trừ kho thêm.';
+            if (!$entry->can_undo || empty($entry->lines)) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['undo' => 'Lần nhập cũ này chưa đủ dữ liệu đối chiếu để hoàn tác tự động.']);
+            }
+            $quantities = collect($entry->lines)->groupBy('product_id')->map(fn ($lines) => $lines->sum('quantity'))->sortKeys();
+            foreach ($quantities as $productId => $quantity) {
+                $product = Product::whereKey($productId)->lockForUpdate()->first();
+                if (!$product || $product->stock_quantity < $quantity) {
+                    throw \Illuminate\Validation\ValidationException::withMessages(['undo' => 'Không thể hoàn tác: số lượng còn trong kho không đủ để trừ lại. Hãy kiểm tra hàng đã xuất hoặc đã điều chỉnh.']);
+                }
+                $product->update(['stock_quantity' => $product->stock_quantity - $quantity]);
+            }
+            if ($order) {
+                \App\Models\ProductExpectedReceipt::where('workshop_order_id', $entry->workshop_order_id)
+                    ->whereIn('product_id', $quantities->keys())->update(['received_at' => null]);
+                $order->update(['stocked_at' => null, 'status' => $entry->previous_status === WorkshopOrder::STATUS_ARRIVED
+                    ? WorkshopOrder::STATUS_ORDERED : $entry->previous_status]);
+            }
+            $entry->update(['undone_at' => now(), 'undone_by' => $request->user()->id]);
+            return 'Đã hoàn tác lần đẩy lên kho và trừ lại đúng số lượng từng size.';
         });
         return $request->wantsJson() ? response()->json(['message' => $message]) : back()->with('status', $message);
     }

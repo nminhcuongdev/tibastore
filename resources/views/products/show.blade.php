@@ -439,6 +439,40 @@
                 </div>
             </nav>
         @endif
+        <section id="purchase-history" style="margin-top:28px">
+            <h2>Lịch sử mua</h2>
+            @error('undo')<div class="status is-error" role="alert">{{ $message }}</div>@enderror
+            <div class="table-shell" style="overflow-x:auto">
+                <table>
+                    <thead><tr><th>Ngày nhập kho</th><th>Nguồn mua / Nhà cung cấp</th><th>Tên đơn</th><th>Size · Số lượng đã nhập</th><th>Người nhập</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+                    <tbody>
+                    @forelse ($purchaseHistory as $entry)
+                        <tr>
+                            <td>{{ $entry->transferred_at->timezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i') }}</td>
+                            <td>{{ \App\Models\WorkshopOrder::supplySources()[$entry->supply_source] ?? $entry->supply_source }}<br>{{ $entry->supplier }}</td>
+                            <td>{{ $entry->order_name ?: '—' }}</td>
+                            <td>@foreach ($entry->lines as $line)<div>{{ $line['size'] }}: <strong>{{ $line['quantity'] }}</strong></div>@endforeach</td>
+                            <td>{{ $entry->user?->name ?? '—' }}</td>
+                            <td>@if ($entry->undone_at)Đã hoàn tác<br>{{ $entry->undone_at->timezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i') }}@else Đã nhập kho @endif</td>
+                            <td>
+                                <a class="link-action" href="{{ route('workshop-orders.index', ['focus' => $entry->workshop_order_id]) }}">Xem đặt hàng</a>
+                                @if (!$entry->undone_at && $entry->can_undo)
+                                    <form method="POST" action="{{ route('workshop-orders.undo-stock', $entry) }}" onsubmit="return confirm('Hoàn tác lần nhập này? Kho sẽ trừ lại đúng số lượng đã cộng của từng size.');" style="margin-top:8px">
+                                        @csrf<button class="link-action danger" type="submit">Hoàn tác</button>
+                                    </form>
+                                @elseif (!$entry->undone_at)
+                                    <div>Chưa đủ dữ liệu hoàn tác tự động</div>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="7">Chưa có lần đẩy hàng từ Đặt hàng vào kho.</td></tr>
+                    @endforelse
+                    </tbody>
+                </table>
+            </div>
+            {{ $purchaseHistory->fragment('purchase-history')->links() }}
+        </section>
     </main>
     @include('orders.reminders-popup')
     <script>

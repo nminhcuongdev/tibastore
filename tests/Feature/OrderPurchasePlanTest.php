@@ -59,6 +59,12 @@ class OrderPurchasePlanTest extends TestCase
         $this->assertSame(3, $m->fresh()->stock_quantity);
         $this->put('/orders/'.$order->id, $data)->assertSessionHasNoErrors()->assertRedirect();
         $this->assertSame(3, $m->fresh()->stock_quantity);
+        $entry = \App\Models\WorkshopStockTransfer::where('workshop_order_id', $od->id)->firstOrFail();
+        $this->postJson(route('workshop-orders.undo-stock', $entry))->assertOk();
+        $this->assertSame(0, $m->fresh()->stock_quantity);
+        $this->assertSame(2, ProductExpectedReceipt::where('workshop_order_id', $od->id)->whereNull('received_at')->count());
+        $this->postJson('/workshop-orders/'.$od->id.'/stock')->assertOk();
+        $this->assertSame(3, $m->fresh()->stock_quantity);
         $plan['expected_date'] = '2033-04-20';
         $data['items'][0]['purchase_plan'] = json_encode($plan);
         $this->putJson('/orders/'.$order->id, $data)->assertUnprocessable()->assertJsonValidationErrors('items.0.purchase_plan.expected_date');

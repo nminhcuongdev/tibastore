@@ -67,6 +67,8 @@ Route::middleware('auth')->group(function () {
         ->name('workshop-orders.status');
     Route::post('/workshop-orders/{workshopOrder}/stock', [WorkshopOrderController::class, 'pushToStock'])
         ->name('workshop-orders.stock');
+    Route::post('/workshop-stock-transfers/{transfer}/undo', [WorkshopOrderController::class, 'undoStockTransfer'])
+        ->name('workshop-orders.undo-stock');
     Route::resource('workshop-orders', WorkshopOrderController::class)->except(['show']);
 
     Route::middleware('role:admin')->group(function () {

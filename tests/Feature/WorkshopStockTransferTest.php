@@ -37,6 +37,25 @@ class WorkshopStockTransferTest extends TestCase
         $this->assertSame(2, StockImportHistory::whereIn('product_id', [$m->id, $l->id])->count());
         $data['size_quantities'] = json_encode([['product_id' => $m->id, 'quantity' => 4]]);
         $this->putJson('/workshop-orders/'.$od->id, $data)->assertUnprocessable();
+        $entry = \App\Models\WorkshopStockTransfer::where('workshop_order_id', $od->id)->firstOrFail();
+        $this->get('/products/'.$m->id)->assertOk()->assertSee('Lịch sử mua')->assertSee('Hoàn tác')
+            ->assertSee(route('workshop-orders.undo-stock', $entry));
+        $this->postJson(route('workshop-orders.undo-stock', $entry))->assertOk();
+        $this->assertSame(10, $m->fresh()->stock_quantity);
+        $this->assertSame(5, $l->fresh()->stock_quantity);
+        $this->assertNull($od->fresh()->stocked_at);
+        $this->assertNotNull($entry->fresh()->undone_at);
+        $this->postJson(route('workshop-orders.undo-stock', $entry))->assertOk();
+        $this->assertSame(10, $m->fresh()->stock_quantity);
+        $this->postJson('/workshop-orders/'.$od->id.'/stock')->assertOk();
+        $this->assertSame(12, $m->fresh()->stock_quantity);
+        $this->assertSame(2, \App\Models\WorkshopStockTransfer::where('workshop_order_id', $od->id)->count());
+        $latest = \App\Models\WorkshopStockTransfer::where('workshop_order_id', $od->id)->latest('id')->firstOrFail();
+        $l->update(['stock_quantity' => 0]);
+        $this->postJson(route('workshop-orders.undo-stock', $latest))->assertUnprocessable()->assertJsonValidationErrors('undo');
+        $this->assertSame(12, $m->fresh()->stock_quantity);
+        $this->assertNull($latest->fresh()->undone_at);
+        $this->get('/products/'.$m->id)->assertOk()->assertSee('Đã hoàn tác');
         $empty = WorkshopOrder::create(['product_code' => WorkshopOrder::NO_PRODUCT_CODE, 'supply_source' => 'mua_ngoai',
             'quantity' => 1, 'status' => WorkshopOrder::STATUS_NOT_YET]);
         $this->postJson('/workshop-orders/'.$empty->id.'/stock')->assertUnprocessable()->assertJsonValidationErrors('size_quantities');
