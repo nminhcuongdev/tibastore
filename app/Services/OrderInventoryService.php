@@ -6,7 +6,6 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductExpectedReceipt;
-use App\Models\StockImportHistory;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -14,15 +13,12 @@ use Illuminate\Validation\ValidationException;
 class OrderInventoryService
 {
     /**
-     * Đồng bộ các việc theo ngày KHÔNG liên quan trạng thái đơn:
-     * hiện chỉ còn nhập kho theo phiếu nhập dự kiến đến hạn.
-     * Trạng thái đơn không còn tự đổi theo ngày — người dùng tự cập nhật.
+     * Kept for existing callers. Expected receipts are forecasts only: dates and
+     * order statuses never receive stock. Stock enters through an explicit transfer
+     * or a manual product stock adjustment.
      */
     public function syncDueOrders(?Carbon $today = null): void
     {
-        $today = $this->date($today ?? now());
-
-        $this->syncDueExpectedReceipts($today);
     }
 
     public function syncOrder(Order $order): void
@@ -384,55 +380,6 @@ class OrderInventoryService
         }
 
         return $result;
-    }
-
-    private function syncDueExpectedReceipts(Carbon $today): void
-    {
-        ProductExpectedReceipt::query()
-            ->whereNull('workshop_order_id')
-            ->whereDate('expected_receive_date', '<=', $today)
-            ->where('expected_receive_quantity', '>', 0)
-            ->whereNull('received_at')
-            ->chunkById(50, function ($receipts) use ($today) {
-                foreach ($receipts as $receipt) {
-                    DB::transaction(function () use ($receipt, $today) {
-                        $lockedReceipt = ProductExpectedReceipt::whereKey($receipt->id)
-                            ->lockForUpdate()
-                            ->firstOrFail();
-
-                        if (
-                            $lockedReceipt->received_at !== null
-                            || $lockedReceipt->expected_receive_quantity <= 0
-                            || (!$lockedReceipt->workshop_order_id && $this->date($lockedReceipt->expected_receive_date)->gt($today))
-                            || ($lockedReceipt->workshop_order_id && !$lockedReceipt->workshopOrder?->hasArrived())
-                        ) {
-                            return;
-                        }
-
-                        $lockedProduct = Product::whereKey($lockedReceipt->product_id)
-                            ->lockForUpdate()
-                            ->firstOrFail();
-
-                        $previousQuantity = (int) $lockedProduct->stock_quantity;
-                        $receivedQuantity = (int) $lockedReceipt->expected_receive_quantity;
-                        $newQuantity = $previousQuantity + $receivedQuantity;
-
-                        $lockedProduct->forceFill([
-                            'stock_quantity' => $newQuantity,
-                        ])->save();
-
-                        $lockedReceipt->forceFill(['received_at' => now()])->save();
-
-                        StockImportHistory::create([
-                            'product_id' => $lockedProduct->id,
-                            'user_id' => null,
-                            'quantity' => $receivedQuantity,
-                            'previous_quantity' => $previousQuantity,
-                            'new_quantity' => $newQuantity,
-                        ]);
-                    });
-                }
-            });
     }
 
     /**

@@ -703,6 +703,7 @@
                         <span class="filter-toggle__badge">đang lọc</span>
                     @endif
                 </button>
+                @include('partials.personal-history', ['historySection' => 'orders'])
                 <button type="button" class="button secondary codes-toggle-all" data-codes-toggle-all
                     aria-expanded="false">
                     <span class="codes-caret" aria-hidden="true">▸</span>

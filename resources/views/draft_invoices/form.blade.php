@@ -2,7 +2,7 @@
 <body><div class="layout">@include('partials.sidebar', ['active' => 'draft-invoices'])<main class="page">
 <form id="invoice-form" method="POST" action="{{ $invoice->exists ? route('draft-invoices.update', $invoice) : route('draft-invoices.store') }}">
 @csrf @if($invoice->exists) @method('PUT') @endif
-<div class="toolbar no-print"><h1>{{ $invoice->exists ? 'Hóa đơn nháp #'.$invoice->id : 'Tạo hóa đơn nháp' }}</h1><a class="button" href="{{ route('draft-invoices.index') }}">Danh sách</a><button type="button" id="print-invoice">In / Lưu PDF</button><button class="primary" type="submit">Lưu nháp</button></div>
+<div class="toolbar no-print"><h1>{{ $invoice->exists ? 'Hóa đơn nháp #'.$invoice->id : 'Tạo hóa đơn nháp' }}</h1>@include('partials.personal-history', ['historySection' => 'draft-invoices'])<a class="button" href="{{ route('draft-invoices.index') }}">Danh sách</a><button type="button" id="print-invoice">In / Lưu PDF</button><button class="primary" type="submit">Lưu nháp</button></div>
 <p class="hint no-print" id="save-state" role="status">Điền trực tiếp vào các ô trong phiếu. Bấm Lưu nháp để lưu lại và mở trên máy khác.</p>
 @if(session('status'))<div class="status">{{ session('status') }}</div>@endif
 @if($errors->any())<div class="errors" role="alert">@foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach</div>@endif
@@ -85,8 +85,44 @@
             } else { message.textContent = 'Mã này chưa có ảnh'; }
         } else { message.textContent = 'Chưa có mã này trong kho'; }
     }
-    function changed() { dirty = true; state.textContent = 'Có thay đổi chưa lưu. Bấm Lưu nháp để lưu hóa đơn.'; }
+    function changed() { dirty = true; state.textContent = 'Có thay đổi chưa lưu. Bấm Lưu nháp để lưu hóa đơn.'; clearTimeout(historyTimer); historyTimer = setTimeout(captureHistory, 650); }
     initial.forEach(add);
+    const headerFields = ['invoice_date', 'customer_name', 'phone', 'address', 'tax_code', 'discount_type', 'discount_value'];
+    function snapshot() {
+        return JSON.stringify({header: Object.fromEntries(headerFields.map(name => [name, form.elements.namedItem(name).value])),
+            items: Array.from(body.rows).map(row => Object.fromEntries(Array.from(row.querySelectorAll('[data-field]')).map(input => [input.dataset.field, input.value])))});
+    }
+    const baseline = snapshot();
+    let undoStack = [baseline], redoStack = [], historyTimer;
+    function captureHistory() {
+        const next = snapshot();
+        if (next === undoStack[undoStack.length - 1]) return;
+        undoStack.push(next);
+        if (undoStack.length > 6) undoStack.shift();
+        redoStack = [];
+    }
+    function restoreHistory(value) {
+        const data = JSON.parse(value);
+        headerFields.forEach(name => form.elements.namedItem(name).value = data.header[name]);
+        body.replaceChildren();
+        data.items.forEach(add);
+        recalculate(); form.querySelectorAll('textarea').forEach(resize);
+        dirty = snapshot() !== baseline;
+        state.textContent = dirty ? 'Đã khôi phục nội dung đang nhập. Bấm Lưu nháp để lưu.' : 'Đã trở về nội dung ban đầu.';
+    }
+    document.addEventListener('personal-history-request', event => {
+        clearTimeout(historyTimer); captureHistory();
+        const redo = event.detail.direction === 'redo';
+        if (redo && redoStack.length) {
+            event.preventDefault();
+            const next = redoStack.pop(); undoStack.push(next); restoreHistory(next);
+        } else if (!redo && undoStack.length > 1) {
+            event.preventDefault(); redoStack.push(undoStack.pop()); restoreHistory(undoStack[undoStack.length - 1]);
+        } else if (dirty) {
+            event.preventDefault(); state.textContent = 'Không còn bước để khôi phục trong nội dung đang nhập. Bạn có thể Lưu nháp để lưu thay đổi.';
+        }
+    });
+    document.addEventListener('personal-history-reload', () => dirty = false);
     const picker = document.getElementById('invoice-product-picker');
     const pickerSearch = document.getElementById('picker-search');
     const pickerCategory = document.getElementById('picker-category');

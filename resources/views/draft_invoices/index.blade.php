@@ -1,6 +1,6 @@
 <!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Hóa đơn nháp — Tiba Store</title>@include('partials.favicon') @include('draft_invoices.styles')</head>
 <body><div class="layout">@include('partials.sidebar', ['active' => 'draft-invoices'])<main class="page">
-<div class="toolbar"><h1>Hóa đơn nháp</h1><a class="button primary" href="{{ route('draft-invoices.create') }}">+ Tạo hóa đơn nháp</a></div>
+<div class="toolbar"><h1>Hóa đơn nháp</h1>@include('partials.personal-history', ['historySection' => 'draft-invoices'])<a class="button primary" href="{{ route('draft-invoices.create') }}">+ Tạo hóa đơn nháp</a></div>
 <p class="hint">Soạn phiếu cho khách, nhập trực tiếp trong bảng và in hoặc lưu PDF. Hóa đơn nháp không ảnh hưởng đơn hàng, tồn kho hay doanh thu.</p>
 @if(session('status'))<div class="status">{{ session('status') }}</div>@endif
 <form class="search" method="GET"><input name="q" value="{{ $query }}" placeholder="Tìm khách hàng hoặc số điện thoại" aria-label="Tìm hóa đơn"><button>Tìm kiếm</button>@if($query !== '')<a class="button" href="{{ route('draft-invoices.index') }}">Bỏ lọc</a>@endif</form>

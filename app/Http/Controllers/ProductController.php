@@ -787,6 +787,9 @@ class ProductController extends Controller
 
     private function deleteProductImageIfUnused(string $imagePath, ?int $exceptProductId = null): void
     {
+        // Retain files needed by a recorded undo/redo, including this in-flight edit.
+        if (app(\App\Services\PersonalEditService::class)->recording
+            || \App\Models\PersonalEdit::where('changes', 'like', '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $imagePath).'%')->exists()) return;
         $query = Product::where('image_path', $imagePath);
 
         if ($exceptProductId !== null) {

@@ -16,6 +16,50 @@ class OrderPurchasePlanTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_confirmed_purchase_sizes_save_to_order_and_forecasts_without_physical_stock(): void
+    {
+        $this->actingAs(User::create(['code' => 'sizes-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $code = 'SIZES-'.bin2hex(random_bytes(4));
+        $lines = [];
+        foreach (['S' => 5, 'M' => 4, 'L' => 5, 'XL' => 4] as $size => $quantity) {
+            $product = Product::create(['code' => $code, 'name' => 'Test', 'size' => $size, 'fabric' => '', 'stock_quantity' => 0]);
+            $lines[] = ['product_id' => $product->id, 'quantity' => $quantity];
+        }
+        $plan = ['expected_date' => '2035-04-01', 'lines' => $lines];
+        $items = array_map(fn ($line) => $line + ['size_pending' => false, 'rental_price' => 10000,
+            'fulfillment_source' => 'mua_ngoai', 'purchase_plan' => $plan], $lines);
+        $this->post('/orders', ['closer_name' => 'Test', 'order_name' => $code, 'pickup_date' => '2035-04-02',
+            'event_date' => '2035-04-03', 'return_date' => '2035-04-04', 'status' => Order::DEFAULT_STATUS,
+            'source' => Order::DEFAULT_SOURCE, 'items' => $items])->assertSessionHasNoErrors()->assertRedirect();
+        $order = Order::where('order_name', $code)->firstOrFail();
+        $this->assertSame(4, $order->items()->count());
+        $this->assertSame(18, (int) $order->items()->sum('quantity'));
+        $workshop = WorkshopOrder::where('customer_order_id', $order->id)->firstOrFail();
+        $this->assertSame(18, $workshop->quantity);
+        $this->assertSame(4, ProductExpectedReceipt::where('workshop_order_id', $workshop->id)->count());
+        app(OrderInventoryService::class)->syncDueOrders(Carbon::parse('2035-04-05'));
+        $this->assertSame(0, (int) Product::where('code', $code)->sum('stock_quantity'));
+        $this->get('/orders/'.$order->id.'/edit')->assertOk()->assertSee('Update vào đơn');
+    }
+
+    public function test_manual_forecasts_do_not_automatically_enter_stock_when_due(): void
+    {
+        $this->actingAs(User::create(['code' => 'forecast-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $product = Product::create(['code' => 'FORECAST-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'fabric' => '', 'size' => 'M', 'stock_quantity' => 0]);
+        $receipt = ProductExpectedReceipt::create(['product_id' => $product->id,
+            'expected_receive_date' => '2020-01-01', 'expected_receive_quantity' => 5]);
+        app(OrderInventoryService::class)->syncDueOrders(Carbon::parse('2040-01-01'));
+        $this->get('/products')->assertOk();
+        $this->assertSame(0, $product->fresh()->stock_quantity);
+        $this->assertNull($receipt->fresh()->received_at);
+        $this->put('/products/'.$product->id, ['code' => $product->code, 'name' => 'Test',
+            'size' => 'M', 'stock_quantity' => 5])->assertSessionHasNoErrors();
+        $this->assertSame(5, $product->fresh()->stock_quantity);
+    }
+
     public function test_purchase_sizes_sync_without_duplicates_and_only_enter_stock_after_arrival(): void
     {
         $this->actingAs(User::create(['code' => 'plan-'.bin2hex(random_bytes(4)), 'name' => 'Test',

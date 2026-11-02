@@ -1465,7 +1465,7 @@
 
             // Rời ô số lượng: nếu vượt tồn dự kiến thì tự điều chỉnh về tối đa và báo.
             quantityInput.addEventListener('blur', () => {
-                if (isPendingRow(sizeRow)) {
+                if (isPendingRow(sizeRow) || block.querySelector('[data-supply-choice]').value !== 'stock') {
                     return;
                 }
 
@@ -1551,7 +1551,7 @@
         function setupPurchasePlan(block, savedPlan) {
             if (typeof savedPlan === 'string') { try { savedPlan = JSON.parse(savedPlan); } catch (_) { savedPlan = null; } }
             const box = document.createElement('div'); box.className = 'purchase-plan'; box.hidden = true;
-            box.innerHTML = `<strong>Size cần mua thêm</strong><div data-purchase-lines></div><button type="button" class="button secondary" data-add-purchase>+ Thêm size cần mua</button><label>Ngày dự kiến nhận<input data-purchase-date type="date"></label><small>Lưu đơn sẽ tự cập nhật Đặt hàng và dự kiến ở Kho. Chỉ nhập phần cần mua thêm.</small>`;
+            box.innerHTML = `<strong>Size cần mua thêm</strong><div data-purchase-lines></div><button type="button" class="button secondary" data-add-purchase>+ Thêm size cần mua</button><button type="button" class="button secondary" data-apply-purchase>Update vào đơn</button><span data-apply-purchase-state role="status"></span><label>Ngày dự kiến nhận<input data-purchase-date type="date"></label><small>Bấm Update vào đơn để điền size và số lượng vào mã này. Lưu đơn để cập nhật Đặt hàng và dự kiến ở Kho. Hàng chỉ vào tồn thực tế khi bấm Đẩy lên kho hoặc nhập tay tại Kho.</small>`;
             block.querySelector('.product-picker-cell').appendChild(box);
             const lines = box.querySelector('[data-purchase-lines]');
             const date = box.querySelector('[data-purchase-date]'); date.value = savedPlan?.expected_date || '';
@@ -1595,6 +1595,31 @@
             }
             box.addEventListener('input', savePlan); box.addEventListener('change', savePlan);
             box.querySelector('[data-add-purchase]').addEventListener('click', () => { addLine(); savePlan(); });
+            box.querySelector('[data-apply-purchase]').addEventListener('click', () => {
+                const state = box.querySelector('[data-apply-purchase-state]');
+                const group = productOptions.find(item => item.code === block.dataset.productCode);
+                const quantities = new Map();
+                for (const row of lines.children) {
+                    const select = row.querySelector('select');
+                    const quantity = row.querySelector('input');
+                    if (!select.reportValidity() || !quantity.reportValidity()) return;
+                    const id = Number(select.value), amount = Number(quantity.value);
+                    if (!group?.items.some(product => Number(product.id) === id) || !Number.isInteger(amount) || amount < 1) {
+                        state.textContent = 'Hãy chọn size thuộc mã hàng và số lượng nguyên lớn hơn 0.'; return;
+                    }
+                    quantities.set(id, (quantities.get(id) || 0) + amount);
+                }
+                if (!quantities.size) { state.textContent = 'Hãy thêm size cần mua trước.'; return; }
+                const notes = new Map(Array.from(block.querySelectorAll('.size-row')).map(row => [
+                    Number(row.querySelector('[data-product-id]').value), row.querySelector('[data-note]').value
+                ]));
+                block.querySelector('[data-size-rows]').replaceChildren();
+                for (const [productId, quantity] of quantities) {
+                    addSizeRow(block, {product_id:productId, quantity, size_pending:false, note:notes.get(productId) || ''});
+                }
+                savePlan(); renumberRows(); refreshProductChoices();
+                state.textContent = 'Đã cập nhật size và số lượng vào đơn. Bấm Lưu đơn để lưu thay đổi.';
+            });
             block.querySelector('[data-supply-choice]').addEventListener('change', () => { refresh(); refreshProductChoices(); });
             block.addEventListener('product-updated', refresh);
             pickupDateInput.addEventListener('change', () => { date.max = pickupDateInput.value; });

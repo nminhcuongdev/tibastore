@@ -513,7 +513,10 @@
 <div class="page">
 
 <main class="content">
-        <h1>{{ $showDiscontinued ? 'Mã hàng đã ngừng dùng' : 'Quản lí kho hàng thời trang' }}</h1>
+        <div style="display:flex;align-items:center;gap:32px;flex-wrap:wrap">
+            <h1>{{ $showDiscontinued ? 'Mã hàng đã ngừng dùng' : 'Quản lí kho hàng thời trang' }}</h1>
+            @include('partials.personal-history', ['historySection' => 'products'])
+        </div>
         @if ($showDiscontinued)
             <div class="discontinued-note">
                 Những mã này đã cất khỏi kho: không hiện ở danh sách kho, không chọn được khi lên đơn
