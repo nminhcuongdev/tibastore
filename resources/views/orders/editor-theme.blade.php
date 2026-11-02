@@ -7,7 +7,10 @@ body.order-editor{background:radial-gradient(ellipse at 90% 0%,#dce9ee 0,transpa
 .order-editor-brand img{display:block;width:90px;height:90px;object-fit:contain;background:#fff;border-radius:10px;border:1px solid #dbbd88;padding:2px}
 .order-editor-eyebrow{display:block;font-size:18px;font-weight:700;letter-spacing:2px;color:#fff}
 .order-editor-tagline{display:block;font-size:8px;letter-spacing:1.2px;color:#d0b88f;margin-top:8px}
-.order-editor-title{flex:1;min-width:0}
+.order-editor-title{flex:1 1 280px;min-width:220px}
+.order-editor-header{flex-wrap:wrap}
+.order-editor-header .personal-history{position:relative;z-index:1;flex:0 1 260px;max-width:260px}
+.order-editor-header .personal-history [data-personal-state]{flex-basis:100%;color:#dbe7f5;white-space:normal;overflow-wrap:anywhere}
 .order-editor-kicker{display:block;color:#d0b88f;font-size:9px;letter-spacing:1.5px;font-weight:600;margin-bottom:9px}
 .order-editor .order-editor-title h1{font-family:'Segoe UI',Arial,sans-serif;font-size:24px!important;font-weight:600;line-height:1.35;color:#fff;margin:0 0 9px!important;letter-spacing:-.4px}
 .order-editor .order-editor-title p{color:#c3d1df;font-size:12px;line-height:1.7;max-width:570px}

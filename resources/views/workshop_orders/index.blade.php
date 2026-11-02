@@ -287,6 +287,7 @@
         <button class="button secondary" type="button" data-undo-edit title="Hoàn tác tối đa 5 thao tác gần nhất của tài khoản bạn">↶ Hoàn tác</button>
         <button class="button secondary" type="button" data-redo-edit title="Làm lại thao tác vừa hoàn tác của tài khoản bạn">↷ Làm lại</button>
         <span data-undo-state role="status"></span>
+        @include('partials.stock-receipt-reminders')
         <div class="spacer"></div>
     </form>
 

@@ -709,6 +709,7 @@
                     <span class="codes-caret" aria-hidden="true">▸</span>
                     <span data-codes-toggle-all-label>Sổ hết tất cả</span>
                 </button>
+                @include('partials.stock-receipt-reminders')
                 <button type="button" class="button secondary" data-open-arrival-reminders aria-haspopup="dialog" aria-controls="arrival-reminder-popup">
                     Nhắc hàng chưa về ({{ number_format($arrivalReminders->pluck('item.id')->unique()->count()) }})
                 </button>

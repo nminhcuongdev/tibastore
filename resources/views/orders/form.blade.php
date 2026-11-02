@@ -415,6 +415,7 @@
             <h1>{{ $mode === 'create' ? 'Tạo đơn hàng mới' : 'Sửa thông tin đơn hàng' }}</h1>
             <p>Chọn nhiều sản phẩm từ kho, cập nhật lịch lấy, lịch diễn, lịch trả và trạng thái xử lý đơn.</p>
             </div>
+            @include('partials.personal-history', ['historySection' => 'orders'])
             <a class="order-editor-back" href="{{ route('orders.index') }}">Về danh sách <span aria-hidden="true">↗</span></a>
         </div>
 
@@ -621,7 +622,7 @@
             <div class="field full">
                 <div id="stock_conflict" class="stock-conflict" style="display:none"></div>
                 <div id="turnaround_warning" class="stock-conflict" role="alert" style="display:none"></div>
-                <div class="order-entry-wrap"><table class="order-entry-table"><colgroup><col style="width:4%"><col style="width:17%"><col style="width:11%"><col style="width:37%"><col style="width:10%"><col style="width:7%"><col style="width:10%"><col style="width:4%"></colgroup><thead><tr><th>STT</th><th>Mã / Ảnh</th><th>Tên sản phẩm</th><th>Size · Số lượng · Ghi chú</th><th>Giá thuê</th><th>Số ngày</th><th>Thành tiền</th><th></th></tr></thead><tbody id="order_items" class="order-items"></tbody></table></div>
+                <div class="order-entry-wrap"><table class="order-entry-table"><colgroup><col style="width:4%"><col style="width:23%"><col style="width:11%"><col style="width:31%"><col style="width:10%"><col style="width:7%"><col style="width:10%"><col style="width:4%"></colgroup><thead><tr><th>STT</th><th>Mã / Ảnh</th><th>Tên sản phẩm</th><th>Size · Số lượng · Ghi chú</th><th>Giá thuê</th><th>Số ngày</th><th>Thành tiền</th><th></th></tr></thead><tbody id="order_items" class="order-items"></tbody></table></div>
                 <div class="items-actions">
                     <button id="add_item_button" class="button secondary" type="button">+ Thêm sản phẩm</button>
                 </div>
@@ -2121,6 +2122,7 @@
                 clearDraft();
             }
         });
+        @include('orders.form-history')
     </script>
     </div>
 </div>

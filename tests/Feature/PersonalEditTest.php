@@ -127,7 +127,7 @@ class PersonalEditTest extends TestCase
     public function test_buttons_render_and_invalid_requests_do_not_create_history(): void
     {
         $this->actingAs($this->account());
-        foreach (['/products', '/orders', '/draft-invoices', '/draft-invoices/create'] as $url) {
+        foreach (['/products', '/orders', '/orders/create', '/draft-invoices', '/draft-invoices/create'] as $url) {
             $this->get($url)->assertOk()->assertSee('data-personal-action="undo"', false)->assertSee('data-personal-action="redo"', false);
         }
         $this->postJson('/draft-invoices', [])->assertUnprocessable();
