@@ -48,13 +48,23 @@ class WorkshopDuplicateTest extends TestCase
         $manual = WorkshopOrder::create(['product_code' => $product->code, 'order_name' => 'Đơn đã od tay',
             'supply_source' => 'mua_ngoai', 'quantity' => 1, 'status' => WorkshopOrder::STATUS_ORDERED]);
         $plan = ['expected_date' => '2039-01-01', 'lines' => [['product_id' => $product->id, 'quantity' => 1]]];
-        $response = $this->post('/orders', ['closer_name' => 'Test', 'order_name' => $manual->order_name,
+        $data = ['closer_name' => 'Test', 'order_name' => $manual->order_name,
             'pickup_date' => '2039-01-02', 'event_date' => '2039-01-03', 'return_date' => '2039-01-04',
             'source' => Order::DEFAULT_SOURCE, 'status' => Order::DEFAULT_STATUS,
             'items' => [['product_id' => $product->id, 'quantity' => 1, 'rental_price' => 100,
-                'fulfillment_source' => 'mua_ngoai', 'purchase_plan' => $plan]]]);
+                'fulfillment_source' => 'mua_ngoai', 'purchase_plan' => $plan]]];
+        $response = $this->post('/orders', $data);
         $response->assertSessionHasNoErrors()->assertRedirect()->assertSessionHas('workshop_duplicate_warning');
+        $customer = Order::where('order_name', $manual->order_name)->firstOrFail();
+        $linked = WorkshopOrder::where('customer_order_id', $customer->id)->firstOrFail();
+        $destination = route('workshop-orders.index', ['focus' => $linked->id, 'duplicates' => 1]).'#workshop-row-'.$linked->id;
+        $response->assertRedirect($destination);
         $this->get($response->headers->get('Location'))->assertOk()->assertSee('Cảnh báo: phần od của đơn này trùng');
+        $this->put('/orders/'.$customer->id, $data)->assertSessionHasNoErrors()->assertRedirect($destination);
+        $this->get($destination)->assertViewHas('orders', fn ($rows) => $rows->pluck('id')->sort()->values()->all()
+            === collect([$manual->id, $linked->id])->sort()->values()->all());
+        $this->assertSame(route('orders.show', $customer), $linked->customer_order_url);
+        $this->assertSame(route('orders.index', ['order_name' => $manual->order_name]), $manual->customer_order_url);
         $duplicates = app(WorkshopDuplicateService::class)->duplicates();
         $this->assertCount(2, $duplicates);
         $this->assertArrayHasKey($manual->id, $duplicates);

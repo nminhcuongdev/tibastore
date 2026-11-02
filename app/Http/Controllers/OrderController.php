@@ -316,6 +316,8 @@ class OrderController extends Controller
             return $order;
         });
 
+        if ($redirect = $this->redirectToDuplicatePurchase($order, 'Đã tạo đơn hàng.')) return $redirect;
+
         return redirect()
             ->route('orders.show', $order)
             ->with('status', 'Đã tạo đơn hàng.');
@@ -443,9 +445,19 @@ class OrderController extends Controller
             $this->inventory->applyStatusAdjustment($lockedOrder);
         });
 
+        if ($redirect = $this->redirectToDuplicatePurchase($order, 'Đã cập nhật đơn hàng.')) return $redirect;
+
         return redirect()
             ->route('orders.index', $returnParameters)
             ->with('status', 'Đã cập nhật đơn hàng.');
+    }
+
+    private function redirectToDuplicatePurchase(Order $order, string $message): ?RedirectResponse
+    {
+        $warning = app(\App\Services\WorkshopDuplicateService::class)->warningForOrder($order->id);
+        if (!$warning) return null;
+        return redirect()->to(route('workshop-orders.index', ['focus' => $warning['focus'], 'duplicates' => 1])
+            .'#workshop-row-'.$warning['focus'])->with('status', $message)->with('workshop_duplicate_warning', $warning);
     }
 
     public function updateStatus(Request $request, Order $order): RedirectResponse|JsonResponse

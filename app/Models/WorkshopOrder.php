@@ -116,4 +116,10 @@ class WorkshopOrder extends Model
     {
         return $this->status === self::STATUS_ARRIVED;
     }
+
+    public function getCustomerOrderUrlAttribute(): ?string
+    {
+        if ($this->customer_order_id) return route('orders.show', $this->customer_order_id);
+        return trim((string) $this->order_name) !== '' ? route('orders.index', ['order_name' => $this->order_name]) : null;
+    }
 }

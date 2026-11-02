@@ -20,6 +20,10 @@ class WorkshopOrderController extends Controller
         $query = trim((string) $request->query('q', ''));
         $focusedOrder = $request->integer('focus') > 0
             ? WorkshopOrder::find($request->integer('focus')) : null;
+        $duplicateRows = app(\App\Services\WorkshopDuplicateService::class)->duplicates();
+        $showDuplicates = $focusedOrder && $request->boolean('duplicates');
+        $focusedIds = $focusedOrder ? [$focusedOrder->id] : [];
+        if ($showDuplicates) $focusedIds = array_merge($focusedIds, $duplicateRows[$focusedOrder->id] ?? []);
         $status = (string) $request->query('status', '');
         $source = trim((string) $request->query('source', ''));
         // Danh sach luon chi hien MOT nguon hang, doi qua lai bang toggle;
@@ -41,7 +45,7 @@ class WorkshopOrderController extends Controller
 
         $ordersQuery = WorkshopOrder::query()
             ->with('product')
-            ->when($focusedOrder, fn ($builder) => $builder->whereKey($focusedOrder->id))
+            ->when($focusedOrder, fn ($builder) => $builder->whereKey($focusedIds))
             ->when($query !== '', function ($builder) use ($query) {
                 $builder->where(function ($sub) use ($query) {
                     $sub->where('product_code', 'like', "%{$query}%")
@@ -53,7 +57,7 @@ class WorkshopOrderController extends Controller
             ->when(array_key_exists($status, WorkshopOrder::statuses()),
                 fn ($builder) => $builder->where('status', $status))
             ->when($source !== '', fn ($builder) => $builder->where('source', 'like', "%{$source}%"))
-            ->where('supply_source', $supplySource)
+            ->when(!$showDuplicates, fn ($builder) => $builder->where('supply_source', $supplySource))
             ->when($buyer !== '', fn ($builder) => $builder->where('buyer', 'like', "%{$buyer}%"))
             ->when($orderedFrom, fn ($builder) => $builder->whereDate('ordered_date', '>=', $orderedFrom))
             ->when($orderedTo, fn ($builder) => $builder->whereDate('ordered_date', '<=', $orderedTo))
@@ -75,7 +79,7 @@ class WorkshopOrderController extends Controller
 
         return view('workshop_orders.index', [
             'orders' => $orders,
-            'duplicateRows' => app(\App\Services\WorkshopDuplicateService::class)->duplicates(),
+            'duplicateRows' => $duplicateRows,
             'focusedOrder' => $focusedOrder,
             'quantityTotal' => (int) ($totals->quantity_total ?? 0),
             'amountTotal' => (int) ($totals->amount_total ?? 0),
@@ -139,6 +143,9 @@ class WorkshopOrderController extends Controller
             return response()->json([
                 'message' => 'Đã thêm dòng đặt hàng.',
                 'id' => $item->id,
+                'order_url' => $item->customer_order_url,
+                'product_url' => $item->product ? route('products.show', $item->product) : null,
+                'product_code' => $item->product_code,
                 'duplicate_rows' => app(\App\Services\WorkshopDuplicateService::class)->duplicates(),
                 'update_url' => route('workshop-orders.update', $item),
                 'delete_url' => route('workshop-orders.destroy', $item),
@@ -177,6 +184,9 @@ class WorkshopOrderController extends Controller
             return response()->json([
                 'message' => 'Đã lưu dòng đặt hàng.',
                 'id' => $workshopOrder->id,
+                'order_url' => $workshopOrder->customer_order_url,
+                'product_url' => $workshopOrder->product ? route('products.show', $workshopOrder->product) : null,
+                'product_code' => $workshopOrder->product_code,
                 'duplicate_rows' => app(\App\Services\WorkshopDuplicateService::class)->duplicates(),
                 'quantity' => $workshopOrder->quantity,
                 'size_note' => $workshopOrder->size_note,

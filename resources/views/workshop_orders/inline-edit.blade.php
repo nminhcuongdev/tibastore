@@ -2,6 +2,31 @@
 (function () {
     const catalog = @json($productCodes);
     const format = value => Number(value || 0).toLocaleString('vi-VN');
+    function editableLink(input, getUrl, editLabel) {
+        const controls = document.createElement('div'); controls.className = 'workshop-value-link';
+        const link = document.createElement('a'); link.target = '_blank'; link.rel = 'noopener';
+        link.dataset.fieldLink = input.name;
+        const edit = document.createElement('button'); edit.type = 'button'; edit.textContent = 'Sửa';
+        edit.setAttribute('aria-label', editLabel);
+        controls.append(link, edit); input.before(controls);
+        function refresh() {
+            const url = getUrl();
+            link.textContent = input.value;
+            if (url) link.href = url; else link.removeAttribute('href');
+            if (document.activeElement !== input) {
+                const show = !!url && !!input.value.trim();
+                controls.hidden = !show; input.hidden = show;
+            }
+        }
+        edit.addEventListener('click', () => {
+            controls.hidden = true; input.hidden = false;
+            input.focus({preventScroll:true}); input.select();
+        });
+        input.addEventListener('blur', refresh);
+        input.addEventListener('input', () => { link.textContent = input.value; });
+        refresh();
+        return refresh;
+    }
     function applyDuplicateWarnings(duplicates) {
         document.querySelectorAll('[data-edit-row][data-order-id]').forEach(row => {
             const peers = duplicates[row.dataset.orderId] || [];
@@ -82,6 +107,18 @@
             row.querySelector('[name=ordered_date]').value = `${part('year')}-${part('month')}-${part('day')}`;
         }
         const codeInput = row.querySelector('[name=product_code]');
+        const refreshCodeLink = editableLink(codeInput, () => {
+            const product = catalog.find(item => item.code.trim().toLowerCase() === codeInput.value.trim().toLowerCase());
+            return product?.sizes?.length ? @json(route('products.show', ['product' => '__PRODUCT__'])).replace('__PRODUCT__', product.sizes[0].id)
+                : (row.dataset.warehouseCode === codeInput.value ? row.dataset.warehouseUrl : null);
+        }, 'Sửa mã hàng');
+        const nameInput = row.querySelector('[name=order_name]');
+        const refreshNameLink = editableLink(nameInput, () => {
+            if (row.dataset.customerOrderId) return row.dataset.orderUrl;
+            if (!nameInput.value.trim()) return null;
+            const url = new URL(@json(route('orders.index')));
+            url.searchParams.set('order_name', nameInput.value.trim()); return url.href;
+        }, 'Sửa tên đơn');
         const imageCell = row.querySelector('[data-product-image]');
         const preview = document.createElement('div'); preview.dataset.imagePreview = '';
         preview.append(...imageCell.childNodes); imageCell.appendChild(preview);
@@ -266,6 +303,10 @@
                     if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
                 }
                 row.dataset.orderId = data.id;
+                row.dataset.orderUrl = data.order_url || '';
+                row.dataset.warehouseCode = data.product_code || '';
+                row.dataset.warehouseUrl = data.product_url || '';
+                refreshCodeLink(); refreshNameLink();
                 applyDuplicateWarnings(data.duplicate_rows || {});
                 if (revision === sentRevision) {
                     row.classList.remove('has-changes');
