@@ -7,6 +7,11 @@
     .order-entry-table .order-item { display: table-row; border: 0; padding: 0; background: white; }
     .order-entry-table .order-item:nth-child(even) { background: #f8fafc; }
     .order-entry-table .order-item > td { padding: 12px 8px; vertical-align: top; border-right: 1px solid #e8edf4; border-bottom: 1px solid #e1e7f0; font-size: 12px; min-width: 0; }
+    .order-entry-table .order-item + .order-item > td { border-top: 3px solid #bf510d; }
+    .order-entry-table .order-item > .entry-number { background: #fff0de; color: #9a3c00; font-weight: 800; border-left: 4px solid #bf510d; }
+    .order-entry-table .product-picker-cell [data-search] { background: #b84a00; color: #fff; border: 2px solid #963b00; font-weight: 800; box-shadow: 0 3px 8px #9a3c0026; }
+    .order-entry-table .product-picker-cell [data-search]::placeholder { color: #ffead6; opacity: 1; }
+    .order-entry-table .product-picker-cell [data-search]:focus { background: #a64000; border-color: #7e3000; outline: 3px solid #ffc58c; outline-offset: 2px; }
     .order-entry-table input, .order-entry-table select { width: 100%; min-width: 0; padding: 7px; font-size: 12px !important; border-radius: 5px; }
     .order-entry-table input[data-block-rental], .order-entry-table input[data-block-days] { text-align: right; }
     .order-entry-table .entry-number { text-align: center; color: #8b99ad; }
