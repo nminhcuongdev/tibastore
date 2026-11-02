@@ -72,6 +72,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/workshop-stock-transfers/{transfer}', [WorkshopOrderController::class, 'deleteStockTransfer'])
         ->name('workshop-orders.delete-stock-history');
     Route::post('/workshop-orders/undo-last-edit', [WorkshopOrderController::class, 'undoLastEdit'])->name('workshop-orders.undo-last-edit');
+    Route::post('/workshop-orders/redo-last-edit', [WorkshopOrderController::class, 'redoLastEdit'])->name('workshop-orders.redo-last-edit');
     Route::resource('workshop-orders', WorkshopOrderController::class)->except(['show']);
 
     Route::middleware('role:admin')->group(function () {

@@ -285,6 +285,7 @@
         <a class="button secondary"
            href="{{ route('workshop-orders.index', ['supply_source' => $supplySource]) }}">Xoá lọc</a>
         <button class="button secondary" type="button" data-undo-edit title="Hoàn tác tối đa 5 thao tác gần nhất của tài khoản bạn">↶ Hoàn tác</button>
+        <button class="button secondary" type="button" data-redo-edit title="Làm lại thao tác vừa hoàn tác của tài khoản bạn">↷ Làm lại</button>
         <span data-undo-state role="status"></span>
         <div class="spacer"></div>
     </form>

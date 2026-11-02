@@ -89,4 +89,50 @@ class WorkshopOrderUndoTest extends TestCase
         $this->postJson('/workshop-orders/undo-last-edit')->assertUnprocessable();
         $this->assertSame(2, $order->fresh()->quantity);
     }
+
+    public function test_five_undone_edits_can_be_redone_in_order(): void
+    {
+        $this->actingAs($this->account());
+        $order = WorkshopOrder::create($this->data());
+        foreach (range(2, 6) as $quantity) {
+            $this->putJson('/workshop-orders/'.$order->id, $this->data($quantity))->assertOk();
+        }
+        foreach (range(1, 5) as $unused) $this->postJson('/workshop-orders/undo-last-edit')->assertOk();
+        foreach (range(2, 6) as $quantity) {
+            $this->postJson('/workshop-orders/redo-last-edit')->assertOk();
+            $this->assertSame($quantity, $order->fresh()->quantity);
+        }
+        $this->postJson('/workshop-orders/redo-last-edit')->assertUnprocessable();
+        $this->postJson('/workshop-orders/undo-last-edit')->assertOk();
+        $this->assertSame(5, $order->fresh()->quantity);
+    }
+
+    public function test_new_edits_clear_redo_and_other_users_cannot_redo_your_changes(): void
+    {
+        $owner = $this->account();
+        $other = $this->account();
+        $order = WorkshopOrder::create($this->data());
+        $this->actingAs($owner)->putJson('/workshop-orders/'.$order->id, $this->data(2))->assertOk();
+        $this->postJson('/workshop-orders/undo-last-edit')->assertOk();
+        $this->actingAs($other)->postJson('/workshop-orders/redo-last-edit', ['user_id' => $owner->id])->assertUnprocessable();
+        $this->putJson('/workshop-orders/'.$order->id, $this->data(3))->assertOk();
+        $this->actingAs($owner)->postJson('/workshop-orders/redo-last-edit')->assertUnprocessable();
+        $this->assertSame(3, $order->fresh()->quantity);
+        $this->putJson('/workshop-orders/'.$order->id, $this->data(4))->assertOk();
+        $this->postJson('/workshop-orders/redo-last-edit')->assertUnprocessable();
+    }
+
+    public function test_creation_and_deletion_can_be_redone(): void
+    {
+        $this->actingAs($this->account());
+        $this->postJson('/workshop-orders', $this->data())->assertCreated();
+        $order = WorkshopOrder::latest('id')->firstOrFail();
+        $this->postJson('/workshop-orders/undo-last-edit')->assertOk();
+        $this->postJson('/workshop-orders/redo-last-edit')->assertOk();
+        $this->assertNotNull($order->fresh());
+        $this->delete('/workshop-orders/'.$order->id)->assertRedirect();
+        $this->postJson('/workshop-orders/undo-last-edit')->assertOk();
+        $this->postJson('/workshop-orders/redo-last-edit')->assertOk();
+        $this->assertNull($order->fresh());
+    }
 }

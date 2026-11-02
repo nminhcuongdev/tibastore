@@ -221,6 +221,12 @@ class WorkshopOrderController extends Controller
         return response()->json(['message' => 'Đã hoàn tác thao tác gần nhất của bạn.']);
     }
 
+    public function redoLastEdit(Request $request): JsonResponse
+    {
+        app(\App\Services\WorkshopOrderUndoService::class)->redo($request->user()->id);
+        return response()->json(['message' => 'Đã làm lại thao tác của bạn.']);
+    }
+
     public function pushToStock(Request $request, WorkshopOrder $workshopOrder): RedirectResponse|JsonResponse
     {
         $message = DB::transaction(function () use ($workshopOrder, $request) {

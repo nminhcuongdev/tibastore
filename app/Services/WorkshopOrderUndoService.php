@@ -24,6 +24,8 @@ class WorkshopOrderUndoService
             // A no-op auto-save must not replace the user's last actual edit.
             $content = fn ($data) => $data ? array_diff_key($data, array_flip(['created_at', 'updated_at'])) : null;
             if ($content($before) != $content($after)) {
+                WorkshopOrderEdit::where('user_id', $userId)->whereNotNull('undone_at')
+                    ->whereNull('redo_invalidated_at')->update(['redo_invalidated_at' => now()]);
                 WorkshopOrderEdit::create(['user_id' => $userId, 'workshop_order_id' => $result->id,
                     'before' => $before, 'after' => $after, 'receipts' => $receipts]);
             }
@@ -67,6 +69,38 @@ class WorkshopOrderUndoService
                 }
             }
             $edit->update(['undone_at' => now()]);
+        });
+    }
+
+    public function redo(int $userId): void
+    {
+        DB::transaction(function () use ($userId) {
+            User::whereKey($userId)->lockForUpdate()->firstOrFail();
+            // Undo walks backwards; redo replays that same five-entry window forwards.
+            $edit = WorkshopOrderEdit::where('user_id', $userId)->latest('id')->limit(5)
+                ->lockForUpdate()->get()->reverse()->first(fn ($entry) => $entry->undone_at !== null
+                    && $entry->redo_invalidated_at === null);
+            if (!$edit) $this->reject('Bạn chưa có thao tác nào để làm lại.');
+            $order = WorkshopOrder::whereKey($edit->workshop_order_id)->lockForUpdate()->first();
+            if ($order?->getAttributes() != $edit->before
+                || WorkshopOrderEdit::where('workshop_order_id', $edit->workshop_order_id)
+                    ->where('id', '>', $edit->id)->where('user_id', '!=', $userId)->exists()) {
+                $this->reject('Không thể làm lại: dòng này đã có thay đổi sau đó. Dữ liệu của người khác được giữ nguyên.');
+            }
+            $receipts = ProductExpectedReceipt::where('workshop_order_id', $edit->workshop_order_id)
+                ->orderBy('id')->lockForUpdate()->get()->map->getAttributes()->all();
+            $expectedReceipts = $edit->after === null ? collect($edit->receipts)->sortBy('id')->values()->all() : [];
+            if ($receipts != $expectedReceipts) $this->reject('Phiếu nhập kho đã thay đổi, không thể làm lại tại đây.');
+            if ($edit->after === null) {
+                ProductExpectedReceipt::where('workshop_order_id', $order->id)->delete();
+                $order->delete();
+            } else {
+                $restored = $order ?? new WorkshopOrder;
+                $restored->setRawAttributes($edit->after);
+                $restored->timestamps = false;
+                $restored->save();
+            }
+            $edit->update(['undone_at' => null]);
         });
     }
 

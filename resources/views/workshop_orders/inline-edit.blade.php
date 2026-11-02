@@ -16,24 +16,25 @@
             document.querySelectorAll('.table-shell').forEach((el, i) => el.scrollLeft = position.tables[i] || 0);
         }));
     }
-    document.querySelector('[data-undo-edit]')?.addEventListener('click', async event => {
+    document.querySelectorAll('[data-undo-edit], [data-redo-edit]').forEach(historyButton => historyButton.addEventListener('click', async event => {
+        const redo = event.currentTarget.hasAttribute('data-redo-edit');
         const state = document.querySelector('[data-undo-state]');
         if (document.querySelector('[data-edit-row].has-changes')) {
-            state.textContent = 'Vui lòng chờ các thay đổi tự lưu xong trước khi hoàn tác.';
+            state.textContent = 'Vui lòng chờ các thay đổi tự lưu xong.';
             return;
         }
-        const button = event.currentTarget;
-        button.disabled = true;
+        document.querySelectorAll('[data-undo-edit], [data-redo-edit]').forEach(control => control.disabled = true);
         // Freeze editing while undo is in flight so new auto-saves cannot race the reload.
         const controls = Array.from(document.querySelectorAll('[data-edit-row] input, [data-edit-row] textarea, [data-edit-row] select, [data-edit-row] button, [data-add-inline-row]'));
         const enabled = controls.filter(control => !control.disabled);
         enabled.forEach(control => control.disabled = true);
         document.querySelectorAll('[data-edit-row]').forEach(row => row.inert = true);
-        state.textContent = 'Đang hoàn tác…';
+        state.textContent = redo ? 'Đang làm lại…' : 'Đang hoàn tác…';
         try {
             const body = new FormData();
             body.append('_token', document.querySelector('[data-inline-edit] [name=_token]').value);
-            const response = await fetch(@json(route('workshop-orders.undo-last-edit')), {
+            const url = redo ? @json(route('workshop-orders.redo-last-edit')) : @json(route('workshop-orders.undo-last-edit'));
+            const response = await fetch(url, {
                 method: 'POST', body, credentials: 'same-origin', headers: {Accept: 'application/json'}
             });
             const data = await response.json();
@@ -42,11 +43,11 @@
             location.reload();
         } catch (error) {
             state.textContent = error.message || 'Chưa hoàn tác được. Vui lòng thử lại.';
-            button.disabled = false;
+            document.querySelectorAll('[data-undo-edit], [data-redo-edit]').forEach(control => control.disabled = false);
             enabled.forEach(control => control.disabled = false);
             document.querySelectorAll('[data-edit-row]').forEach(row => row.inert = false);
         }
-    });
+    }));
     document.addEventListener('submit', event => {
         if (event.defaultPrevented || !event.target.querySelector('[name=_method][value=DELETE]')) return;
         rememberScroll();
