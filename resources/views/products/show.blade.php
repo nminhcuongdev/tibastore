@@ -458,6 +458,12 @@
                             <td>@if ($entry->undone_at)Đã hoàn tác<br>{{ $entry->undone_at->timezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i') }}@else {{ $entry->supply_source === 'direct_stock' ? 'Đã ghi nhận' : 'Đã nhập kho' }} @endif</td>
                             <td>
                                 @if ($entry->workshop_order_id)<a class="link-action" href="{{ route('workshop-orders.index', ['focus' => $entry->workshop_order_id]) }}">Xem đặt hàng</a>@endif
+                                @if ($entry->undone_at)
+                                    <form method="POST" action="{{ route('workshop-orders.delete-stock-history', $entry) }}" onsubmit="return confirm('Xóa dòng lịch sử đã hoàn tác này?');" style="margin-top:8px">
+                                        @csrf @method('DELETE')
+                                        <button class="link-action danger" type="submit">Xóa dòng</button>
+                                    </form>
+                                @endif
                                 @if (!$entry->undone_at && $entry->can_undo)
                                     <form method="POST" action="{{ route('workshop-orders.undo-stock', $entry) }}" onsubmit="return confirm('Hoàn tác lần ghi nhận này? Kho sẽ đảo lại đúng phần tăng hoặc giảm của từng size.');" style="margin-top:8px">
                                         @csrf<button class="link-action danger" type="submit">Hoàn tác</button>

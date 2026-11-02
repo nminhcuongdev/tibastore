@@ -266,6 +266,19 @@ class WorkshopOrderController extends Controller
         return $request->wantsJson() ? response()->json(['message' => $message]) : back()->with('status', $message);
     }
 
+    public function deleteStockTransfer(Request $request, \App\Models\WorkshopStockTransfer $transfer): RedirectResponse|JsonResponse
+    {
+        DB::transaction(function () use ($transfer) {
+            $entry = \App\Models\WorkshopStockTransfer::whereKey($transfer->id)->lockForUpdate()->firstOrFail();
+            if (!$entry->undone_at) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['undo' => 'Chỉ được xóa dòng lịch sử đã hoàn tác.']);
+            }
+            $entry->delete();
+        });
+        $message = 'Đã xóa dòng lịch sử đã hoàn tác.';
+        return $request->wantsJson() ? response()->json(['message' => $message]) : back()->with('status', $message);
+    }
+
     private function validatedData(Request $request, ?WorkshopOrder $existing = null): array
     {
         if (is_string($request->input('size_quantities'))) {

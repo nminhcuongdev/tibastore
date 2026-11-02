@@ -56,6 +56,16 @@ class WorkshopStockTransferTest extends TestCase
         $this->assertSame(12, $m->fresh()->stock_quantity);
         $this->assertNull($latest->fresh()->undone_at);
         $this->get('/products/'.$m->id)->assertOk()->assertSee('Đã hoàn tác');
+        $this->get('/products/'.$m->id)->assertOk()
+            ->assertSee(route('workshop-orders.delete-stock-history', $entry))
+            ->assertDontSee('action="'.route('workshop-orders.delete-stock-history', $latest).'"', false);
+        $this->deleteJson(route('workshop-orders.delete-stock-history', $latest))->assertUnprocessable();
+        $this->assertNotNull($latest->fresh());
+        $this->deleteJson(route('workshop-orders.delete-stock-history', $entry))->assertOk();
+        $this->assertNull($entry->fresh());
+        $this->assertSame(12, $m->fresh()->stock_quantity);
+        $this->assertSame(0, $l->fresh()->stock_quantity);
+        $this->assertNotNull($od->fresh()->stocked_at);
         $empty = WorkshopOrder::create(['product_code' => WorkshopOrder::NO_PRODUCT_CODE, 'supply_source' => 'mua_ngoai',
             'quantity' => 1, 'status' => WorkshopOrder::STATUS_NOT_YET]);
         $this->postJson('/workshop-orders/'.$empty->id.'/stock')->assertUnprocessable()->assertJsonValidationErrors('size_quantities');
