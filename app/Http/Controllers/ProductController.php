@@ -760,6 +760,17 @@ class ProductController extends Controller
             'previous_quantity' => $previousQuantity,
             'new_quantity' => $newQuantity,
         ]);
+        \App\Models\WorkshopStockTransfer::create([
+            'workshop_order_id' => null,
+            'product_code' => $product->code,
+            'supply_source' => 'direct_stock',
+            'previous_status' => 'direct_stock',
+            'lines' => [['product_id' => $product->id, 'size' => $product->size, 'quantity' => $quantity,
+                'previous_quantity' => $previousQuantity, 'new_quantity' => $newQuantity]],
+            'user_id' => auth()->id(),
+            'transferred_at' => now(),
+            'can_undo' => true,
+        ]);
     }
 
     private function deleteProductImageIfUnused(string $imagePath, ?int $exceptProductId = null): void

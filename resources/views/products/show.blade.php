@@ -449,13 +449,13 @@
                     @forelse ($purchaseHistory as $entry)
                         <tr>
                             <td>{{ $entry->transferred_at->timezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i') }}</td>
-                            <td>{{ \App\Models\WorkshopOrder::supplySources()[$entry->supply_source] ?? $entry->supply_source }}<br>{{ $entry->supplier }}</td>
+                            <td>{{ $entry->supply_source === 'direct_stock' ? 'Nhập trực tiếp tại Kho' : (\App\Models\WorkshopOrder::supplySources()[$entry->supply_source] ?? $entry->supply_source) }}<br>{{ $entry->supplier }}</td>
                             <td>{{ $entry->order_name ?: '—' }}</td>
-                            <td>@foreach ($entry->lines as $line)<div>{{ $line['size'] }}: <strong>{{ $line['quantity'] }}</strong></div>@endforeach</td>
+                            <td>@foreach ($entry->lines as $line)<div>{{ $line['size'] }}: <strong>+{{ $line['quantity'] }}</strong>@if (isset($line['previous_quantity'])) <small>({{ $line['previous_quantity'] }} → {{ $line['new_quantity'] }})</small>@endif</div>@endforeach</td>
                             <td>{{ $entry->user?->name ?? '—' }}</td>
                             <td>@if ($entry->undone_at)Đã hoàn tác<br>{{ $entry->undone_at->timezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i') }}@else Đã nhập kho @endif</td>
                             <td>
-                                <a class="link-action" href="{{ route('workshop-orders.index', ['focus' => $entry->workshop_order_id]) }}">Xem đặt hàng</a>
+                                @if ($entry->workshop_order_id)<a class="link-action" href="{{ route('workshop-orders.index', ['focus' => $entry->workshop_order_id]) }}">Xem đặt hàng</a>@endif
                                 @if (!$entry->undone_at && $entry->can_undo)
                                     <form method="POST" action="{{ route('workshop-orders.undo-stock', $entry) }}" onsubmit="return confirm('Hoàn tác lần nhập này? Kho sẽ trừ lại đúng số lượng đã cộng của từng size.');" style="margin-top:8px">
                                         @csrf<button class="link-action danger" type="submit">Hoàn tác</button>
@@ -466,7 +466,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7">Chưa có lần đẩy hàng từ Đặt hàng vào kho.</td></tr>
+                        <tr><td colspan="7">Chưa có lịch sử nhập hàng cho mã này.</td></tr>
                     @endforelse
                     </tbody>
                 </table>
