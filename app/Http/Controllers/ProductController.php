@@ -669,6 +669,7 @@ class ProductController extends Controller
     {
         $product->expectedReceipts()
             ->whereNull('received_at')
+            ->whereNull('workshop_order_id')
             ->delete();
 
         if ($receipts === []) {

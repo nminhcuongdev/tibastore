@@ -132,7 +132,9 @@ class WorkshopOrderController extends Controller
                 'message' => 'Đã thêm dòng đặt hàng.',
                 'update_url' => route('workshop-orders.update', $item),
                 'delete_url' => route('workshop-orders.destroy', $item),
+                'stock_url' => route('workshop-orders.stock', $item),
                 'quantity' => $item->quantity, 'total' => $item->total_amount,
+                'size_note' => $item->size_note,
                 'product_name' => $item->product?->name ?? ($item->product_code === WorkshopOrder::NO_PRODUCT_CODE ? 'Chưa tạo mã' : 'Mã không còn trong kho'),
                 'image' => $item->image_url,
             ], 201);
@@ -155,11 +157,13 @@ class WorkshopOrderController extends Controller
     public function update(Request $request, WorkshopOrder $workshopOrder): RedirectResponse|JsonResponse
     {
         $workshopOrder->update($this->validatedData($request, $workshopOrder));
+        app(\App\Services\OrderInventoryService::class)->syncDueOrders();
         if ($request->wantsJson()) {
             $workshopOrder->refresh()->load('product');
             return response()->json([
                 'message' => 'Đã lưu dòng đặt hàng.',
                 'quantity' => $workshopOrder->quantity,
+                'size_note' => $workshopOrder->size_note,
                 'total' => $workshopOrder->total_amount,
                 'product_name' => $workshopOrder->product?->name ?? ($workshopOrder->product_code === WorkshopOrder::NO_PRODUCT_CODE ? 'Chưa tạo mã' : 'Mã không còn trong kho'),
                 'image' => $workshopOrder->image_url,
@@ -179,25 +183,68 @@ class WorkshopOrderController extends Controller
         ]);
 
         $workshopOrder->update($data);
+        app(\App\Services\OrderInventoryService::class)->syncDueOrders();
 
         return back()->with('status', "Đã chuyển {$workshopOrder->product_code} sang \"{$workshopOrder->statusLabel()}\".");
     }
 
     public function destroy(WorkshopOrder $workshopOrder): RedirectResponse
     {
+        \App\Models\ProductExpectedReceipt::where('workshop_order_id', $workshopOrder->id)->whereNull('received_at')->delete();
         $workshopOrder->delete();
 
         return back()->with('status', 'Đã xoá dòng đặt hàng.');
     }
 
+    public function pushToStock(Request $request, WorkshopOrder $workshopOrder): RedirectResponse|JsonResponse
+    {
+        $message = DB::transaction(function () use ($workshopOrder, $request) {
+            $item = WorkshopOrder::whereKey($workshopOrder->id)->lockForUpdate()->firstOrFail();
+            if ($item->stocked_at) return 'Dòng này đã được đẩy lên kho trước đó, không cộng thêm.';
+            $lines = $item->purchase_plan['lines'] ?? $item->size_quantities;
+            if (!$lines || $item->product_code === WorkshopOrder::NO_PRODUCT_CODE) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['size_quantities' => 'Hãy chọn mã hàng, nhập size và số lượng từng size rồi lưu dòng trước khi đẩy lên kho.']);
+            }
+            $quantities = collect($lines)->groupBy('product_id')->map(fn ($rows) => $rows->sum('quantity'))->sortKeys();
+            foreach ($quantities as $productId => $quantity) {
+                $product = Product::whereKey($productId)->lockForUpdate()->firstOrFail();
+                if ($product->code !== $item->product_code || $quantity < 1) {
+                    throw \Illuminate\Validation\ValidationException::withMessages(['size_quantities' => 'Size và số lượng không khớp mã hàng.']);
+                }
+                $receipts = \App\Models\ProductExpectedReceipt::where('workshop_order_id', $item->id)
+                    ->where('product_id', $productId)->lockForUpdate()->get();
+                // Phiếu đã nhận theo cơ chế cũ không được cộng lần nữa.
+                if (!$receipts->contains(fn ($receipt) => $receipt->received_at !== null)) {
+                    $previous = (int) $product->stock_quantity;
+                    $product->update(['stock_quantity' => $previous + $quantity]);
+                    \App\Models\StockImportHistory::create(['product_id' => $productId, 'user_id' => $request->user()->id,
+                        'quantity' => $quantity, 'previous_quantity' => $previous, 'new_quantity' => $previous + $quantity]);
+                }
+                foreach ($receipts as $receipt) {
+                    if (!$receipt->received_at) $receipt->update(['received_at' => now()]);
+                }
+            }
+            $item->update(['stocked_at' => now(), 'status' => WorkshopOrder::STATUS_ARRIVED]);
+            return 'Đã cộng số lượng từng size vào kho.';
+        });
+        return $request->wantsJson() ? response()->json(['message' => $message]) : back()->with('status', $message);
+    }
+
     private function validatedData(Request $request, ?WorkshopOrder $existing = null): array
     {
+        if (is_string($request->input('size_quantities'))) {
+            $decoded = json_decode($request->input('size_quantities'), true);
+            if (json_last_error() === JSON_ERROR_NONE) $request->merge(['size_quantities' => $decoded]);
+        }
         if (! $existing && ! $request->filled('ordered_date')) {
             $request->merge(['ordered_date' => now('Asia/Ho_Chi_Minh')->toDateString()]);
         }
 
         $data = $request->validate([
             'customer_order_id' => ['nullable', 'integer', 'exists:orders,id'],
+            'size_quantities' => ['nullable', 'array', 'max:100'],
+            'size_quantities.*.product_id' => ['required', 'integer', 'exists:products,id'],
+            'size_quantities.*.quantity' => ['required', 'integer', 'min:1'],
             'product_code' => ['required', 'string', 'max:50',
                 Rule::when($request->input('product_code') !== WorkshopOrder::NO_PRODUCT_CODE && (!$existing || $request->input('product_code') !== $existing->product_code), Rule::exists('products', 'code'))],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
@@ -227,6 +274,33 @@ class WorkshopOrderController extends Controller
         ]);
 
         unset($data['image']);
+        if (!empty($data['size_quantities'])) {
+            $products = Product::whereIn('id', collect($data['size_quantities'])->pluck('product_id'))->get()->keyBy('id');
+            foreach ($data['size_quantities'] as $line) {
+                if ($products[$line['product_id']]->code !== $data['product_code']) {
+                    throw \Illuminate\Validation\ValidationException::withMessages(['size_quantities' => 'Size phải thuộc đúng mã hàng.']);
+                }
+            }
+            $data['quantity'] = collect($data['size_quantities'])->sum('quantity');
+            $data['size_note'] = collect($data['size_quantities'])->map(fn ($line) => $products[$line['product_id']]->size.': '.$line['quantity'])->implode(', ');
+        }
+        if ($existing?->stocked_at) {
+            foreach (['product_code', 'quantity', 'size_quantities', 'size_note'] as $field) {
+                if (array_key_exists($field, $data) && $data[$field] != $existing->$field) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([$field => 'Dòng đã đẩy lên kho không thể đổi mã, size hoặc số lượng. Hãy tạo dòng nhập bổ sung.']);
+                }
+            }
+        }
+        if ($existing?->purchase_plan) {
+            foreach (['product_code', 'supply_source', 'quantity', 'size_note', 'returned_date'] as $field) {
+                $saved = $field === 'returned_date' ? $existing->returned_date?->toDateString() : $existing->$field;
+                if (array_key_exists($field, $data) && (string) $data[$field] !== (string) $saved) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        $field => 'Dòng này được đồng bộ từ đơn khách. Hãy sửa kế hoạch mua trên đơn khách để cập nhật đồng thời Kho và od.',
+                    ]);
+                }
+            }
+        }
         // Liên kết chỉ được tạo từ các mã đã chọn cần od trong đơn khách.
         $customerOrderId = $data['customer_order_id'] ?? $existing?->customer_order_id;
         if ($customerOrderId) {
@@ -254,7 +328,7 @@ class WorkshopOrderController extends Controller
     {
         return Product::query()
             ->active()
-            ->select('code', 'name', 'image_path', 'category')
+            ->select('id', 'code', 'name', 'size', 'image_path', 'category')
             ->orderBy('code')
             ->get()
             ->groupBy('code')
@@ -267,6 +341,7 @@ class WorkshopOrderController extends Controller
                     'code' => $group->first()->code,
                     'name' => $group->first()->name,
                     'category' => $group->pluck('category')->first(fn ($category) => filled($category)) ?: 'Chưa phân loại',
+                    'sizes' => $group->map(fn ($product) => ['id' => $product->id, 'size' => $product->size])->values()->all(),
                     'image' => $withImage ? asset('storage/' . $withImage->image_path) : null,
                 ];
             })

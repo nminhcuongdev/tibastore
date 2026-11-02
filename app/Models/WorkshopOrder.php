@@ -29,6 +29,9 @@ class WorkshopOrder extends Model
     protected $fillable = [
         'product_code',
         'customer_order_id',
+        'purchase_plan',
+        'size_quantities',
+        'stocked_at',
         'image_path',
         'supply_source',
         'size_note',
@@ -44,6 +47,9 @@ class WorkshopOrder extends Model
     ];
 
     protected $casts = [
+        'purchase_plan' => 'array',
+        'size_quantities' => 'array',
+        'stocked_at' => 'datetime',
         'ordered_date' => 'date',
         'returned_date' => 'date',
         'quantity' => 'integer',

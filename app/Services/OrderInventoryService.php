@@ -389,6 +389,7 @@ class OrderInventoryService
     private function syncDueExpectedReceipts(Carbon $today): void
     {
         ProductExpectedReceipt::query()
+            ->whereNull('workshop_order_id')
             ->whereDate('expected_receive_date', '<=', $today)
             ->where('expected_receive_quantity', '>', 0)
             ->whereNull('received_at')
@@ -402,7 +403,8 @@ class OrderInventoryService
                         if (
                             $lockedReceipt->received_at !== null
                             || $lockedReceipt->expected_receive_quantity <= 0
-                            || $this->date($lockedReceipt->expected_receive_date)->gt($today)
+                            || (!$lockedReceipt->workshop_order_id && $this->date($lockedReceipt->expected_receive_date)->gt($today))
+                            || ($lockedReceipt->workshop_order_id && !$lockedReceipt->workshopOrder?->hasArrived())
                         ) {
                             return;
                         }

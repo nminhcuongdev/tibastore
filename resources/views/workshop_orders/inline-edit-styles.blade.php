@@ -1,4 +1,5 @@
 <style>
+.workshop-size-editor{display:grid;gap:8px;margin-top:10px}.workshop-size-line{display:grid;grid-template-columns:minmax(0,1fr) 65px 24px;gap:5px;margin:7px 0}.workshop-size-line select,.workshop-size-line input{min-width:0!important;width:100%!important}.workshop-size-editor small{white-space:normal;color:#64748b}.workshop-size-editor button{cursor:pointer}.workshop-size-editor [hidden]{display:none!important}td[data-stock-cell]{min-width:150px;text-align:center}
 table th:nth-child(3),table td:nth-child(3){width:220px;min-width:220px;max-width:260px;white-space:normal;overflow-wrap:anywhere}
 tr[data-edit-row] textarea[name=size_note]{width:100%;min-width:190px;min-height:40px;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;line-height:1.6;resize:none;overflow:hidden}
 [data-product-image]:focus{outline:2px solid #82a9d1;outline-offset:-2px}

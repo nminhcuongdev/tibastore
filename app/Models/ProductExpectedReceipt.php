@@ -12,6 +12,7 @@ class ProductExpectedReceipt extends Model
 
     protected $fillable = [
         'product_id',
+        'workshop_order_id',
         'expected_receive_date',
         'expected_receive_quantity',
         'received_at',
@@ -26,5 +27,10 @@ class ProductExpectedReceipt extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function workshopOrder(): BelongsTo
+    {
+        return $this->belongsTo(WorkshopOrder::class);
     }
 }

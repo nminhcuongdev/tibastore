@@ -497,6 +497,7 @@
                             'expected_receipts',
                             $product->expectedReceipts
                                 ->whereNull('received_at')
+                                ->whereNull('workshop_order_id')
                                 ->map(fn ($receipt) => [
                                     'expected_receive_date' => $receipt->expected_receive_date?->format('Y-m-d'),
                                     'expected_receive_quantity' => $receipt->expected_receive_quantity,
@@ -543,6 +544,11 @@
                         </div>
                         @error('expected_receipts.*.expected_receive_date') <div class="error">{{ $message }}</div> @enderror
                         @error('expected_receipts.*.expected_receive_quantity') <div class="error">{{ $message }}</div> @enderror
+                        @foreach ($product->expectedReceipts->whereNull('received_at')->whereNotNull('workshop_order_id') as $odReceipt)
+                            <p class="hint">Dự kiến từ od: {{ $odReceipt->expected_receive_date->format('d/m/Y') }} — {{ $odReceipt->expected_receive_quantity }} sản phẩm size {{ $product->size }}.
+                                <a href="{{ route('workshop-orders.index', ['focus' => $odReceipt->workshop_order_id]) }}">Xem đặt hàng</a>
+                            </p>
+                        @endforeach
                     </div>
                 @endif
 

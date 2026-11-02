@@ -13,6 +13,7 @@ class OrderItem extends Model
     protected $fillable = [
         'product_id',
         'fulfillment_source',
+        'purchase_plan',
         'size_pending',
         'quantity',
         'rental_price',
@@ -23,6 +24,7 @@ class OrderItem extends Model
     ];
 
     protected $casts = [
+        'purchase_plan' => 'array',
         'quantity' => 'integer',
         'rental_price' => 'integer',
         'rental_days' => 'decimal:2',

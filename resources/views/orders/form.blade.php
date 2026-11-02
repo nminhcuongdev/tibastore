@@ -451,6 +451,7 @@
                     'rental_days' => $item['rental_days'] ?? 1,
                     'size_pending' => ! empty($item['size_pending']),
                     'fulfillment_source' => $item['fulfillment_source'] ?? 'stock',
+                    'purchase_plan' => $item['purchase_plan'] ?? null,
                     'note' => $item['note'] ?? null,
                 ])->values()
                 : ($orderItems->isNotEmpty()
@@ -461,6 +462,7 @@
                         'rental_days' => $item->rental_days ?? 1,
                         'size_pending' => (bool) $item->size_pending,
                         'fulfillment_source' => $item->fulfillment_source ?? 'stock',
+                        'purchase_plan' => $item->purchase_plan,
                         'note' => $item->note,
                     ])->values()
                     : collect([[
@@ -971,7 +973,7 @@
             return group.items.filter(product => {
                 const isCurrentSelection = selectedProductId && Number(product.id) === Number(selectedProductId);
 
-                return isCurrentSelection || (! selectedIds.has(String(product.id)) && stockLimit(product) > 0);
+                return isCurrentSelection || (! selectedIds.has(String(product.id)) && (block.querySelector('[data-supply-choice]').value !== 'stock' || stockLimit(product) > 0));
             });
         }
 
@@ -984,7 +986,7 @@
 
             const selectedIds = block ? selectedProductIdsInBlock(block) : new Set();
 
-            return group.items.filter(product => ! selectedIds.has(String(product.id)) && stockLimit(product) > 0);
+            return group.items.filter(product => ! selectedIds.has(String(product.id)) && (block?.querySelector('[data-supply-choice]').value !== 'stock' || stockLimit(product) > 0));
         }
 
         function updateAddSizeButton(block) {
@@ -1107,7 +1109,7 @@
             quantityInput.removeAttribute('max');
 
             // Dòng "chưa chốt" không giữ kho theo size nên không giới hạn số lượng theo tồn.
-            if (isPendingRow(sizeRow)) {
+            if (isPendingRow(sizeRow) || sizeRow.closest('.order-item').querySelector('[data-supply-choice]').value !== 'stock') {
                 setRowQtyWarning(sizeRow, '');
                 return true;
             }
@@ -1162,6 +1164,10 @@
                 const sourceInput = sizeRow.querySelector('[data-fulfillment-source]');
                 sourceInput.name = `items[${index}][fulfillment_source]`;
                 sourceInput.value = sizeRow.closest('.order-item').querySelector('[data-supply-choice]').value;
+                const planInput = sizeRow.querySelector('[data-purchase-plan]');
+                planInput.name = `items[${index}][purchase_plan]`;
+                const plan = sizeRow.closest('.order-item').purchasePlan;
+                planInput.value = sourceInput.value === 'stock' || !plan ? '' : JSON.stringify(plan);
                 sizeRow.querySelector('[data-rental-days]').name = `items[${index}][rental_days]`;
                 const rentalHidden = sizeRow.querySelector('[data-rental]');
                 if (rentalHidden) {
@@ -1211,7 +1217,7 @@
                 const hasCategory = !category || group.items.some(item => item.category === category);
 
                 // Cho phép chọn lại mã đã có (thêm khối cùng mã với giá khác).
-                const hasStock = group.items.some(product => stockLimit(product) > 0);
+                const hasStock = block.querySelector('[data-supply-choice]').value !== 'stock' || group.items.some(product => stockLimit(product) > 0);
 
                 return hasKeyword && hasStock && hasCategory;
             }).slice(0, 20);
@@ -1430,6 +1436,7 @@
                     <input data-rental-days type="hidden" value="${size.rental_days || 1}">
                     <input data-size-pending type="hidden" value="${size.size_pending ? '1' : '0'}">
                     <input data-fulfillment-source type="hidden" value="stock">
+                    <input data-purchase-plan type="hidden" value="">
                 </div>
                 <div class="field">
                     <label>Số lượng</label>
@@ -1541,6 +1548,58 @@
             return sizeRow;
         }
 
+        function setupPurchasePlan(block, savedPlan) {
+            if (typeof savedPlan === 'string') { try { savedPlan = JSON.parse(savedPlan); } catch (_) { savedPlan = null; } }
+            const box = document.createElement('div'); box.className = 'purchase-plan'; box.hidden = true;
+            box.innerHTML = `<strong>Size cần mua thêm</strong><div data-purchase-lines></div><button type="button" class="button secondary" data-add-purchase>+ Thêm size cần mua</button><label>Ngày dự kiến nhận<input data-purchase-date type="date"></label><small>Lưu đơn sẽ tự cập nhật Đặt hàng và dự kiến ở Kho. Chỉ nhập phần cần mua thêm.</small>`;
+            block.querySelector('.product-picker-cell').appendChild(box);
+            const lines = box.querySelector('[data-purchase-lines]');
+            const date = box.querySelector('[data-purchase-date]'); date.value = savedPlan?.expected_date || '';
+            const addWarehouseSize = document.createElement('a'); addWarehouseSize.className = 'button secondary';
+            addWarehouseSize.textContent = 'Thêm size trong Kho ↗'; addWarehouseSize.target = '_blank'; addWarehouseSize.rel = 'noopener';
+            box.insertBefore(addWarehouseSize, box.querySelector('label'));
+            let code = null;
+            function savePlan() {
+                block.purchasePlan = {expected_date:date.value, lines:Array.from(lines.children).map(row => ({
+                    product_id:Number(row.querySelector('select').value), quantity:Number(row.querySelector('input').value)
+                }))};
+                renumberRows();
+            }
+            function addLine(data = {}) {
+                const row = document.createElement('div'); row.className = 'purchase-plan-line';
+                const select = document.createElement('select'); select.setAttribute('aria-label', 'Size cần mua'); select.required = true;
+                const empty = document.createElement('option'); empty.value = ''; empty.textContent = 'Chọn size cần mua'; select.appendChild(empty);
+                const group = productOptions.find(item => item.code === block.dataset.productCode);
+                (group?.items || []).forEach(product => { const option = document.createElement('option'); option.value = product.id; option.textContent = product.size; select.appendChild(option); });
+                select.value = data.product_id || '';
+                const quantity = document.createElement('input'); quantity.type = 'number'; quantity.min = '1'; quantity.step = '1'; quantity.required = true; quantity.value = data.quantity || 1; quantity.setAttribute('aria-label', 'Số lượng cần mua');
+                const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = '×'; remove.setAttribute('aria-label', 'Xóa size cần mua');
+                remove.addEventListener('click', () => { if (lines.children.length > 1) { row.remove(); savePlan(); } });
+                row.append(select, quantity, remove); lines.appendChild(row);
+            }
+            function refresh() {
+                const needed = block.querySelector('[data-supply-choice]').value !== 'stock';
+                const group = productOptions.find(item => item.code === block.dataset.productCode);
+                addWarehouseSize.hidden = !group;
+                if (group) addWarehouseSize.href = @json(route('products.show', ['product' => '__PRODUCT__'])).replace('__PRODUCT__', group.items[0].id);
+                box.hidden = !needed;
+                if (code !== block.dataset.productCode) {
+                    if (code !== null) savedPlan = null;
+                    code = block.dataset.productCode;
+                    lines.replaceChildren();
+                    (savedPlan?.lines?.length ? savedPlan.lines : [{}]).forEach(addLine);
+                }
+                box.querySelectorAll('input,select,button').forEach(input => input.disabled = !needed);
+                date.required = needed; date.max = pickupDateInput.value;
+                savePlan();
+            }
+            box.addEventListener('input', savePlan); box.addEventListener('change', savePlan);
+            box.querySelector('[data-add-purchase]').addEventListener('click', () => { addLine(); savePlan(); });
+            block.querySelector('[data-supply-choice]').addEventListener('change', () => { refresh(); refreshProductChoices(); });
+            block.addEventListener('product-updated', refresh);
+            pickupDateInput.addEventListener('change', () => { date.max = pickupDateInput.value; });
+        }
+
         function addItemBlock(blockData = {}) {
             const block = document.createElement('tr');
             block.className = 'order-item';
@@ -1563,6 +1622,7 @@
             block.querySelector('.product-picker-cell').appendChild(sourceBox);
             const supplyChoice = block.querySelector('[data-supply-choice]');
             supplyChoice.value = blockData.fulfillment_source || 'stock';
+            setupPurchasePlan(block, blockData.purchase_plan);
             function updateOdLink() {
                 const needed = supplyChoice.value !== 'stock';
                 const link = block.querySelector('[data-od-link]');
@@ -1650,6 +1710,7 @@
             updateComputedTotal();
 
             updateOdLink();
+            block.dispatchEvent(new Event('product-updated'));
             return block;
         }
 
@@ -1874,6 +1935,7 @@
                         rental_days: block.querySelector('[data-block-days]').value,
                         size_pending: isPendingRow(row) ? 1 : 0,
                         fulfillment_source: block.querySelector('[data-supply-choice]').value,
+                        purchase_plan: block.purchasePlan || null,
                         note: noteEl ? noteEl.value : '',
                     });
                 });
@@ -1981,7 +2043,7 @@
             }
 
             // Giá thuê của mã lấy từ dòng đầu tiên (các size cùng mã dùng chung giá).
-            groupedBlocks.push({ code, sizes: [sizeData], rental: item.rental_price, days: item.rental_days || 1, fulfillment_source: item.fulfillment_source || 'stock' });
+            groupedBlocks.push({ code, sizes: [sizeData], rental: item.rental_price, days: item.rental_days || 1, fulfillment_source: item.fulfillment_source || 'stock', purchase_plan: item.purchase_plan || null });
         });
 
         if (groupedBlocks.length > 0) {

@@ -307,6 +307,7 @@ class OrderController extends Controller
             $order = Order::create($orderData);
             $order->items()->createMany($items);
             $order->load('items');
+            app(\App\Services\OrderPurchasePlanService::class)->sync($order);
 
             $this->inventory->applyStatusAdjustment($order);
 
@@ -424,6 +425,7 @@ class OrderController extends Controller
             $lockedOrder->items()->delete();
             $lockedOrder->items()->createMany($items);
             $lockedOrder->load('items');
+            app(\App\Services\OrderPurchasePlanService::class)->sync($lockedOrder);
 
             $itemsAfter = $this->itemsSnapshot($lockedOrder);
 
@@ -496,6 +498,9 @@ class OrderController extends Controller
             }
 
             $lockedOrder->update(['status' => $data['status']]);
+            if ($data['status'] === 'huy_don') {
+                app(\App\Services\OrderPurchasePlanService::class)->sync($lockedOrder);
+            }
 
             $this->inventory->applyStatusAdjustment($lockedOrder);
         });
@@ -550,6 +555,8 @@ class OrderController extends Controller
                 ->firstOrFail();
 
             $this->inventory->resetAdjustment($lockedOrder);
+            $lockedOrder->status = 'huy_don';
+            app(\App\Services\OrderPurchasePlanService::class)->sync($lockedOrder);
             $lockedOrder->delete();
         });
 
@@ -562,6 +569,10 @@ class OrderController extends Controller
     {
         if (is_array($request->input('items'))) {
             $request->merge(['items' => array_map(function ($item) {
+                if (is_array($item) && isset($item['purchase_plan']) && is_string($item['purchase_plan'])) {
+                    $decoded = json_decode($item['purchase_plan'], true);
+                    if (json_last_error() === JSON_ERROR_NONE) $item['purchase_plan'] = $decoded;
+                }
                 if (is_array($item) && isset($item['rental_days']) && is_string($item['rental_days'])) {
                     $item['rental_days'] = str_replace(',', '.', trim($item['rental_days']));
                 }
@@ -594,6 +605,11 @@ class OrderController extends Controller
             'items.*.product_id' => ['required', 'exists:products,id'],
             'items.*.size_pending' => ['nullable', 'boolean'],
             'items.*.fulfillment_source' => ['nullable', Rule::in(['stock', 'xuong_may', 'mua_ngoai'])],
+            'items.*.purchase_plan' => ['nullable', 'array'],
+            'items.*.purchase_plan.expected_date' => ['required_with:items.*.purchase_plan.lines', 'date', 'before_or_equal:pickup_date'],
+            'items.*.purchase_plan.lines' => ['required_with:items.*.purchase_plan', 'array', 'min:1'],
+            'items.*.purchase_plan.lines.*.product_id' => ['required', 'integer', 'exists:products,id'],
+            'items.*.purchase_plan.lines.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.rental_price' => ['nullable', 'integer', 'min:0'],
             'items.*.rental_days' => ['nullable', 'numeric', 'min:0.01', 'max:3650', 'regex:/^\d+(\.\d{1,2})?$/'],
@@ -642,6 +658,7 @@ class OrderController extends Controller
 
         $data['items'] = collect($data['items'])->map(function ($item) use ($productRentals) {
             $item['fulfillment_source'] = $item['fulfillment_source'] ?? 'stock';
+            if ($item['fulfillment_source'] === 'stock') $item['purchase_plan'] = null;
             $item['size_pending'] = ! empty($item['size_pending']);
             $item['rental_days'] = (float) ($item['rental_days'] ?? 1);
             $item['rental_price'] = array_key_exists('rental_price', $item) && $item['rental_price'] !== null && $item['rental_price'] !== ''
@@ -657,7 +674,7 @@ class OrderController extends Controller
         // Cho phép cùng mã-size xuất hiện nhiều dòng với giá khác nhau (thuê bộ / thuê lẻ),
         // nên KHÔNG chặn trùng ở đây. Kiểm tồn sẽ cộng dồn số lượng theo từng sản phẩm.
         $this->inventory->assertItemsAvailable(
-            $data['items'],
+            array_values(array_filter($data['items'], fn ($item) => $item['fulfillment_source'] === 'stock' || empty($item['purchase_plan']))),
             $data['pickup_date'],
             $data['return_date'],
             $order?->id,

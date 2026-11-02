@@ -65,6 +65,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/change-logs', [ChangeLogController::class, 'index'])->name('change-logs.index');
     Route::patch('/workshop-orders/{workshopOrder}/status', [WorkshopOrderController::class, 'updateStatus'])
         ->name('workshop-orders.status');
+    Route::post('/workshop-orders/{workshopOrder}/stock', [WorkshopOrderController::class, 'pushToStock'])
+        ->name('workshop-orders.stock');
     Route::resource('workshop-orders', WorkshopOrderController::class)->except(['show']);
 
     Route::middleware('role:admin')->group(function () {

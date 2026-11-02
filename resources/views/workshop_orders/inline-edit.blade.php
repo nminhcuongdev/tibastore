@@ -75,6 +75,67 @@
         const form = row.querySelector('[data-inline-edit]');
         const state = row.querySelector('[data-save-state]');
         const button = form.querySelector('button');
+        const sizeCell = row.querySelector('[name=size_note]').closest('td');
+        const sizeEditor = document.createElement('div'); sizeEditor.className = 'workshop-size-editor';
+        const sizeList = document.createElement('div');
+        const addSize = document.createElement('button'); addSize.type = 'button'; addSize.textContent = '+ Thêm size và số lượng';
+        sizeEditor.append(sizeList, addSize); sizeCell.appendChild(sizeEditor);
+        const managed = row.dataset.managedPlan === '1';
+        let savedSizes = JSON.parse(row.dataset.sizeQuantities || '[]');
+        function readSizes() {
+            return Array.from(sizeList.children).filter(line => line.querySelector('select').value).map(line => ({
+                product_id:Number(line.querySelector('select').value), quantity:Number(line.querySelector('input').value)
+            }));
+        }
+        function sizeChanged() {
+            const lines = readSizes();
+            if (lines.length) {
+                row.querySelector('[name=quantity]').value = lines.reduce((sum, line) => sum + line.quantity, 0);
+            }
+            row.classList.add('has-changes'); state.textContent = 'Chưa lưu';
+            row.querySelector('[data-row-total]').textContent = format(Number(row.querySelector('[name=quantity]').value) * Number(row.querySelector('[name=unit_price]').value));
+        }
+        function addSizeLine(data = {}) {
+            const line = document.createElement('div'); line.className = 'workshop-size-line';
+            const select = document.createElement('select'); select.setAttribute('aria-label', 'Size nhập kho');
+            const empty = document.createElement('option'); empty.value = ''; empty.textContent = 'Chọn size'; select.appendChild(empty);
+            const product = catalog.find(item => item.code.toLowerCase() === codeInput.value.trim().toLowerCase());
+            (product?.sizes || []).forEach(size => { const option = document.createElement('option'); option.value = size.id; option.textContent = size.size; select.appendChild(option); });
+            select.value = data.product_id || '';
+            const quantity = document.createElement('input'); quantity.type = 'number'; quantity.min = '1'; quantity.step = '1'; quantity.value = data.quantity || 1; quantity.setAttribute('aria-label', 'Số lượng size nhập kho');
+            const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = '×'; remove.setAttribute('aria-label', 'Xóa size nhập kho');
+            remove.addEventListener('click', () => { line.remove(); sizeChanged(); });
+            line.append(select, quantity, remove); sizeList.appendChild(line);
+            if (managed || row.dataset.stocked === '1') { select.disabled = true; quantity.disabled = true; remove.disabled = true; }
+        }
+        savedSizes.forEach(addSizeLine);
+        addSize.hidden = managed || row.dataset.stocked === '1';
+        addSize.addEventListener('click', () => addSizeLine());
+        sizeList.addEventListener('change', sizeChanged); sizeList.addEventListener('input', sizeChanged);
+        codeInput.addEventListener('change', () => { if (!managed && row.dataset.stocked !== '1') { sizeList.replaceChildren(); savedSizes = []; } });
+        if (managed) {
+            const hint = document.createElement('small'); hint.textContent = 'Size và số lượng đồng bộ từ kế hoạch mua trên đơn khách.'; sizeEditor.appendChild(hint);
+        }
+        const stockButton = document.createElement('button'); stockButton.type = 'button'; stockButton.className = 'inline-save';
+        row.querySelector('[data-stock-cell]').appendChild(stockButton);
+        function updateStockButton() {
+            stockButton.textContent = row.dataset.stocked === '1' ? 'Đã đẩy lên kho' : 'Đẩy lên kho';
+            stockButton.disabled = !row.dataset.stockUrl || row.dataset.stocked === '1';
+        }
+        updateStockButton();
+        stockButton.addEventListener('click', async () => {
+            if (row.classList.contains('has-changes')) { state.textContent = 'Hãy Lưu dòng trước khi đẩy lên kho.'; return; }
+            stockButton.disabled = true;
+            try {
+                const body = new FormData(); body.append('_token', form.querySelector('[name=_token]').value);
+                const response = await fetch(row.dataset.stockUrl, {method:'POST',body,credentials:'same-origin',headers:{Accept:'application/json'}});
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.errors ? Object.values(data.errors).flat().join(' ') : data.message);
+                row.dataset.stocked = '1'; row.querySelector('[name=status]').value = 'da_ve'; colorRow(); state.textContent = data.message;
+                addSize.hidden = true; sizeList.querySelectorAll('input,select,button').forEach(input => input.disabled = true);
+            } catch (error) { state.textContent = error.message; state.style.color = '#b42318'; }
+            finally { updateStockButton(); }
+        });
         function changed(event) {
             if (!event.target.matches('input,textarea,select')) return;
             row.classList.add('has-changes'); state.textContent = 'Chưa lưu'; state.style.color = '';
@@ -91,6 +152,8 @@
             if (!form.reportValidity()) return;
             const inputs = Array.from(row.querySelectorAll('input,textarea,select'));
             const body = new FormData(form);
+            const sizes = readSizes();
+            if (!managed) body.set('size_quantities', JSON.stringify(sizes));
             if (pendingImage) body.append('image', pendingImage);
             inputs.forEach(input => input.disabled = true); button.disabled = true; state.textContent = 'Đang lưu…';
             try {
@@ -101,6 +164,7 @@
                 if (isNew) {
                     row.removeAttribute('data-new-row');
                     form.action = data.update_url;
+                    row.dataset.stockUrl = data.stock_url; updateStockButton();
                     const method = document.createElement('input'); method.type = 'hidden'; method.name = '_method'; method.value = 'PUT'; form.appendChild(method);
                     const deleteForm = document.createElement('form'); deleteForm.method = 'POST'; deleteForm.action = data.delete_url;
                     const token = document.createElement('input'); token.type = 'hidden'; token.name = '_token'; token.value = form.querySelector('[name=_token]').value;
@@ -117,6 +181,8 @@
                 if (summaryQuantity) { const value = Number(summaryQuantity.dataset.summaryQuantity) + Number(data.quantity) - Number(row.dataset.quantity); summaryQuantity.dataset.summaryQuantity = value; summaryQuantity.textContent = format(value); }
                 if (summaryAmount) { const value = Number(summaryAmount.dataset.summaryAmount) + Number(data.total) - Number(row.dataset.total); summaryAmount.dataset.summaryAmount = value; summaryAmount.textContent = format(value); }
                 row.dataset.quantity = data.quantity; row.dataset.total = data.total;
+                row.querySelector('[name=quantity]').value = data.quantity;
+                row.querySelector('[name=size_note]').value = data.size_note || '';
                 row.querySelector('[data-row-total]').textContent = format(data.total);
                 row.querySelector('[name=status]').className = 'status-select st-' + row.querySelector('[name=status]').value;
                 const selectedCode = row.querySelector('[name=product_code]').value;
@@ -127,7 +193,10 @@
                 if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
                 row.classList.remove('has-changes'); state.textContent = 'Đã lưu'; state.style.color = '';
             } catch (error) { state.textContent = 'Chưa lưu: ' + error.message; state.style.color = '#b42318'; }
-            finally { inputs.forEach(input => input.disabled = false); button.disabled = false; }
+            finally {
+                inputs.forEach(input => input.disabled = false); button.disabled = false;
+                if (managed || row.dataset.stocked === '1') sizeList.querySelectorAll('input,select,button').forEach(input => input.disabled = true);
+            }
         });
     }
     let newRowIndex = 0;

@@ -334,13 +334,14 @@
                     <th>Hàng đã về chưa</th>
                     <th>Thao tác</th>
                     <th>Xóa dòng</th>
+                    <th>Đẩy lên kho</th>
                 </tr>
             </thead>
             <caption style="caption-side:top;text-align:left;padding:12px;color:#7386a0;font-size:12px">Sửa trực tiếp trong các ô, sau đó bấm Lưu ở cuối dòng. Thành tiền tự tính theo số lượng và đơn giá.</caption>
             <tbody data-workshop-rows>
                 @forelse ($orders as $item)
                     @php $product = $item->product; @endphp
-                    <tr id="workshop-row-{{ $item->id }}" data-edit-row data-custom-image="{{ $item->image_path ? $item->image_url : '' }}" class="{{ $item->hasArrived() ? 'is-arrived' : ($item->status === \App\Models\WorkshopOrder::STATUS_ORDERED ? 'is-ordered' : '') }}" data-quantity="{{ $item->quantity }}" data-total="{{ $item->total_amount }}">
+                    <tr id="workshop-row-{{ $item->id }}" data-edit-row data-size-quantities="{{ json_encode($item->purchase_plan['lines'] ?? $item->size_quantities ?? []) }}" data-managed-plan="{{ $item->purchase_plan ? '1' : '0' }}" data-stocked="{{ $item->stocked_at ? '1' : '0' }}" data-stock-url="{{ route('workshop-orders.stock', $item) }}" data-custom-image="{{ $item->image_path ? $item->image_url : '' }}" class="{{ $item->hasArrived() ? 'is-arrived' : ($item->status === \App\Models\WorkshopOrder::STATUS_ORDERED ? 'is-ordered' : '') }}" data-quantity="{{ $item->quantity }}" data-total="{{ $item->total_amount }}">
                         <td>
                             <input form="workshop-edit-{{ $item->id }}" name="product_code" value="{{ $item->product_code }}" required maxlength="50" aria-label="Mã hàng">
                             @if ($product)
@@ -395,10 +396,11 @@
                                     <button class="danger" type="submit">Xóa dòng</button>
                                 </form>
                         </td>
+                        <td data-stock-cell></td>
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="15">Nhập mã và thông tin vào dòng trống bên dưới để tạo đặt hàng mới.</td>
+                        <td class="empty" colspan="16">Nhập mã và thông tin vào dòng trống bên dưới để tạo đặt hàng mới.</td>
                     </tr>
                 @endforelse
             </tbody>

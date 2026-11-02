@@ -19,6 +19,7 @@ body.order-editor{background:radial-gradient(ellipse at 90% 0%,#dce9ee 0,transpa
 .entry-supply-choice{margin-top:12px;padding:12px;border:1px solid #bbddca;border-radius:8px;background:#eff9f3;display:grid;gap:8px}
 .entry-supply-choice label{font-weight:800;color:#246446}.entry-supply-choice.needs-od{background:#fff0f6;border-color:#edbbd1}.entry-supply-choice.needs-od label,.entry-supply-choice a{color:#96315e;font-weight:800}.entry-supply-choice small{font-size:12px;line-height:1.5;color:#655166}
 .entry-supply-choice [hidden]{display:none!important}
+.purchase-plan{margin-top:12px;padding:12px;border:1px solid #edbbd1;background:#fff7fb;border-radius:8px;display:grid;gap:10px}.purchase-plan[hidden]{display:none!important}.purchase-plan strong{color:#96315e}.purchase-plan-line{display:grid;grid-template-columns:minmax(0,1fr) 65px 24px;gap:5px;margin:8px 0}.purchase-plan-line select,.purchase-plan-line input{min-width:0!important;width:100%!important}.purchase-plan-line button{border:0;background:transparent;color:#a52c4d;cursor:pointer}.purchase-plan label{display:grid;gap:6px}.purchase-plan small{font-size:12px;line-height:1.5;color:#655166}
 .order-editor-section.section-schedule{--section-color:#7540a5;--section-bg:#f5effc}
 .order-editor-section.section-payment{--section-color:#24734d;--section-bg:#edf8f1}
 .order-editor-section.section-products{--section-color:#a35716;--section-bg:#fff4e7}
