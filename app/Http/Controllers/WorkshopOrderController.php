@@ -105,8 +105,8 @@ class WorkshopOrderController extends Controller
                 'update_url' => route('workshop-orders.update', $item),
                 'delete_url' => route('workshop-orders.destroy', $item),
                 'quantity' => $item->quantity, 'total' => $item->total_amount,
-                'product_name' => $item->product?->name ?? 'Mã không còn trong kho',
-                'image' => $item->product?->image_path ? asset('storage/'.$item->product->image_path) : null,
+                'product_name' => $item->product?->name ?? ($item->product_code === WorkshopOrder::NO_PRODUCT_CODE ? 'Chưa tạo mã' : 'Mã không còn trong kho'),
+                'image' => $item->image_url,
             ], 201);
         }
 
@@ -133,9 +133,8 @@ class WorkshopOrderController extends Controller
                 'message' => 'Đã lưu dòng đặt hàng.',
                 'quantity' => $workshopOrder->quantity,
                 'total' => $workshopOrder->total_amount,
-                'product_name' => $workshopOrder->product?->name ?? 'Mã không còn trong kho',
-                'image' => $workshopOrder->product?->image_path
-                    ? asset('storage/'.$workshopOrder->product->image_path) : null,
+                'product_name' => $workshopOrder->product?->name ?? ($workshopOrder->product_code === WorkshopOrder::NO_PRODUCT_CODE ? 'Chưa tạo mã' : 'Mã không còn trong kho'),
+                'image' => $workshopOrder->image_url,
             ]);
         }
 
@@ -165,9 +164,10 @@ class WorkshopOrderController extends Controller
 
     private function validatedData(Request $request, ?WorkshopOrder $existing = null): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'product_code' => ['required', 'string', 'max:50',
-                Rule::when(!$existing || $request->input('product_code') !== $existing->product_code, Rule::exists('products', 'code'))],
+                Rule::when($request->input('product_code') !== WorkshopOrder::NO_PRODUCT_CODE && (!$existing || $request->input('product_code') !== $existing->product_code), Rule::exists('products', 'code'))],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
             'supply_source' => ['required', Rule::in(array_keys(WorkshopOrder::supplySources()))],
             'size_note' => ['nullable', 'string', 'max:255'],
             'quantity' => ['required', 'integer', 'min:1'],
@@ -181,6 +181,8 @@ class WorkshopOrderController extends Controller
             'status' => ['required', Rule::in(array_keys(WorkshopOrder::statuses()))],
         ], [
             'product_code.required' => 'Vui lòng chọn mã hàng.',
+            'image.image' => 'Vui lòng dán hoặc chọn một tệp ảnh hợp lệ.',
+            'image.max' => 'Ảnh không được vượt quá 5MB.',
             'supply_source.required' => 'Vui lòng chọn nguồn hàng.',
             'supply_source.in' => 'Nguồn hàng không hợp lệ.',
             'quantity.required' => 'Vui lòng nhập số lượng đặt.',
@@ -190,6 +192,13 @@ class WorkshopOrderController extends Controller
             'product_code.exists' => 'Mã hàng này chưa có trong kho.',
             'returned_date.after_or_equal' => 'Ngày trả hàng không được trước ngày đặt hàng.',
         ]);
+
+        unset($data['image']);
+        if ($request->hasFile('image')) {
+            $data['image_path'] = $request->file('image')->store('workshop-orders', 'public');
+        }
+
+        return $data;
     }
 
     /**

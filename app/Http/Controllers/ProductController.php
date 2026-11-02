@@ -343,7 +343,7 @@ class ProductController extends Controller
                     'name' => $data['name'],
                     'image_path' => $data['image_path'] ?? null,
                     'stock_quantity' => $variant['stock_quantity'],
-                    'fabric' => $data['fabric'],
+                    'fabric' => '',
                     'category' => $data['category'] ?? null,
                     'size' => $variant['size'],
                     'rental_price' => $data['rental_price'] ?? 0,
@@ -406,7 +406,6 @@ class ProductController extends Controller
         // Riêng size và số lượng tồn luôn là của từng size nên KHÔNG đồng bộ.
         $sharedData = [
             'name' => $data['name'],
-            'fabric' => $data['fabric'],
             'category' => $data['category'] ?? null,
             'rental_price' => $data['rental_price'] ?? 0,
         ];
@@ -567,7 +566,6 @@ class ProductController extends Controller
             'expected_receipts' => ['nullable', 'array'],
             'expected_receipts.*.expected_receive_date' => ['nullable', 'date'],
             'expected_receipts.*.expected_receive_quantity' => ['nullable', 'integer', 'min:0'],
-            'fabric' => ['required', 'string', 'max:255'],
             'category' => ['nullable', 'string', 'max:255'],
             'size' => ['required', 'string', 'max:50'],
             'rental_price' => ['nullable', 'integer', 'min:0'],
@@ -583,7 +581,6 @@ class ProductController extends Controller
             'expected_receipts.*.expected_receive_date.date' => 'Ngày dự kiến nhận hàng không hợp lệ.',
             'expected_receipts.*.expected_receive_quantity.integer' => 'Số lượng nhận dự kiến phải là số nguyên.',
             'expected_receipts.*.expected_receive_quantity.min' => 'Số lượng nhận dự kiến không được âm.',
-            'fabric.required' => 'Vui lòng nhập chất liệu vải.',
             'size.required' => 'Vui lòng nhập size.',
             'rental_price.integer' => 'Giá thuê phải là số.',
             'rental_price.min' => 'Giá thuê không được âm.',
@@ -687,7 +684,6 @@ class ProductController extends Controller
             'code' => ['required', 'string', 'max:50'],
             'name' => ['required', 'string', 'max:255'],
             'image' => ['nullable', 'image', 'max:2048'],
-            'fabric' => ['required', 'string', 'max:255'],
             'category' => ['nullable', 'string', 'max:255'],
             'rental_price' => ['nullable', 'integer', 'min:0'],
             'variants' => ['required', 'array', 'min:1'],
@@ -701,7 +697,6 @@ class ProductController extends Controller
             'name.required' => 'Vui lòng nhập tên sản phẩm.',
             'image.image' => 'Hình ảnh phải là tệp ảnh hợp lệ.',
             'image.max' => 'Hình ảnh không được vượt quá 2MB.',
-            'fabric.required' => 'Vui lòng nhập chất liệu vải.',
             'rental_price.integer' => 'Giá thuê phải là số.',
             'rental_price.min' => 'Giá thuê không được âm.',
             'variants.required' => 'Vui lòng thêm ít nhất một size.',

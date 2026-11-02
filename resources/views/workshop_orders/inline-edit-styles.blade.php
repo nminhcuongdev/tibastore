@@ -1,4 +1,8 @@
 <style>
+table th:nth-child(3),table td:nth-child(3){width:220px;min-width:220px;max-width:260px;white-space:normal;overflow-wrap:anywhere}
+tr[data-edit-row] textarea[name=size_note]{width:100%;min-width:190px;min-height:40px;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;line-height:1.6;resize:none;overflow:hidden}
+[data-product-image]:focus{outline:2px solid #82a9d1;outline-offset:-2px}
+[data-product-image]>.muted{max-width:130px;font-size:11px;margin-top:4px}
 .workshop-add-row-actions{margin:16px 0 24px;display:flex;justify-content:flex-start}.workshop-add-row-actions button{padding:13px 20px;border:1px dashed #c4d3e7;border-radius:10px;background:white;color:#5e7491;font:inherit;font-size:13px;cursor:pointer;box-shadow:0 3px 8px #203b6008}.workshop-add-row-actions button:hover{background:#f3f7fd;border-color:#8eabc9}
 table th:nth-child(15),table td:nth-child(15){min-width:115px;width:115px;text-align:center}td[data-delete-cell] .danger{white-space:nowrap;padding:9px 12px;border:1px solid #e9bfc3;background:#fff;color:#ad3342;border-radius:7px;cursor:pointer}
 table thead th{ text-align:center!important; vertical-align:middle; }

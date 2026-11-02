@@ -10,6 +10,8 @@ class WorkshopOrder extends Model
 {
     use HasFactory;
 
+    public const NO_PRODUCT_CODE = 'Chưa tạo mã';
+
     public const STATUS_NOT_YET = 'chua_ve';
 
     public const STATUS_ARRIVED = 'da_ve';
@@ -24,6 +26,7 @@ class WorkshopOrder extends Model
 
     protected $fillable = [
         'product_code',
+        'image_path',
         'supply_source',
         'size_note',
         'quantity',
@@ -51,6 +54,13 @@ class WorkshopOrder extends Model
     public function getTotalAmountAttribute(): int
     {
         return (int) $this->quantity * (int) $this->unit_price;
+    }
+
+    public function getImageUrlAttribute(): ?string
+    {
+        $path = $this->image_path ?: $this->product?->image_path;
+
+        return $path ? asset('storage/'.$path) : null;
     }
 
     /**

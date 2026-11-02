@@ -334,27 +334,27 @@
             <tbody data-workshop-rows>
                 @forelse ($orders as $item)
                     @php $product = $item->product; @endphp
-                    <tr data-edit-row class="{{ $item->hasArrived() ? 'is-arrived' : '' }}" data-quantity="{{ $item->quantity }}" data-total="{{ $item->total_amount }}">
+                    <tr data-edit-row data-custom-image="{{ $item->image_path ? $item->image_url : '' }}" class="{{ $item->hasArrived() ? 'is-arrived' : '' }}" data-quantity="{{ $item->quantity }}" data-total="{{ $item->total_amount }}">
                         <td>
                             <input form="workshop-edit-{{ $item->id }}" name="product_code" value="{{ $item->product_code }}" required maxlength="50" aria-label="Mã hàng">
                             @if ($product)
                                 <div class="muted" data-product-label>{{ $product->name }}</div>
                             @else
-                                <div class="muted" data-product-label>Mã không còn trong kho</div>
+                                <div class="muted" data-product-label>{{ $item->product_code === \App\Models\WorkshopOrder::NO_PRODUCT_CODE ? 'Chưa tạo mã' : 'Mã không còn trong kho' }}</div>
                             @endif
                         </td>
                         <td data-product-image>
-                            @if ($product && $product->image_path)
+                            @if ($item->image_url)
                                 <button class="thumb has-image" type="button"
-                                    data-full-image="{{ asset('storage/' . $product->image_path) }}"
+                                    data-full-image="{{ $item->image_url }}"
                                     title="Bấm để xem ảnh lớn">
-                                    <img src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $item->product_code }}">
+                                    <img src="{{ $item->image_url }}" alt="{{ $item->product_code }}">
                                 </button>
                             @else
                                 <span class="thumb">CHƯA CÓ ẢNH</span>
                             @endif
                         </td>
-                        <td class="wrap"><input form="workshop-edit-{{ $item->id }}" name="size_note" type="text" value="{{ $item->size_note }}" aria-label="Size" maxlength="255"></td>
+                        <td class="wrap"><textarea form="workshop-edit-{{ $item->id }}" name="size_note" rows="1" wrap="soft" aria-label="Size" maxlength="255">{{ $item->size_note }}</textarea></td>
                         <td class="num"><input form="workshop-edit-{{ $item->id }}" name="quantity" type="number" value="{{ $item->quantity }}" aria-label="Số lượng" min="1" step="1" required></td>
                         <td class="num"><input form="workshop-edit-{{ $item->id }}" name="unit_price" type="number" value="{{ $item->unit_price ?? 0 }}" aria-label="Đơn giá" min="0" step="1"></td>
                         <td class="num strong" data-row-total>{{ number_format($item->total_amount) }}</td>

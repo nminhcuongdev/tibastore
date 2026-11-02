@@ -587,7 +587,6 @@
                                         Số lượng {{ $sort === 'quantity' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}
                                     </a>
                                 </th>
-                                <th>Vải</th>
                                 <th>Ngày dự kiến nhận</th>
                                 <th>SL nhận dự kiến</th>
                                 <th>Số size</th>
@@ -661,7 +660,6 @@
                                             @endif
                                         </div>
                                     </td>
-                                    <td>{{ $product->fabric }}</td>
                                     <td>{{ $product->expected_receive_date ? \Illuminate\Support\Carbon::parse($product->expected_receive_date)->format('d/m/Y') : 'N/A' }}</td>
                                     <td>{{ number_format($product->total_expected_receive_quantity ?? 0) }}</td>
                                     <td>{{ number_format($product->size_count) }}</td>

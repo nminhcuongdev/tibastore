@@ -3,19 +3,48 @@
     const catalog = @json($productCodes);
     const format = value => Number(value || 0).toLocaleString('vi-VN');
     function previewImage(row, product) {
-        const cell = row.querySelector('[data-product-image]');
+        const cell = row.querySelector('[data-image-preview]');
         cell.replaceChildren();
         if (product && product.image) {
             const button = document.createElement('button'); button.type = 'button'; button.className = 'thumb has-image'; button.dataset.fullImage = product.image;
             const img = document.createElement('img'); img.src = product.image; img.alt = product.code;
             button.appendChild(img); cell.appendChild(button);
         } else { const span = document.createElement('span'); span.className = 'thumb'; span.textContent = 'CHƯA CÓ ẢNH'; cell.appendChild(span); }
-        row.querySelector('[data-product-label]').textContent = product ? product.name : 'Mã không còn trong kho';
+        row.querySelector('[data-product-label]').textContent = product ? product.name : (row.querySelector('[name=product_code]').value === @json(\App\Models\WorkshopOrder::NO_PRODUCT_CODE) ? 'Chưa tạo mã' : 'Chọn mã để hiện tên và ảnh');
     }
     function setupRow(row) {
         const codeInput = row.querySelector('[name=product_code]');
+        const imageCell = row.querySelector('[data-product-image]');
+        const preview = document.createElement('div'); preview.dataset.imagePreview = '';
+        preview.append(...imageCell.childNodes); imageCell.appendChild(preview);
+        const savedImage = preview.querySelector('img')?.src;
+        let customImage = row.dataset.customImage || null;
+        let pendingImage = null;
+        let objectUrl = null;
+        imageCell.tabIndex = 0;
+        imageCell.setAttribute('aria-label', 'Ảnh đặt hàng. Bấm vào ô rồi nhấn Ctrl+V để dán ảnh.');
+        const upload = document.createElement('input'); upload.type = 'file'; upload.accept = 'image/jpeg,image/png,image/gif,image/webp'; upload.hidden = true;
+        const uploadButton = document.createElement('button'); uploadButton.type = 'button'; uploadButton.textContent = 'Chọn ảnh';
+        const hint = document.createElement('div'); hint.className = 'muted'; hint.textContent = 'Bấm ô ảnh rồi Ctrl+V · tối đa 5MB';
+        imageCell.append(upload, uploadButton, hint);
+        uploadButton.addEventListener('click', () => upload.click());
+        function acceptImage(file) {
+            if (!file || button.disabled) return;
+            if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+                state.textContent = 'Chọn ảnh JPG, PNG, GIF hoặc WebP tối đa 5MB.'; state.style.color = '#b42318'; return;
+            }
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+            pendingImage = file; objectUrl = URL.createObjectURL(file); customImage = objectUrl;
+            previewImage(row, {image:customImage, code:codeInput.value, name:row.querySelector('[data-product-label]').textContent});
+            row.classList.add('has-changes'); state.textContent = 'Chưa lưu ảnh'; state.style.color = '';
+        }
+        upload.addEventListener('change', () => acceptImage(upload.files[0]));
+        row.addEventListener('paste', event => {
+            const image = Array.from(event.clipboardData?.items || []).find(item => item.type.startsWith('image/'));
+            if (image) { event.preventDefault(); acceptImage(image.getAsFile()); }
+        });
         const savedProduct = catalog.find(product => product.code.trim().toLowerCase() === codeInput.value.trim().toLowerCase());
-        if (savedProduct) previewImage(row, savedProduct);
+        if (savedProduct && !savedImage) previewImage(row, savedProduct);
         row.querySelector('[data-remove-new-row]')?.addEventListener('click', () => {
             if (!row.hasAttribute('data-new-row')) return;
             row.remove();
@@ -42,7 +71,8 @@
             row.querySelector('[data-row-total]').textContent = format(Number(row.querySelector('[name=quantity]').value) * Number(row.querySelector('[name=unit_price]').value));
             if (event.target.name === 'product_code') {
                 const code = event.target.value.trim().toLowerCase();
-                previewImage(row, catalog.find(product => product.code.toLowerCase() === code));
+                const product = catalog.find(product => product.code.toLowerCase() === code);
+                previewImage(row, customImage ? {image:customImage, code:codeInput.value, name:product?.name || (codeInput.value === @json(\App\Models\WorkshopOrder::NO_PRODUCT_CODE) ? 'Chưa tạo mã' : 'Chọn mã để hiện tên và ảnh')} : product);
             }
         }
         row.addEventListener('input', changed); row.addEventListener('change', changed);
@@ -51,6 +81,7 @@
             if (!form.reportValidity()) return;
             const inputs = Array.from(row.querySelectorAll('input,textarea,select'));
             const body = new FormData(form);
+            if (pendingImage) body.append('image', pendingImage);
             inputs.forEach(input => input.disabled = true); button.disabled = true; state.textContent = 'Đang lưu…';
             try {
                 const response = await fetch(form.action, {method:'POST',body,credentials:'same-origin',headers:{Accept:'application/json','X-Requested-With':'XMLHttpRequest'}});
@@ -81,6 +112,9 @@
                 const selectedCode = row.querySelector('[name=product_code]').value;
                 const selectedProduct = catalog.find(product => product.code.toLowerCase() === selectedCode.trim().toLowerCase());
                 previewImage(row, {name:data.product_name,image:data.image || selectedProduct?.image,code:selectedCode});
+                if (pendingImage) customImage = data.image || null;
+                pendingImage = null; upload.value = '';
+                if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
                 row.classList.remove('has-changes'); state.textContent = 'Đã lưu'; state.style.color = '';
             } catch (error) { state.textContent = 'Chưa lưu: ' + error.message; state.style.color = '#b42318'; }
             finally { inputs.forEach(input => input.disabled = false); button.disabled = false; }

@@ -393,10 +393,6 @@
                 <div class="metric-value">{{ $product->size }}</div>
             </div>
             <div class="metric">
-                <div class="metric-label">Vải</div>
-                <div class="metric-value">{{ $product->fabric }}</div>
-            </div>
-            <div class="metric">
                 <div class="metric-label">Tổng đơn</div>
                 <div class="metric-value">{{ number_format($product->orderItems()->count()) }}</div>
             </div>

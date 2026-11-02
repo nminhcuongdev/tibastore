@@ -1,5 +1,6 @@
 <div id="workshop-product-picker" class="product-picker no-print" hidden>
 <div class="picker-head"><strong>Chọn sản phẩm</strong><button type="button" data-picker-close aria-label="Đóng gợi ý">×</button></div>
+<button type="button" class="picker-option" data-picker-no-code>Chưa tạo mã — đặt hàng bằng ảnh</button>
 <label class="picker-category">Danh mục<select id="picker-category" aria-label="Lọc theo danh mục"><option value="">Tất cả danh mục</option></select></label>
 <input id="picker-search" type="search" placeholder="Tìm mã, tên hoặc danh mục…" aria-label="Tìm mã, tên hoặc danh mục">
 <div id="picker-results" class="picker-results" role="listbox" aria-label="Sản phẩm gợi ý"></div>
@@ -81,6 +82,7 @@ const body = document.querySelector('[data-workshop-rows]');
     pickerSearch.addEventListener('input', renderProducts);
     pickerCategory.addEventListener('change', renderProducts);
     picker.querySelector('[data-picker-close]').addEventListener('click', closePicker);
+    picker.querySelector('[data-picker-no-code]').addEventListener('click', () => choose({code: @json(\App\Models\WorkshopOrder::NO_PRODUCT_CODE)}));
     document.addEventListener('pointerdown', event => { if (!picker.hidden && !picker.contains(event.target) && event.target !== activeCodeInput) closePicker(); });
     document.addEventListener('keydown', event => {
         if (picker.hidden) {

@@ -359,7 +359,7 @@
     <main class="content">
         <div class="heading">
             <h1>{{ $mode === 'create' ? 'Thêm sản phẩm mới' : 'Sửa thông tin sản phẩm' }}</h1>
-            <p>Cập nhật thông tin tồn kho, chất liệu vải, size và giá nhập cho từng mẫu thời trang.</p>
+            <p>Cập nhật thông tin tồn kho, size và giá nhập cho từng mẫu thời trang.</p>
         </div>
 
         @if (session('status'))
@@ -386,7 +386,7 @@
                             <input type="checkbox" name="apply_to_all_sizes" value="1" @checked(old('apply_to_all_sizes', '1') == '1')>
                             <span>Áp dụng thay đổi cho <u>tất cả size</u> của mã hàng này</span>
                         </label>
-                        <div class="hint">Bỏ chọn nếu chỉ muốn sửa riêng size đang mở — tên, vải, danh mục, giá thuê, ảnh sẽ chỉ đổi cho size này. Size và số lượng tồn luôn theo từng size.</div>
+                        <div class="hint">Bỏ chọn nếu chỉ muốn sửa riêng size đang mở — tên, danh mục, giá thuê, ảnh sẽ chỉ đổi cho size này. Size và số lượng tồn luôn theo từng size.</div>
                     </div>
                 @endif
 
@@ -413,12 +413,6 @@
                     <label for="name">Tên sản phẩm</label>
                     <input id="name" name="name" type="text" value="{{ old('name', $product->name) }}" required>
                     @error('name') <div class="error">{{ $message }}</div> @enderror
-                </div>
-
-                <div class="field">
-                    <label for="fabric">Vải</label>
-                    <input id="fabric" name="fabric" type="text" value="{{ old('fabric', $product->fabric) }}" placeholder="Lụa, cotton, tweed..." required>
-                    @error('fabric') <div class="error">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="field">
