@@ -310,6 +310,11 @@
         </div>
     </div>
 
+    @if ($focusedOrder)
+        <p role="status">Đang xem dòng đặt hàng {{ $focusedOrder->product_code }} — {{ $focusedOrder->order_name }}.
+            <a href="{{ route('workshop-orders.index', ['supply_source' => $supplySource]) }}">Xem tất cả đặt hàng</a>
+        </p>
+    @endif
     <div class="table-shell">
         <table>
             <thead>
@@ -335,7 +340,7 @@
             <tbody data-workshop-rows>
                 @forelse ($orders as $item)
                     @php $product = $item->product; @endphp
-                    <tr data-edit-row data-custom-image="{{ $item->image_path ? $item->image_url : '' }}" class="{{ $item->hasArrived() ? 'is-arrived' : ($item->status === \App\Models\WorkshopOrder::STATUS_ORDERED ? 'is-ordered' : '') }}" data-quantity="{{ $item->quantity }}" data-total="{{ $item->total_amount }}">
+                    <tr id="workshop-row-{{ $item->id }}" data-edit-row data-custom-image="{{ $item->image_path ? $item->image_url : '' }}" class="{{ $item->hasArrived() ? 'is-arrived' : ($item->status === \App\Models\WorkshopOrder::STATUS_ORDERED ? 'is-ordered' : '') }}" data-quantity="{{ $item->quantity }}" data-total="{{ $item->total_amount }}">
                         <td>
                             <input form="workshop-edit-{{ $item->id }}" name="product_code" value="{{ $item->product_code }}" required maxlength="50" aria-label="Mã hàng">
                             @if ($product)

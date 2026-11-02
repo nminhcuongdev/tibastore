@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\Order;
 use App\Models\WorkshopOrder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
@@ -17,11 +18,16 @@ class WorkshopOrderController extends Controller
     public function index(Request $request): View
     {
         $query = trim((string) $request->query('q', ''));
+        $focusedOrder = $request->integer('focus') > 0
+            ? WorkshopOrder::find($request->integer('focus')) : null;
         $status = (string) $request->query('status', '');
         $source = trim((string) $request->query('source', ''));
         // Danh sach luon chi hien MOT nguon hang, doi qua lai bang toggle;
         // vao thang khong kem tham so thi mac dinh xem hang dat xuong.
         $supplySource = (string) $request->query('supply_source', WorkshopOrder::DEFAULT_SUPPLY_SOURCE);
+        if ($focusedOrder) {
+            $supplySource = $focusedOrder->supply_source;
+        }
 
         if (! array_key_exists($supplySource, WorkshopOrder::supplySources())) {
             $supplySource = WorkshopOrder::DEFAULT_SUPPLY_SOURCE;
@@ -32,6 +38,7 @@ class WorkshopOrderController extends Controller
 
         $ordersQuery = WorkshopOrder::query()
             ->with('product')
+            ->when($focusedOrder, fn ($builder) => $builder->whereKey($focusedOrder->id))
             ->when($query !== '', function ($builder) use ($query) {
                 $builder->where(function ($sub) use ($query) {
                     $sub->where('product_code', 'like', "%{$query}%")
@@ -64,6 +71,7 @@ class WorkshopOrderController extends Controller
 
         return view('workshop_orders.index', [
             'orders' => $orders,
+            'focusedOrder' => $focusedOrder,
             'quantityTotal' => (int) ($totals->quantity_total ?? 0),
             'amountTotal' => (int) ($totals->amount_total ?? 0),
             'statuses' => WorkshopOrder::statuses(),
@@ -79,17 +87,36 @@ class WorkshopOrderController extends Controller
         ]);
     }
 
-    public function create(): View
+    public function create(Request $request): View|RedirectResponse
     {
+        $defaults = [];
+        if ($request->filled('customer_order_id')) {
+            $customerOrder = Order::with('items.product')->findOrFail($request->integer('customer_order_id'));
+            $source = (string) $request->query('supply_source');
+            abort_unless(array_key_exists($source, WorkshopOrder::supplySources()), 422);
+            $code = (string) $request->query('product_code');
+            $lines = $customerOrder->items->filter(fn ($line) => $line->product?->code === $code
+                && $line->fulfillment_source === $source);
+            abort_if($lines->isEmpty(), 422, 'Hãy lưu lựa chọn cần od trên đơn khách trước khi mở đặt hàng.');
+            $existing = WorkshopOrder::where('customer_order_id', $customerOrder->id)
+                ->where('product_code', $code)->where('supply_source', $source)->first();
+            if ($existing) {
+                return redirect()->to(route('workshop-orders.index', ['focus' => $existing->id]).'#workshop-row-'.$existing->id);
+            }
+            $defaults = ['customer_order_id' => $customerOrder->id, 'product_code' => $code,
+                'supply_source' => $source, 'order_name' => $customerOrder->order_name,
+                'quantity' => $lines->sum('quantity'),
+                'size_note' => $lines->map(fn ($line) => $line->displaySize().': '.$line->quantity)->implode(', ')];
+        }
         return view('workshop_orders.form', [
             'mode' => 'create',
-            'workshopOrder' => new WorkshopOrder([
+            'workshopOrder' => new WorkshopOrder(array_merge([
                 'status' => WorkshopOrder::DEFAULT_STATUS,
                 'supply_source' => WorkshopOrder::DEFAULT_SUPPLY_SOURCE,
                 'quantity' => 1,
                 'unit_price' => 0,
                 'ordered_date' => now('Asia/Ho_Chi_Minh')->toDateString(),
-            ]),
+            ], $defaults)),
             'statuses' => WorkshopOrder::statuses(),
             'supplySources' => WorkshopOrder::supplySources(),
             'productCodes' => $this->productCodes(),
@@ -170,6 +197,7 @@ class WorkshopOrderController extends Controller
         }
 
         $data = $request->validate([
+            'customer_order_id' => ['nullable', 'integer', 'exists:orders,id'],
             'product_code' => ['required', 'string', 'max:50',
                 Rule::when($request->input('product_code') !== WorkshopOrder::NO_PRODUCT_CODE && (!$existing || $request->input('product_code') !== $existing->product_code), Rule::exists('products', 'code'))],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
@@ -199,6 +227,19 @@ class WorkshopOrderController extends Controller
         ]);
 
         unset($data['image']);
+        // Liên kết chỉ được tạo từ các mã đã chọn cần od trong đơn khách.
+        $customerOrderId = $data['customer_order_id'] ?? $existing?->customer_order_id;
+        if ($customerOrderId) {
+            $customerOrder = Order::with('items.product')->findOrFail($customerOrderId);
+            $matches = $customerOrder->items->contains(fn ($line) => $line->product?->code === $data['product_code']
+                && $line->fulfillment_source === $data['supply_source']);
+            if (! $matches) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'product_code' => 'Mã và nguồn od chưa khớp với đơn khách. Hãy lưu lựa chọn trên đơn khách trước.',
+                ]);
+            }
+            $data['customer_order_id'] = $customerOrderId;
+        }
         if ($request->hasFile('image')) {
             $data['image_path'] = $request->file('image')->store('workshop-orders', 'public');
         }

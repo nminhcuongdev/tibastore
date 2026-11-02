@@ -18,13 +18,13 @@
             <article class="arrival-item">
                 @if ($item->image_url)<img src="{{ $item->image_url }}" alt="{{ $item->product_code }}">@endif
                 <div>
-                    <strong>{{ $customerOrder->order_name }} — {{ $item->product_code }}</strong>
+                    <strong><a href="{{ route('workshop-orders.index', ['focus' => $item->id]) }}#workshop-row-{{ $item->id }}">{{ $customerOrder->order_name }} — {{ $item->product_code }}</a></strong>
                     <p class="{{ $reminder['overdue'] ? 'arrival-overdue' : '' }}">Khách lấy: {{ $customerOrder->pickup_date->format('d/m/Y') }}{{ $reminder['overdue'] ? ' · Đã quá ngày lấy' : '' }}</p>
                     <p>{{ $item->supplySourceLabel() }} · {{ $item->statusLabel() }} · Số lượng: {{ $item->quantity }}</p>
                     @if ($item->size_note)<p>Size: {{ $item->size_note }}</p>@endif
                     @if ($item->source)<p>Nhà cung cấp: {{ $item->source }}</p>@endif
-                    <a href="{{ route('workshop-orders.index', ['supply_source' => $item->supply_source, 'q' => $item->product_code === \App\Models\WorkshopOrder::NO_PRODUCT_CODE ? $item->order_name : $item->product_code]) }}">Mở đặt hàng</a>
-                    <a href="{{ route('orders.show', $customerOrder) }}">Xem đơn khách</a>
+                    <a class="button secondary" href="{{ route('workshop-orders.index', ['focus' => $item->id]) }}#workshop-row-{{ $item->id }}">Đến dòng đặt hàng</a>
+                    <a class="button secondary" href="{{ route('orders.show', $customerOrder) }}">Đến đơn khách: {{ $customerOrder->order_name }}</a>
                 </div>
             </article>
         @empty

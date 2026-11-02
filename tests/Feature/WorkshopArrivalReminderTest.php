@@ -58,7 +58,13 @@ class WorkshopArrivalReminderTest extends TestCase
         $this->travelTo($today);
         try {
             $this->get('/orders?q=NO-MATCH')->assertOk()->assertSee('Nhắc hàng chưa về')
-                ->assertSee('arrival-reminder-popup', false)->assertSee($name.'-due')->assertSee('Khách lấy: 12/01/2031');
+                ->assertSee('arrival-reminder-popup', false)->assertSee($name.'-due')->assertSee('Khách lấy: 12/01/2031')
+                ->assertSee(route('workshop-orders.index', ['focus' => $outside->id]).'#workshop-row-'.$outside->id)
+                ->assertSee(route('orders.show', $due));
+            $this->get('/workshop-orders?focus='.$outside->id)->assertOk()
+                ->assertSee('id="workshop-row-'.$outside->id.'"', false)
+                ->assertDontSee('id="workshop-row-'.$workshop->id.'"', false)
+                ->assertSee('Xem tất cả đặt hàng')->assertViewHas('supplySource', WorkshopOrder::SUPPLY_OUTSIDE);
         } finally {
             $this->travelBack();
         }

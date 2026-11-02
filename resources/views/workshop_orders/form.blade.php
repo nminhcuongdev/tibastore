@@ -229,6 +229,9 @@
     <form class="form-shell" method="POST"
         action="{{ $mode === 'create' ? route('workshop-orders.store') : route('workshop-orders.update', $workshopOrder) }}">
         @csrf
+        @if ($workshopOrder->customer_order_id)
+            <input type="hidden" name="customer_order_id" value="{{ $workshopOrder->customer_order_id }}">
+        @endif
         @if ($mode === 'edit')
             @method('PUT')
         @endif

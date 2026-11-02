@@ -450,6 +450,7 @@
                     'rental_price' => $item['rental_price'] ?? null,
                     'rental_days' => $item['rental_days'] ?? 1,
                     'size_pending' => ! empty($item['size_pending']),
+                    'fulfillment_source' => $item['fulfillment_source'] ?? 'stock',
                     'note' => $item['note'] ?? null,
                 ])->values()
                 : ($orderItems->isNotEmpty()
@@ -459,6 +460,7 @@
                         'rental_price' => $item->rental_price,
                         'rental_days' => $item->rental_days ?? 1,
                         'size_pending' => (bool) $item->size_pending,
+                        'fulfillment_source' => $item->fulfillment_source ?? 'stock',
                         'note' => $item->note,
                     ])->values()
                     : collect([[
@@ -528,7 +530,7 @@
                 @error('carrier') <div class="error">{{ $message }}</div> @enderror
             </div>
 
-            <div class="order-editor-section"><span>02</span><div><h2>Lịch thuê & xử lý</h2><p>Ngày lấy, ngày diễn, ngày trả và trạng thái đơn</p></div></div>
+            <div class="order-editor-section section-schedule"><span>02</span><div><h2>Lịch thuê & xử lý</h2><p>Ngày lấy, ngày diễn, ngày trả và trạng thái đơn</p></div></div>
             <div class="field">
                 <label for="pickup_date">Ngày lấy</label>
                 <input id="pickup_date" name="pickup_date" type="date" value="{{ old('pickup_date', $order->pickup_date?->format('Y-m-d')) }}" required>
@@ -565,7 +567,7 @@
                 @error('status') <div class="error">{{ $message }}</div> @enderror
             </div>
 
-            <div class="order-editor-section"><span>03</span><div><h2>Thanh toán & chiết khấu</h2><p>Theo dõi tiền hàng, vận chuyển và các lần thanh toán</p></div></div>
+            <div class="order-editor-section section-payment"><span>03</span><div><h2>Thanh toán & chiết khấu</h2><p>Theo dõi tiền hàng, vận chuyển và các lần thanh toán</p></div></div>
             <div class="field">
                 <label for="source">Nguồn hàng</label>
                 <select id="source" name="source" required>
@@ -613,7 +615,7 @@
                 @error('discount_amount') <div class="error">{{ $message }}</div> @enderror
             </div>
 
-            <div class="order-editor-section"><span>04</span><div><h2>Sản phẩm trong đơn</h2><p>Chọn mã, size và số lượng trực tiếp trong bảng</p></div></div>
+            <div class="order-editor-section section-products"><span>04</span><div><h2>Sản phẩm trong đơn</h2><p>Chọn mã, size và số lượng trực tiếp trong bảng</p></div></div>
             <div class="field full">
                 <div id="stock_conflict" class="stock-conflict" style="display:none"></div>
                 <div id="turnaround_warning" class="stock-conflict" role="alert" style="display:none"></div>
@@ -1157,6 +1159,9 @@
             itemsContainer.querySelectorAll('.size-row').forEach(sizeRow => {
                 sizeRow.querySelector('[data-product-id]').name = `items[${index}][product_id]`;
                 sizeRow.querySelector('[data-quantity]').name = `items[${index}][quantity]`;
+                const sourceInput = sizeRow.querySelector('[data-fulfillment-source]');
+                sourceInput.name = `items[${index}][fulfillment_source]`;
+                sourceInput.value = sizeRow.closest('.order-item').querySelector('[data-supply-choice]').value;
                 sizeRow.querySelector('[data-rental-days]').name = `items[${index}][rental_days]`;
                 const rentalHidden = sizeRow.querySelector('[data-rental]');
                 if (rentalHidden) {
@@ -1364,6 +1369,7 @@
             thumb.disabled = !product;
             if (product) { image.src = product.image_url; image.alt = group.name; thumb.dataset.fullImage = product.image_url; }
             else { image.removeAttribute('src'); delete thumb.dataset.fullImage; }
+            block.dispatchEvent(new Event('product-updated'));
         }
 
         function refreshProductChoices() {
@@ -1423,6 +1429,7 @@
                     <input data-rental type="hidden" value="${size.rental_price != null ? size.rental_price : ''}">
                     <input data-rental-days type="hidden" value="${size.rental_days || 1}">
                     <input data-size-pending type="hidden" value="${size.size_pending ? '1' : '0'}">
+                    <input data-fulfillment-source type="hidden" value="stock">
                 </div>
                 <div class="field">
                     <label>Số lượng</label>
@@ -1551,6 +1558,29 @@
             `;
             itemIndex += 1;
 
+            const sourceBox = document.createElement('div'); sourceBox.className = 'entry-supply-choice';
+            sourceBox.innerHTML = `<label>Nguồn hàng mã này</label><select data-supply-choice aria-label="Nguồn hàng mã này"><option value="stock">Sẵn kho</option><option value="xuong_may">Cần od – Xưởng</option><option value="mua_ngoai">Cần od – Mua ngoài</option></select><a data-od-link target="_blank" rel="noopener" hidden>Đến đặt hàng od ↗</a><small data-od-hint hidden>Lưu đơn trước để mở đúng mã và số lượng cần đặt.</small>`;
+            block.querySelector('.product-picker-cell').appendChild(sourceBox);
+            const supplyChoice = block.querySelector('[data-supply-choice]');
+            supplyChoice.value = blockData.fulfillment_source || 'stock';
+            function updateOdLink() {
+                const needed = supplyChoice.value !== 'stock';
+                const link = block.querySelector('[data-od-link]');
+                const savedOrderId = @json($order->id);
+                link.hidden = !needed || !savedOrderId || !block.dataset.productCode;
+                block.querySelector('[data-od-hint]').hidden = !needed;
+                sourceBox.classList.toggle('needs-od', needed);
+                const url = new URL(@json(route('workshop-orders.create')));
+                url.searchParams.set('customer_order_id', savedOrderId || '');
+                url.searchParams.set('product_code', block.dataset.productCode || '');
+                url.searchParams.set('supply_source', supplyChoice.value);
+                link.href = url.toString();
+            }
+            supplyChoice.addEventListener('change', () => { renumberRows(); updateOdLink(); });
+            block.addEventListener('input', updateOdLink);
+            block.addEventListener('change', updateOdLink);
+            block.addEventListener('product-updated', updateOdLink);
+
             const searchInput = block.querySelector('[data-search]');
             const selectedInfo = block.querySelector('[data-selected-info]');
             const categorySelect = block.querySelector('[data-category]');
@@ -1619,6 +1649,7 @@
             renumberRows();
             updateComputedTotal();
 
+            updateOdLink();
             return block;
         }
 
@@ -1842,6 +1873,7 @@
                         rental_price: rental,
                         rental_days: block.querySelector('[data-block-days]').value,
                         size_pending: isPendingRow(row) ? 1 : 0,
+                        fulfillment_source: block.querySelector('[data-supply-choice]').value,
                         note: noteEl ? noteEl.value : '',
                     });
                 });
@@ -1937,7 +1969,7 @@
             const sizeData = { product_id: item.product_id, quantity: item.quantity, rental_price: item.rental_price, rental_days: item.rental_days || 1, size_pending: item.size_pending, note: item.note };
 
             // Gộp theo MÃ + GIÁ THUÊ: cùng mã nhưng khác giá sẽ thành 2 khối riêng.
-            const groupKey = code !== null ? code + '|' + (item.rental_price != null ? item.rental_price : '') + '|' + (item.rental_days || 1) : null;
+            const groupKey = code !== null ? code + '|' + (item.rental_price != null ? item.rental_price : '') + '|' + (item.rental_days || 1) + '|' + (item.fulfillment_source || 'stock') : null;
 
             if (groupKey !== null && codeToBlockIndex.has(groupKey)) {
                 groupedBlocks[codeToBlockIndex.get(groupKey)].sizes.push(sizeData);
@@ -1949,7 +1981,7 @@
             }
 
             // Giá thuê của mã lấy từ dòng đầu tiên (các size cùng mã dùng chung giá).
-            groupedBlocks.push({ code, sizes: [sizeData], rental: item.rental_price, days: item.rental_days || 1 });
+            groupedBlocks.push({ code, sizes: [sizeData], rental: item.rental_price, days: item.rental_days || 1, fulfillment_source: item.fulfillment_source || 'stock' });
         });
 
         if (groupedBlocks.length > 0) {

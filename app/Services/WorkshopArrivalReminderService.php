@@ -17,25 +17,29 @@ class WorkshopArrivalReminderService
         $pending = WorkshopOrder::with('product')
             ->whereIn('status', [WorkshopOrder::STATUS_NOT_YET, WorkshopOrder::STATUS_ORDERED])
             ->whereIn('supply_source', array_keys(WorkshopOrder::supplySources()))
-            ->whereNotNull('order_name')->get()
-            ->filter(fn ($item) => $normalize($item->order_name) !== '');
+            ->get()->filter(fn ($item) => $item->customer_order_id || $normalize($item->order_name) !== '');
         if ($pending->isEmpty()) {
             return collect();
         }
 
         $orders = Order::with(['items.product', 'product'])
-            ->whereIn(DB::raw('LOWER(TRIM(order_name))'), $pending->map(fn ($item) => $normalize($item->order_name))->unique()->all())
+            ->where(function ($query) use ($pending, $normalize) {
+                $query->whereIn('id', $pending->pluck('customer_order_id')->filter()->all())
+                    ->orWhereIn(DB::raw('LOWER(TRIM(order_name))'), $pending->whereNull('customer_order_id')->map(fn ($item) => $normalize($item->order_name))->unique()->all());
+            })
             ->whereDate('pickup_date', '<=', $today->copy()->addDays(2)->toDateString())
             ->whereNotIn('status', ['huy_don', 'da_gui', Order::RETURNED_STATUS, Order::CHECKED_STATUS])
             ->orderBy('pickup_date')->orderBy('id')->get();
-        $byName = $pending->groupBy(fn ($item) => $normalize($item->order_name));
         $reminders = collect();
         foreach ($orders as $order) {
             $codes = $order->items->pluck('product.code');
             if ($order->product) {
                 $codes->push($order->product->code);
             }
-            foreach ($byName->get($normalize($order->order_name), collect()) as $item) {
+            $matching = $pending->filter(fn ($item) => $item->customer_order_id
+                ? (int) $item->customer_order_id === $order->id
+                : $normalize($item->order_name) === $normalize($order->order_name));
+            foreach ($matching as $item) {
                 if ($item->product_code !== WorkshopOrder::NO_PRODUCT_CODE
                     && ! $codes->contains(fn ($code) => $normalize($code) === $normalize($item->product_code))) {
                     continue;

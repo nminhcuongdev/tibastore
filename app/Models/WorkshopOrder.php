@@ -28,6 +28,7 @@ class WorkshopOrder extends Model
 
     protected $fillable = [
         'product_code',
+        'customer_order_id',
         'image_path',
         'supply_source',
         'size_note',

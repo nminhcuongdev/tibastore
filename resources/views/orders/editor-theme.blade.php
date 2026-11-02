@@ -14,11 +14,17 @@ body.order-editor{background:radial-gradient(ellipse at 90% 0%,#dce9ee 0,transpa
 .order-editor-back{display:inline-flex;align-items:center;gap:14px;padding:10px 13px;border:1px solid #ffffff35;border-radius:7px;font-size:11px;color:#e8eef5;white-space:nowrap;position:relative;z-index:1}
 .order-editor-back:hover{background:#ffffff15}.order-editor-back span{color:#d3b17a;font-size:18px}
 .order-editor .form-shell{max-width:none;border:1px solid #dae2ec;border-radius:14px;box-shadow:0 8px 35px #1c355409;gap:18px 22px;padding:24px;align-items:start;background:#fffffffa}
-.order-editor-section{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:20px 0 12px;border-top:1px solid #e7ebf1;margin-top:8px}
-.order-editor-section:first-child{border-top:0;padding-top:0;margin-top:0}
-.order-editor-section>span{display:grid;place-items:center;flex-shrink:0;width:34px;height:36px;border:1px solid #e5d9c4;border-radius:8px;background:#faf6ee;color:#a07c42;font-size:11px;font-weight:600}
-.order-editor-section h2{margin:0!important;font-size:15px!important;font-weight:600;color:#25415e}
-.order-editor-section p{margin:5px 0 0;color:#8b99ab;font-size:11px}
+.order-editor-section{--section-color:#2455a4;--section-bg:#edf4ff;grid-column:1/-1;display:flex;align-items:center;gap:14px;padding:16px 18px;border:1px solid var(--section-bg);border-left:5px solid var(--section-color);border-radius:10px;background:var(--section-bg);margin-top:12px}
+.order-editor-section:first-child{margin-top:0}
+.entry-supply-choice{margin-top:12px;padding:12px;border:1px solid #bbddca;border-radius:8px;background:#eff9f3;display:grid;gap:8px}
+.entry-supply-choice label{font-weight:800;color:#246446}.entry-supply-choice.needs-od{background:#fff0f6;border-color:#edbbd1}.entry-supply-choice.needs-od label,.entry-supply-choice a{color:#96315e;font-weight:800}.entry-supply-choice small{font-size:12px;line-height:1.5;color:#655166}
+.entry-supply-choice [hidden]{display:none!important}
+.order-editor-section.section-schedule{--section-color:#7540a5;--section-bg:#f5effc}
+.order-editor-section.section-payment{--section-color:#24734d;--section-bg:#edf8f1}
+.order-editor-section.section-products{--section-color:#a35716;--section-bg:#fff4e7}
+.order-editor-section>span{display:grid;place-items:center;flex-shrink:0;width:38px;height:40px;border-radius:8px;background:var(--section-color);color:#fff;font-size:13px;font-weight:800}
+.order-editor-section h2{margin:0!important;font-size:18px!important;font-weight:800;color:var(--section-color);line-height:1.4}
+.order-editor-section p{margin:5px 0 0;color:#52647b;font-size:12px;line-height:1.5}
 .order-editor .form-shell>.field{align-content:start;gap:8px}
 .order-editor .form-shell>.field>label{font-size:12px!important;font-weight:600;color:#526982}
 .order-editor .form-shell>.field>input,.order-editor .form-shell>.field>select,.order-editor .form-shell>.field>textarea{background:#fbfcfe;border-color:#d8e1ed;border-radius:7px;padding:10px 12px;font-size:13px;box-shadow:0 1px 2px #1c355403}

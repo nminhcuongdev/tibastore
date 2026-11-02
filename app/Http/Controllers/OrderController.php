@@ -593,6 +593,7 @@ class OrderController extends Controller
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'exists:products,id'],
             'items.*.size_pending' => ['nullable', 'boolean'],
+            'items.*.fulfillment_source' => ['nullable', Rule::in(['stock', 'xuong_may', 'mua_ngoai'])],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.rental_price' => ['nullable', 'integer', 'min:0'],
             'items.*.rental_days' => ['nullable', 'numeric', 'min:0.01', 'max:3650', 'regex:/^\d+(\.\d{1,2})?$/'],
@@ -640,6 +641,7 @@ class OrderController extends Controller
             ->pluck('rental_price', 'id');
 
         $data['items'] = collect($data['items'])->map(function ($item) use ($productRentals) {
+            $item['fulfillment_source'] = $item['fulfillment_source'] ?? 'stock';
             $item['size_pending'] = ! empty($item['size_pending']);
             $item['rental_days'] = (float) ($item['rental_days'] ?? 1);
             $item['rental_price'] = array_key_exists('rental_price', $item) && $item['rental_price'] !== null && $item['rental_price'] !== ''
