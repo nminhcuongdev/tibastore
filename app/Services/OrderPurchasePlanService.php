@@ -22,8 +22,11 @@ class OrderPurchasePlanService
         foreach ($groups as $items) {
             $first = $items->first();
             $plan = $first->purchase_plan;
+            unset($plan['applied_lines']);
             foreach ($items as $item) {
-                if ($item->purchase_plan !== $plan) {
+                $itemPlan = $item->purchase_plan;
+                unset($itemPlan['applied_lines']);
+                if ($itemPlan !== $plan) {
                     throw ValidationException::withMessages(['items' => 'Các dòng cùng mã và nguồn od phải dùng cùng kế hoạch mua.']);
                 }
             }

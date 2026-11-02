@@ -16,6 +16,32 @@ class OrderPurchasePlanTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_additional_purchase_preserves_existing_stock_size_and_notes_when_saved_again(): void
+    {
+        $this->actingAs(User::create(['code' => 'append-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $code = 'APPEND-'.bin2hex(random_bytes(4));
+        $large = Product::create(['code' => $code, 'name' => 'Test', 'size' => 'L', 'fabric' => '', 'stock_quantity' => 1]);
+        $medium = Product::create(['code' => $code, 'name' => 'Test', 'size' => 'M', 'fabric' => '', 'stock_quantity' => 0]);
+        $plan = ['expected_date' => '2038-01-01', 'lines' => [['product_id' => $medium->id, 'quantity' => 1]],
+            'applied_lines' => [['product_id' => $medium->id, 'quantity' => 1]]];
+        $data = ['closer_name' => 'Test', 'order_name' => $code, 'pickup_date' => '2038-01-02',
+            'event_date' => '2038-01-03', 'return_date' => '2038-01-04', 'status' => Order::DEFAULT_STATUS,
+            'source' => Order::DEFAULT_SOURCE, 'items' => [
+                ['product_id' => $large->id, 'quantity' => 1, 'rental_price' => 90000, 'note' => 'Giữ ghi chú L', 'fulfillment_source' => 'mua_ngoai', 'purchase_plan' => $plan],
+                ['product_id' => $medium->id, 'quantity' => 1, 'rental_price' => 90000, 'note' => '1 M mua thêm', 'fulfillment_source' => 'mua_ngoai', 'purchase_plan' => $plan],
+            ]];
+        $this->post('/orders', $data)->assertSessionHasNoErrors();
+        $order = Order::where('order_name', $code)->firstOrFail();
+        $this->put('/orders/'.$order->id, $data)->assertSessionHasNoErrors();
+        $this->assertSame(2, (int) $order->items()->sum('quantity'));
+        $this->assertSame('Giữ ghi chú L', $order->items()->where('product_id', $large->id)->firstOrFail()->note);
+        $this->assertSame('1 M mua thêm', $order->items()->where('product_id', $medium->id)->firstOrFail()->note);
+        $this->assertSame(1, WorkshopOrder::where('customer_order_id', $order->id)->firstOrFail()->quantity);
+        $this->assertSame(1, $large->fresh()->stock_quantity);
+        $this->assertSame(0, $medium->fresh()->stock_quantity);
+    }
+
     public function test_confirmed_purchase_sizes_save_to_order_and_forecasts_without_physical_stock(): void
     {
         $this->actingAs(User::create(['code' => 'sizes-'.bin2hex(random_bytes(4)), 'name' => 'Test',
@@ -26,7 +52,7 @@ class OrderPurchasePlanTest extends TestCase
             $product = Product::create(['code' => $code, 'name' => 'Test', 'size' => $size, 'fabric' => '', 'stock_quantity' => 0]);
             $lines[] = ['product_id' => $product->id, 'quantity' => $quantity];
         }
-        $plan = ['expected_date' => '2035-04-01', 'lines' => $lines];
+        $plan = ['expected_date' => '2035-04-01', 'lines' => $lines, 'applied_lines' => $lines];
         $items = array_map(fn ($line) => $line + ['size_pending' => false, 'rental_price' => 10000,
             'fulfillment_source' => 'mua_ngoai', 'purchase_plan' => $plan], $lines);
         $this->post('/orders', ['closer_name' => 'Test', 'order_name' => $code, 'pickup_date' => '2035-04-02',
@@ -36,6 +62,8 @@ class OrderPurchasePlanTest extends TestCase
         $this->assertSame(4, $order->items()->count());
         $this->assertSame(18, (int) $order->items()->sum('quantity'));
         $workshop = WorkshopOrder::where('customer_order_id', $order->id)->firstOrFail();
+        $this->assertSame($lines, $order->items->first()->purchase_plan['applied_lines']);
+        $this->assertArrayNotHasKey('applied_lines', $workshop->purchase_plan);
         $this->assertSame(18, $workshop->quantity);
         $this->assertSame(4, ProductExpectedReceipt::where('workshop_order_id', $workshop->id)->count());
         app(OrderInventoryService::class)->syncDueOrders(Carbon::parse('2035-04-05'));

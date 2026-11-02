@@ -11,6 +11,10 @@ body.order-editor{background:radial-gradient(ellipse at 90% 0%,#dce9ee 0,transpa
 .order-editor-header{flex-wrap:wrap}
 .order-editor-header .personal-history{position:relative;z-index:1;flex:0 1 260px;max-width:260px}
 .order-editor-header .personal-history [data-personal-state]{flex-basis:100%;color:#dbe7f5;white-space:normal;overflow-wrap:anywhere}
+.order-editor-history-slot{flex:0 1 260px;max-width:260px}
+.order-editor-header .personal-history.is-pinned{position:fixed;top:12px;right:24px;z-index:200;width:300px;max-width:calc(100vw - 24px);box-sizing:border-box;padding:10px;background:#1c3554;border:1px solid #415b7c;border-radius:12px;box-shadow:0 5px 20px #1b36532b}
+.order-editor-header .personal-history [data-personal-state]:empty{display:none}
+@media print{.order-editor-history-slot{display:none!important}}
 .order-editor-kicker{display:block;color:#d0b88f;font-size:9px;letter-spacing:1.5px;font-weight:600;margin-bottom:9px}
 .order-editor .order-editor-title h1{font-family:'Segoe UI',Arial,sans-serif;font-size:24px!important;font-weight:600;line-height:1.35;color:#fff;margin:0 0 9px!important;letter-spacing:-.4px}
 .order-editor .order-editor-title p{color:#c3d1df;font-size:12px;line-height:1.7;max-width:570px}

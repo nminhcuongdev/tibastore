@@ -415,7 +415,9 @@
             <h1>{{ $mode === 'create' ? 'Tạo đơn hàng mới' : 'Sửa thông tin đơn hàng' }}</h1>
             <p>Chọn nhiều sản phẩm từ kho, cập nhật lịch lấy, lịch diễn, lịch trả và trạng thái xử lý đơn.</p>
             </div>
-            @include('partials.personal-history', ['historySection' => 'orders'])
+            <div class="order-editor-history-slot">
+                @include('partials.personal-history', ['historySection' => 'orders'])
+            </div>
             <a class="order-editor-back" href="{{ route('orders.index') }}">Về danh sách <span aria-hidden="true">↗</span></a>
         </div>
 
@@ -1549,10 +1551,13 @@
             return sizeRow;
         }
 
+        @include('orders.purchase-size-merge')
         function setupPurchasePlan(block, savedPlan) {
             if (typeof savedPlan === 'string') { try { savedPlan = JSON.parse(savedPlan); } catch (_) { savedPlan = null; } }
+            block.appliedPurchaseLines = savedPlan?.applied_lines || [];
+            let inferLegacyApplied = !!savedPlan && !savedPlan.applied_lines;
             const box = document.createElement('div'); box.className = 'purchase-plan'; box.hidden = true;
-            box.innerHTML = `<strong>Size cần mua thêm</strong><div data-purchase-lines></div><button type="button" class="button secondary" data-add-purchase>+ Thêm size cần mua</button><button type="button" class="button secondary" data-apply-purchase>Update vào đơn</button><span data-apply-purchase-state role="status"></span><label>Ngày dự kiến nhận<input data-purchase-date type="date"></label><small>Bấm Update vào đơn để điền size và số lượng vào mã này. Lưu đơn để cập nhật Đặt hàng và dự kiến ở Kho. Hàng chỉ vào tồn thực tế khi bấm Đẩy lên kho hoặc nhập tay tại Kho.</small>`;
+            box.innerHTML = `<strong>Size cần mua thêm</strong><div data-purchase-lines></div><button type="button" class="button secondary" data-add-purchase>+ Thêm size cần mua</button><button type="button" class="button secondary" data-apply-purchase>Update vào đơn</button><span data-apply-purchase-state role="status"></span><label>Ngày dự kiến nhận<input data-purchase-date type="date"></label><small>Bấm Update vào đơn để bổ sung phần mua thêm, giữ nguyên size và ghi chú đã nhập. Lưu đơn để cập nhật Đặt hàng và dự kiến ở Kho. Hàng chỉ vào tồn thực tế khi bấm Đẩy lên kho hoặc nhập tay tại Kho.</small>`;
             block.querySelector('.product-picker-cell').appendChild(box);
             const lines = box.querySelector('[data-purchase-lines]');
             const date = box.querySelector('[data-purchase-date]'); date.value = savedPlan?.expected_date || '';
@@ -1561,7 +1566,7 @@
             box.insertBefore(addWarehouseSize, box.querySelector('label'));
             let code = null;
             function savePlan() {
-                block.purchasePlan = {expected_date:date.value, lines:Array.from(lines.children).map(row => ({
+                block.purchasePlan = {expected_date:date.value, applied_lines:block.appliedPurchaseLines, lines:Array.from(lines.children).map(row => ({
                     product_id:Number(row.querySelector('select').value), quantity:Number(row.querySelector('input').value)
                 }))};
                 renumberRows();
@@ -1585,13 +1590,20 @@
                 if (group) addWarehouseSize.href = @json(route('products.show', ['product' => '__PRODUCT__'])).replace('__PRODUCT__', group.items[0].id);
                 box.hidden = !needed;
                 if (code !== block.dataset.productCode) {
-                    if (code !== null) savedPlan = null;
+                    if (code !== null) { savedPlan = null; block.appliedPurchaseLines = []; inferLegacyApplied = false; }
                     code = block.dataset.productCode;
                     lines.replaceChildren();
                     (savedPlan?.lines?.length ? savedPlan.lines : [{}]).forEach(addLine);
                 }
                 box.querySelectorAll('input,select,button').forEach(input => input.disabled = !needed);
                 date.required = needed; date.max = pickupDateInput.value;
+                if (inferLegacyApplied && block.querySelector('.size-row')) {
+                    const current = Array.from(block.querySelectorAll('.size-row')).filter(row => !isPendingRow(row));
+                    block.appliedPurchaseLines = (savedPlan?.lines || []).map(line => ({product_id:line.product_id,
+                        quantity:Math.min(Number(line.quantity), current.filter(row => Number(row.querySelector('[data-product-id]').value) === Number(line.product_id))
+                            .reduce((sum, row) => sum + Number(row.querySelector('[data-quantity]').value), 0))}));
+                    inferLegacyApplied = false;
+                }
                 savePlan();
             }
             box.addEventListener('input', savePlan); box.addEventListener('change', savePlan);
@@ -1611,15 +1623,50 @@
                     quantities.set(id, (quantities.get(id) || 0) + amount);
                 }
                 if (!quantities.size) { state.textContent = 'Hãy thêm size cần mua trước.'; return; }
-                const notes = new Map(Array.from(block.querySelectorAll('.size-row')).map(row => [
-                    Number(row.querySelector('[data-product-id]').value), row.querySelector('[data-note]').value
-                ]));
-                block.querySelector('[data-size-rows]').replaceChildren();
-                for (const [productId, quantity] of quantities) {
-                    addSizeRow(block, {product_id:productId, quantity, size_pending:false, note:notes.get(productId) || ''});
+                const existingRows = Array.from(block.querySelectorAll('.size-row')).filter(row => !isPendingRow(row));
+                const existing = existingRows.map(row => ({product_id:Number(row.querySelector('[data-product-id]').value), quantity:Number(row.querySelector('[data-quantity]').value)}));
+                const result = purchaseSizeUpdates(existing, Array.from(quantities, ([product_id, quantity]) => ({product_id, quantity})), block.appliedPurchaseLines);
+                for (const addition of result.additions) {
+                    let remaining = addition.quantity;
+                    let target = existingRows.find(item => Number(item.querySelector('[data-product-id]').value) === addition.product_id);
+                    // Resolve the unconfirmed part first instead of counting it twice.
+                    // Confirmed sizes and their notes stay in place.
+                    const placeholders = Array.from(block.querySelectorAll('.size-row')).filter(row => isPendingRow(row) || !row.querySelector('[data-product-id]').value);
+                    for (const placeholder of placeholders) {
+                        if (!remaining) break;
+                        const input = placeholder.querySelector('[data-quantity]');
+                        const quantity = Number(input.value);
+                        if (!Number.isInteger(quantity) || quantity < 1) continue;
+                        const used = Math.min(remaining, quantity);
+                        const note = placeholder.querySelector('[data-note]').value;
+                        if (target) {
+                            const targetQuantity = target.querySelector('[data-quantity]');
+                            targetQuantity.value = Number(targetQuantity.value) + used;
+                            const targetNote = target.querySelector('[data-note]');
+                            if (note && !targetNote.value.split('\n').includes(note)) targetNote.value = [targetNote.value, note].filter(Boolean).join('\n');
+                            if (used === quantity) placeholder.remove(); else input.value = quantity - used;
+                        } else if (used === quantity) {
+                            placeholder.querySelector('[data-size-pending]').value = '0';
+                            placeholder.querySelector('[data-product-id]').value = addition.product_id;
+                            populateSizeSelect(placeholder, addition.product_id);
+                            target = placeholder; existingRows.push(target);
+                        } else {
+                            input.value = quantity - used;
+                            target = addSizeRow(block, {product_id:addition.product_id, quantity:used, size_pending:false, note});
+                            existingRows.push(target);
+                        }
+                        remaining -= used;
+                    }
+                    if (remaining && target) {
+                        const input = target.querySelector('[data-quantity]'); input.value = Number(input.value) + remaining;
+                    } else if (remaining) {
+                        target = addSizeRow(block, {product_id:addition.product_id, quantity:remaining, size_pending:false});
+                        existingRows.push(target);
+                    }
                 }
+                block.appliedPurchaseLines = result.applied;
                 savePlan(); renumberRows(); refreshProductChoices();
-                state.textContent = 'Đã cập nhật size và số lượng vào đơn. Bấm Lưu đơn để lưu thay đổi.';
+                state.textContent = result.additions.length ? 'Đã bổ sung phần mua thêm, giữ nguyên các dòng trước đó. Bấm Lưu đơn để lưu.' : 'Phần mua thêm đã có trong đơn, không cộng trùng.';
             });
             block.querySelector('[data-supply-choice]').addEventListener('change', () => { refresh(); refreshProductChoices(); });
             block.addEventListener('product-updated', refresh);

@@ -1,3 +1,19 @@
+        const historySlot = document.querySelector('.order-editor-history-slot');
+        const historyControls = historySlot.querySelector('[data-personal-history]');
+        let pinFrame = null;
+        function pinEditorHistory() {
+            pinFrame = null;
+            const shouldPin = historySlot.getBoundingClientRect().top < 12;
+            if (!historyControls.classList.contains('is-pinned')) {
+                historySlot.style.minHeight = historyControls.getBoundingClientRect().height + 'px';
+            }
+            historyControls.classList.toggle('is-pinned', shouldPin);
+        }
+        window.addEventListener('scroll', () => {
+            if (pinFrame === null) pinFrame = requestAnimationFrame(pinEditorHistory);
+        }, {passive:true});
+        window.addEventListener('resize', pinEditorHistory);
+        pinEditorHistory();
         // The editor keeps five local steps, including unsaved product blocks and plans.
         // Saved account history remains available on the orders list.
         function editorSnapshot() {
