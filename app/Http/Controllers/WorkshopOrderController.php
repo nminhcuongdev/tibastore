@@ -125,7 +125,8 @@ class WorkshopOrderController extends Controller
 
     public function store(Request $request): RedirectResponse|JsonResponse
     {
-        $item = WorkshopOrder::create($this->validatedData($request));
+        $item = app(\App\Services\WorkshopOrderUndoService::class)->record($request->user()->id, null,
+            fn () => WorkshopOrder::create($this->validatedData($request)));
         if ($request->wantsJson()) {
             $item->load('product');
             return response()->json([
@@ -156,7 +157,11 @@ class WorkshopOrderController extends Controller
 
     public function update(Request $request, WorkshopOrder $workshopOrder): RedirectResponse|JsonResponse
     {
-        $workshopOrder->update($this->validatedData($request, $workshopOrder));
+        app(\App\Services\WorkshopOrderUndoService::class)->record($request->user()->id, $workshopOrder, function ($locked) use ($request) {
+            $locked->fill($this->validatedData($request, $locked));
+            if ($locked->isDirty()) $locked->save();
+            return $locked;
+        });
         app(\App\Services\OrderInventoryService::class)->syncDueOrders();
         if ($request->wantsJson()) {
             $workshopOrder->refresh()->load('product');
@@ -182,18 +187,32 @@ class WorkshopOrderController extends Controller
             'status' => ['required', Rule::in(array_keys(WorkshopOrder::statuses()))],
         ]);
 
-        $workshopOrder->update($data);
+        app(\App\Services\WorkshopOrderUndoService::class)->record($request->user()->id, $workshopOrder, function ($locked) use ($data) {
+            $locked->fill($data);
+            if ($locked->isDirty()) $locked->save();
+            return $locked;
+        });
+        $workshopOrder->refresh();
         app(\App\Services\OrderInventoryService::class)->syncDueOrders();
 
         return back()->with('status', "Đã chuyển {$workshopOrder->product_code} sang \"{$workshopOrder->statusLabel()}\".");
     }
 
-    public function destroy(WorkshopOrder $workshopOrder): RedirectResponse
+    public function destroy(Request $request, WorkshopOrder $workshopOrder): RedirectResponse
     {
-        \App\Models\ProductExpectedReceipt::where('workshop_order_id', $workshopOrder->id)->whereNull('received_at')->delete();
-        $workshopOrder->delete();
+        app(\App\Services\WorkshopOrderUndoService::class)->record($request->user()->id, $workshopOrder, function ($locked) {
+            \App\Models\ProductExpectedReceipt::where('workshop_order_id', $locked->id)->whereNull('received_at')->delete();
+            $locked->delete();
+            return $locked;
+        });
 
         return back()->with('status', 'Đã xoá dòng đặt hàng.');
+    }
+
+    public function undoLastEdit(Request $request): JsonResponse
+    {
+        app(\App\Services\WorkshopOrderUndoService::class)->undo($request->user()->id);
+        return response()->json(['message' => 'Đã hoàn tác thao tác gần nhất của bạn.']);
     }
 
     public function pushToStock(Request $request, WorkshopOrder $workshopOrder): RedirectResponse|JsonResponse

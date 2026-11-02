@@ -77,7 +77,9 @@ class WorkshopInlineEditTest extends TestCase
             'size_note' => 'M: 2', 'order_name' => 'Đơn thử', 'ordered_date' => '2026-11-01', 'returned_date' => '2026-11-02'];
         $item = WorkshopOrder::create($data);
         $this->get('/workshop-orders')->assertOk()->assertSee('data-inline-edit', false)
-            ->assertSee('workshop-new-row', false)->assertSee('data-new-row', false);
+            ->assertSee('workshop-new-row', false)->assertSee('data-new-row', false)
+            ->assertSee('Các thay đổi được tự động lưu.')
+            ->assertDontSee('class="inline-save">Lưu', false);
         $this->postJson('/workshop-orders', $data)->assertCreated()
             ->assertJsonPath('total', 200000)->assertJsonPath('product_name', 'Áo thử')
             ->assertJsonStructure(['update_url', 'quantity', 'image']);

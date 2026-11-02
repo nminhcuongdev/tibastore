@@ -2,6 +2,55 @@
 (function () {
     const catalog = @json($productCodes);
     const format = value => Number(value || 0).toLocaleString('vi-VN');
+    const scrollKey = 'workshop-scroll:' + location.pathname + location.search;
+    function rememberScroll() {
+        sessionStorage.setItem(scrollKey, JSON.stringify({x: window.scrollX, y: window.scrollY,
+            tables: Array.from(document.querySelectorAll('.table-shell')).map(el => el.scrollLeft)}));
+    }
+    const previousScroll = sessionStorage.getItem(scrollKey);
+    if (previousScroll) {
+        sessionStorage.removeItem(scrollKey);
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            const position = JSON.parse(previousScroll);
+            window.scrollTo(position.x, position.y);
+            document.querySelectorAll('.table-shell').forEach((el, i) => el.scrollLeft = position.tables[i] || 0);
+        }));
+    }
+    document.querySelector('[data-undo-edit]')?.addEventListener('click', async event => {
+        const state = document.querySelector('[data-undo-state]');
+        if (document.querySelector('[data-edit-row].has-changes')) {
+            state.textContent = 'Vui lòng chờ các thay đổi tự lưu xong trước khi hoàn tác.';
+            return;
+        }
+        const button = event.currentTarget;
+        button.disabled = true;
+        // Freeze editing while undo is in flight so new auto-saves cannot race the reload.
+        const controls = Array.from(document.querySelectorAll('[data-edit-row] input, [data-edit-row] textarea, [data-edit-row] select, [data-edit-row] button, [data-add-inline-row]'));
+        const enabled = controls.filter(control => !control.disabled);
+        enabled.forEach(control => control.disabled = true);
+        document.querySelectorAll('[data-edit-row]').forEach(row => row.inert = true);
+        state.textContent = 'Đang hoàn tác…';
+        try {
+            const body = new FormData();
+            body.append('_token', document.querySelector('[data-inline-edit] [name=_token]').value);
+            const response = await fetch(@json(route('workshop-orders.undo-last-edit')), {
+                method: 'POST', body, credentials: 'same-origin', headers: {Accept: 'application/json'}
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.errors ? Object.values(data.errors).flat().join(' ') : data.message);
+            rememberScroll();
+            location.reload();
+        } catch (error) {
+            state.textContent = error.message || 'Chưa hoàn tác được. Vui lòng thử lại.';
+            button.disabled = false;
+            enabled.forEach(control => control.disabled = false);
+            document.querySelectorAll('[data-edit-row]').forEach(row => row.inert = false);
+        }
+    });
+    document.addEventListener('submit', event => {
+        if (event.defaultPrevented || !event.target.querySelector('[name=_method][value=DELETE]')) return;
+        rememberScroll();
+    });
     function previewImage(row, product) {
         const cell = row.querySelector('[data-image-preview]');
         cell.replaceChildren();
@@ -34,14 +83,14 @@
         imageCell.append(upload, uploadButton, hint);
         uploadButton.addEventListener('click', () => upload.click());
         function acceptImage(file) {
-            if (!file || button.disabled) return;
+            if (!file) return;
             if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
                 state.textContent = 'Chọn ảnh JPG, PNG, GIF hoặc WebP tối đa 5MB.'; state.style.color = '#b42318'; return;
             }
             if (objectUrl) URL.revokeObjectURL(objectUrl);
             pendingImage = file; objectUrl = URL.createObjectURL(file); customImage = objectUrl;
             previewImage(row, {image:customImage, code:codeInput.value, name:row.querySelector('[data-product-label]').textContent});
-            row.classList.add('has-changes'); state.textContent = 'Chưa lưu ảnh'; state.style.color = '';
+            row.classList.add('has-changes'); state.textContent = 'Chờ tự lưu ảnh…'; scheduleSave(); state.style.color = '';
         }
         upload.addEventListener('change', () => acceptImage(upload.files[0]));
         row.addEventListener('paste', event => {
@@ -52,6 +101,8 @@
         if (savedProduct && !savedImage) previewImage(row, savedProduct);
         row.querySelector('[data-remove-new-row]')?.addEventListener('click', () => {
             if (!row.hasAttribute('data-new-row')) return;
+            if (saving) { state.textContent = 'Vui lòng chờ tự lưu xong trước khi xóa dòng.'; return; }
+            clearTimeout(saveTimer);
             row.remove();
             if (!document.querySelector('[data-new-row]')) appendNewRow();
         });
@@ -74,7 +125,12 @@
         });
         const form = row.querySelector('[data-inline-edit]');
         const state = row.querySelector('[data-save-state]');
-        const button = form.querySelector('button');
+        let saveTimer, saving = false, revision = 0;
+        function scheduleSave() {
+            revision++;
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(saveRow, 650);
+        }
         const sizeCell = row.querySelector('[name=size_note]').closest('td');
         const sizeEditor = document.createElement('div'); sizeEditor.className = 'workshop-size-editor';
         const sizeList = document.createElement('div');
@@ -92,7 +148,7 @@
             if (lines.length) {
                 row.querySelector('[name=quantity]').value = lines.reduce((sum, line) => sum + line.quantity, 0);
             }
-            row.classList.add('has-changes'); state.textContent = 'Chưa lưu';
+            row.classList.add('has-changes'); state.textContent = 'Chờ tự lưu…'; scheduleSave();
             row.querySelector('[data-row-total]').textContent = format(Number(row.querySelector('[name=quantity]').value) * Number(row.querySelector('[name=unit_price]').value));
         }
         function addSizeLine(data = {}) {
@@ -124,7 +180,7 @@
         }
         updateStockButton();
         stockButton.addEventListener('click', async () => {
-            if (row.classList.contains('has-changes')) { state.textContent = 'Hãy Lưu dòng trước khi đẩy lên kho.'; return; }
+            if (saving || row.classList.contains('has-changes')) { state.textContent = 'Vui lòng chờ tự lưu xong rồi đẩy lên kho.'; return; }
             stockButton.disabled = true;
             try {
                 const body = new FormData(); body.append('_token', form.querySelector('[name=_token]').value);
@@ -138,7 +194,7 @@
         });
         function changed(event) {
             if (!event.target.matches('input,textarea,select')) return;
-            row.classList.add('has-changes'); state.textContent = 'Chưa lưu'; state.style.color = '';
+            row.classList.add('has-changes'); state.textContent = 'Chờ tự lưu…'; scheduleSave(); state.style.color = '';
             row.querySelector('[data-row-total]').textContent = format(Number(row.querySelector('[name=quantity]').value) * Number(row.querySelector('[name=unit_price]').value));
             if (event.target.name === 'product_code') {
                 const code = event.target.value.trim().toLowerCase();
@@ -147,15 +203,17 @@
             }
         }
         row.addEventListener('input', changed); row.addEventListener('change', changed);
-        form.addEventListener('submit', async event => {
-            event.preventDefault();
-            if (!form.reportValidity()) return;
-            const inputs = Array.from(row.querySelectorAll('input,textarea,select'));
+        form.addEventListener('submit', event => { event.preventDefault(); clearTimeout(saveTimer); saveRow(); });
+        async function saveRow() {
+            if (saving || !row.isConnected || !row.classList.contains('has-changes')) return;
+            if (!form.checkValidity()) { state.textContent = 'Chưa lưu: vui lòng kiểm tra các ô bắt buộc.'; return; }
+            saving = true;
+            const sentRevision = revision, sentImage = pendingImage;
             const body = new FormData(form);
             const sizes = readSizes();
             if (!managed) body.set('size_quantities', JSON.stringify(sizes));
             if (pendingImage) body.append('image', pendingImage);
-            inputs.forEach(input => input.disabled = true); button.disabled = true; state.textContent = 'Đang lưu…';
+            state.textContent = 'Đang lưu…';
             try {
                 const response = await fetch(form.action, {method:'POST',body,credentials:'same-origin',headers:{Accept:'application/json','X-Requested-With':'XMLHttpRequest'}});
                 const data = await response.json();
@@ -181,23 +239,26 @@
                 if (summaryQuantity) { const value = Number(summaryQuantity.dataset.summaryQuantity) + Number(data.quantity) - Number(row.dataset.quantity); summaryQuantity.dataset.summaryQuantity = value; summaryQuantity.textContent = format(value); }
                 if (summaryAmount) { const value = Number(summaryAmount.dataset.summaryAmount) + Number(data.total) - Number(row.dataset.total); summaryAmount.dataset.summaryAmount = value; summaryAmount.textContent = format(value); }
                 row.dataset.quantity = data.quantity; row.dataset.total = data.total;
-                row.querySelector('[name=quantity]').value = data.quantity;
-                row.querySelector('[name=size_note]').value = data.size_note || '';
-                row.querySelector('[data-row-total]').textContent = format(data.total);
+                if (revision === sentRevision) row.querySelector('[name=quantity]').value = data.quantity;
+                if (revision === sentRevision) row.querySelector('[name=size_note]').value = data.size_note || '';
+                if (revision === sentRevision) row.querySelector('[data-row-total]').textContent = format(data.total);
                 row.querySelector('[name=status]').className = 'status-select st-' + row.querySelector('[name=status]').value;
                 const selectedCode = row.querySelector('[name=product_code]').value;
                 const selectedProduct = catalog.find(product => product.code.toLowerCase() === selectedCode.trim().toLowerCase());
-                previewImage(row, {name:data.product_name,image:data.image || selectedProduct?.image,code:selectedCode});
-                if (pendingImage) customImage = data.image || null;
-                pendingImage = null; upload.value = '';
-                if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
-                row.classList.remove('has-changes'); state.textContent = 'Đã lưu'; state.style.color = '';
+                if (revision === sentRevision) previewImage(row, {name:data.product_name,image:data.image || selectedProduct?.image,code:selectedCode});
+                if (pendingImage === sentImage) {
+                    if (pendingImage) customImage = data.image || null;
+                    pendingImage = null; upload.value = '';
+                    if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
+                }
+                if (revision === sentRevision) { row.classList.remove('has-changes'); state.textContent = 'Đã lưu'; state.style.color = ''; }
             } catch (error) { state.textContent = 'Chưa lưu: ' + error.message; state.style.color = '#b42318'; }
             finally {
-                inputs.forEach(input => input.disabled = false); button.disabled = false;
+                saving = false;
+                if (revision !== sentRevision) { clearTimeout(saveTimer); saveTimer = setTimeout(saveRow, 650); }
                 if (managed || row.dataset.stocked === '1') sizeList.querySelectorAll('input,select,button').forEach(input => input.disabled = true);
             }
-        });
+        }
     }
     let newRowIndex = 0;
     function appendNewRow() {

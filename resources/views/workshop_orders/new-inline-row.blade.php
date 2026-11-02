@@ -13,7 +13,7 @@
     <td><input form="workshop-new-__NEW__" name="returned_date" type="date" aria-label="Ngày trả hàng"></td>
     <td><input form="workshop-new-__NEW__" name="buyer" maxlength="255" placeholder="Người mua…" aria-label="Người mua hàng"></td>
     <td><select form="workshop-new-__NEW__" name="status" class="status-select" aria-label="Trạng thái">@foreach($statuses as $value => $label)<option value="{{ $value }}" @selected($value === \App\Models\WorkshopOrder::DEFAULT_STATUS)>{{ $label }}</option>@endforeach</select></td>
-    <td><form id="workshop-new-__NEW__" data-inline-edit method="POST" action="{{ route('workshop-orders.store') }}">@csrf<input type="hidden" name="supply_source" value="{{ $supplySource }}"><button type="submit" class="inline-save">Lưu dòng</button></form><span data-save-state role="status">Dòng mới</span></td>
+    <td><form id="workshop-new-__NEW__" data-inline-edit method="POST" action="{{ route('workshop-orders.store') }}">@csrf<input type="hidden" name="supply_source" value="{{ $supplySource }}"></form><span data-save-state role="status">Dòng mới</span></td>
     <td data-delete-cell><button type="button" class="danger" data-remove-new-row>Xóa dòng</button></td>
     <td data-stock-cell></td>
 </tr>

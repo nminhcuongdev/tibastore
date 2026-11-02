@@ -280,6 +280,8 @@
         {{-- Xoa loc nhung van o lai nguon hang dang xem. --}}
         <a class="button secondary"
            href="{{ route('workshop-orders.index', ['supply_source' => $supplySource]) }}">Xoá lọc</a>
+        <button class="button secondary" type="button" data-undo-edit title="Hoàn tác tối đa 5 thao tác gần nhất của tài khoản bạn">↶ Hoàn tác</button>
+        <span data-undo-state role="status"></span>
         <div class="spacer"></div>
     </form>
 
@@ -337,7 +339,7 @@
                     <th>Đẩy lên kho</th>
                 </tr>
             </thead>
-            <caption style="caption-side:top;text-align:left;padding:12px;color:#7386a0;font-size:12px">Sửa trực tiếp trong các ô, sau đó bấm Lưu ở cuối dòng. Thành tiền tự tính theo số lượng và đơn giá.</caption>
+            <caption style="caption-side:top;text-align:left;padding:12px;color:#7386a0;font-size:12px">Các thay đổi được tự động lưu. Thành tiền tự tính theo số lượng và đơn giá.</caption>
             <tbody data-workshop-rows>
                 @forelse ($orders as $item)
                     @php $product = $item->product; @endphp
@@ -385,7 +387,7 @@
                         </td>
                         <td>
                             <div class="row-actions">
-                                <form id="workshop-edit-{{ $item->id }}" data-inline-edit method="POST" action="{{ route('workshop-orders.update', $item) }}">@csrf @method('PUT')<input type="hidden" name="supply_source" value="{{ $item->supply_source }}"><button type="submit" class="inline-save">Lưu</button></form><span data-save-state role="status"></span>
+                                <form id="workshop-edit-{{ $item->id }}" data-inline-edit method="POST" action="{{ route('workshop-orders.update', $item) }}">@csrf @method('PUT')<input type="hidden" name="supply_source" value="{{ $item->supply_source }}"></form><span data-save-state role="status"></span>
                             </div>
                         </td>
                         <td data-delete-cell>
