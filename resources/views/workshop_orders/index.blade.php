@@ -346,12 +346,12 @@
                     @foreach (['ordered_date' => 'Ngày đặt hàng', 'returned_date' => 'Ngày trả hàng'] as $column => $label)
                         @php
                             $activeSort = $sort === $column;
-                            $nextDirection = $activeSort && $direction === 'desc' ? 'asc' : 'desc';
+                            $nextDirection = $activeSort && $direction === 'asc' ? 'desc' : 'asc';
                         @endphp
                         <th aria-sort="{{ $activeSort ? ($direction === 'asc' ? 'ascending' : 'descending') : 'none' }}">
-                            <a style="color:inherit;text-decoration:none;white-space:nowrap" href="{{ request()->fullUrlWithQuery(['sort' => $column, 'direction' => $nextDirection, 'page' => null]) }}"
+                            <a href="{{ request()->fullUrlWithQuery(['sort' => $column, 'direction' => $nextDirection, 'page' => null]) }}"
                                title="{{ $nextDirection === 'desc' ? 'Sắp xếp gần nhất trước' : 'Sắp xếp xa nhất trước' }}">
-                                {{ $label }} <span aria-hidden="true">{{ $activeSort ? ($direction === 'desc' ? '↓' : '↑') : '↕' }}</span>
+                                {{ $label }} {{ $activeSort ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}
                             </a>
                         </th>
                     @endforeach
