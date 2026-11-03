@@ -40,4 +40,23 @@ class WorkshopOrderSortingTest extends TestCase
         }
         $this->get('/workshop-orders?sort=invalid&direction=invalid')->assertOk();
     }
+
+    public function test_default_list_prioritizes_not_ordered_rows_by_newest_date(): void
+    {
+        $this->actingAs(User::create(['code' => 'sort-'.bin2hex(random_bytes(4)), 'name' => 'Sort test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        foreach ([['DEFAULT-DONE', '2026-12-01', WorkshopOrder::STATUS_ORDERED],
+            ['DEFAULT-OLD', '2026-10-01', WorkshopOrder::STATUS_NOT_YET],
+            ['DEFAULT-NEW', '2026-11-01', WorkshopOrder::STATUS_NOT_YET],
+            ['DEFAULT-ARRIVED', '2026-12-02', WorkshopOrder::STATUS_ARRIVED]] as [$code, $date, $status]) {
+            WorkshopOrder::create(['product_code' => $code, 'supply_source' => WorkshopOrder::SUPPLY_OUTSIDE,
+                'quantity' => 1, 'unit_price' => 0, 'status' => $status, 'ordered_date' => $date]);
+        }
+        $this->get('/workshop-orders?supply_source=mua_ngoai&q=DEFAULT-')->assertOk()
+            ->assertSeeInOrder(['value="DEFAULT-NEW"', 'value="DEFAULT-OLD"',
+                'value="DEFAULT-ARRIVED"', 'value="DEFAULT-DONE"'], false);
+        $this->get('/workshop-orders?supply_source=mua_ngoai&q=DEFAULT-&sort=ordered_date&direction=desc')->assertOk()
+            ->assertSeeInOrder(['value="DEFAULT-ARRIVED"', 'value="DEFAULT-DONE"',
+                'value="DEFAULT-NEW"', 'value="DEFAULT-OLD"'], false);
+    }
 }

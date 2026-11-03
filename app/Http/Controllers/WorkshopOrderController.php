@@ -61,6 +61,8 @@ class WorkshopOrderController extends Controller
             ->when($buyer !== '', fn ($builder) => $builder->where('buyer', 'like', "%{$buyer}%"))
             ->when($orderedFrom, fn ($builder) => $builder->whereDate('ordered_date', '>=', $orderedFrom))
             ->when($orderedTo, fn ($builder) => $builder->whereDate('ordered_date', '<=', $orderedTo))
+            ->when(!$request->filled('sort'), fn ($builder) => $builder
+                ->orderByRaw('CASE WHEN status = ? THEN 0 ELSE 1 END', [WorkshopOrder::STATUS_NOT_YET]))
             ->when($sort, fn ($builder) => $builder->orderByRaw($sort.' IS NULL')->orderBy($sort, $direction))
             ->orderByDesc('created_at')
             ->orderByDesc('id');
