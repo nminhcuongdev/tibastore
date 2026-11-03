@@ -726,6 +726,7 @@
                     }
                 });
 
+                block.querySelector('[data-block-quantity]').textContent = blockQuantity.toLocaleString('vi-VN');
                 const subtotal = blockAmount;
                 const subtotalEl = block.querySelector('[data-block-subtotal]');
 
@@ -1682,7 +1683,7 @@
                 <td class="entry-number"><span data-block-number></span><div class="drag-handle" data-drag-handle title="Kéo để sắp xếp">&#8942;&#8942;</div></td>
                 <td class="product-picker-cell"><label class="entry-sr-only" for="${searchId}">Mã hàng</label><select data-category aria-label="Lọc danh mục"><option value="">Tất cả danh mục</option></select><input id="${searchId}" data-search type="search" autocomplete="off" placeholder="Nhập mã hoặc tên…" required><button class="entry-code-thumb" data-size-thumb type="button" disabled aria-label="Phóng to ảnh sản phẩm"><img data-code-preview alt="" hidden></button><div data-suggestions class="product-suggestions"></div><div data-row-error class="error row-error"></div></td>
                 <td><div data-selected-info class="selected-product-info"></div></td>
-                <td><div data-size-rows class="size-rows"></div><button class="button secondary" data-add-size type="button" disabled>+ Thêm size</button></td>
+                <td><div data-size-rows class="size-rows"></div><div style="margin:12px 0;padding:10px 12px;background:#eff6ff;border:1px solid #c3d4ed;border-radius:8px;color:#1e3a5f;font-weight:800" role="status">Tổng số lượng: <span data-block-quantity>0</span></div><button class="button secondary" data-add-size type="button" disabled>+ Thêm size</button></td>
                 <td><label class="entry-sr-only">Giá thuê</label><input data-block-rental type="number" min="0" step="1000" value="0" aria-label="Giá thuê mã hàng"></td>
                 <td><input data-block-days type="text" inputmode="decimal" value="1" required aria-label="Số ngày thuê mã hàng" placeholder="1,5"></td>
                 <td class="entry-amount"><span data-block-subtotal>0</span></td>
