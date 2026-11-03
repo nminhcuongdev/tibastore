@@ -21,11 +21,19 @@ class WorkshopOrderSortingTest extends TestCase
                 'quantity' => 1, 'unit_price' => 0, 'status' => WorkshopOrder::DEFAULT_STATUS,
                 'ordered_date' => $ordered, 'returned_date' => $returned]);
         }
+        $this->get('/workshop-orders?supply_source=mua_ngoai&q=SORT-')->assertOk()
+            ->assertSeeInOrder(['value="SORT-NEWER"', 'value="SORT-OLDER"', 'value="SORT-EMPTY"'], false)
+            ->assertSee('aria-sort="descending"', false);
         foreach (['ordered_date', 'returned_date'] as $column) {
             $url = '/workshop-orders?supply_source=mua_ngoai&q=SORT-&sort='.$column;
-            $this->get($url.'&direction=desc')->assertOk()
+            $descending = $this->get($url.'&direction=desc')->assertOk()
                 ->assertSeeInOrder(['value="SORT-NEWER"', 'value="SORT-OLDER"', 'value="SORT-EMPTY"'], false)
                 ->assertSee('aria-sort="descending"', false);
+            preg_match('/<th aria-sort="descending">\s*<a href="([^"]+)"/', $descending->getContent(), $matches);
+            $ascendingUrl = html_entity_decode($matches[1]);
+            $this->assertStringContainsString('direction=asc', $ascendingUrl);
+            $this->get($ascendingUrl)->assertOk()
+                ->assertSeeInOrder(['value="SORT-OLDER"', 'value="SORT-NEWER"', 'value="SORT-EMPTY"'], false);
             $this->get($url.'&direction=asc')->assertOk()
                 ->assertSeeInOrder(['value="SORT-OLDER"', 'value="SORT-NEWER"', 'value="SORT-EMPTY"'], false)
                 ->assertSee('aria-sort="ascending"', false);

@@ -40,7 +40,7 @@ class WorkshopOrderController extends Controller
         $orderedFrom = $this->filterDate($request->query('ordered_from'));
         $orderedTo = $this->filterDate($request->query('ordered_to'));
         $sort = in_array($request->query('sort'), ['ordered_date', 'returned_date'], true)
-            ? $request->query('sort') : null;
+            ? $request->query('sort') : 'ordered_date';
         $direction = $request->query('direction') === 'asc' ? 'asc' : 'desc';
 
         $ordersQuery = WorkshopOrder::query()
