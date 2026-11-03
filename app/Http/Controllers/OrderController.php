@@ -626,7 +626,7 @@ class OrderController extends Controller
             'items.*.purchase_plan.lines.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.purchase_plan.applied_lines' => ['nullable', 'array', 'max:100'],
             'items.*.purchase_plan.updated_once' => ['sometimes', 'boolean'],
-            'items.*.purchase_plan.applied_lines.*.product_id' => ['required', 'integer', 'exists:products,id'],
+            'items.*.purchase_plan.applied_lines.*.product_id' => ['required', 'integer'],
             'items.*.purchase_plan.applied_lines.*.quantity' => ['required', 'integer', 'min:0'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.rental_price' => ['nullable', 'integer', 'min:0'],
@@ -677,6 +677,14 @@ class OrderController extends Controller
         $data['items'] = collect($data['items'])->map(function ($item) use ($productRentals) {
             $item['fulfillment_source'] = $item['fulfillment_source'] ?? 'stock';
             if ($item['fulfillment_source'] === 'stock') $item['purchase_plan'] = null;
+            // Applied lines are bookkeeping, not new products to order. Drop stale
+            // references when a size was deleted or removed from this order.
+            if (isset($item['purchase_plan']['applied_lines'])) {
+                $item['purchase_plan']['applied_lines'] = array_values(array_filter(
+                    $item['purchase_plan']['applied_lines'],
+                    fn ($line) => $productRentals->has($line['product_id'])
+                ));
+            }
             $item['size_pending'] = ! empty($item['size_pending']);
             $item['rental_days'] = (float) ($item['rental_days'] ?? 1);
             $item['rental_price'] = array_key_exists('rental_price', $item) && $item['rental_price'] !== null && $item['rental_price'] !== ''

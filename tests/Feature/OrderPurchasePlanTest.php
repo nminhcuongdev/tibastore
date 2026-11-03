@@ -33,7 +33,9 @@ class OrderPurchasePlanTest extends TestCase
             ]];
         $this->post('/orders', $data)->assertSessionHasNoErrors();
         $order = Order::where('order_name', $code)->firstOrFail();
+        $data['items'][0]['purchase_plan']['applied_lines'][] = ['product_id' => 2147483647, 'quantity' => 1];
         $this->put('/orders/'.$order->id, $data)->assertSessionHasNoErrors();
+        $this->assertSame($plan['applied_lines'], $order->items()->where('product_id', $large->id)->firstOrFail()->purchase_plan['applied_lines']);
         $this->assertSame(2, (int) $order->items()->sum('quantity'));
         $this->assertSame('Giữ ghi chú L', $order->items()->where('product_id', $large->id)->firstOrFail()->note);
         $this->assertSame('1 M mua thêm', $order->items()->where('product_id', $medium->id)->firstOrFail()->note);
