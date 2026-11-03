@@ -556,7 +556,7 @@
                                     </td>
                                     <td class="code"><span class="click-copy" data-copy-value="{{ $code }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $code }}</span></td>
                                     <td data-sort-value="{{ $product?->name ?? '' }}">
-                                        <div class="value">{{ $product?->name ?? 'Sản phẩm không còn tồn tại' }}</div>
+                                        <div class="value product-name">{{ $product?->name ?? 'Sản phẩm không còn tồn tại' }}</div>
                                         <div class="muted">Tồn hiện tại: {{ number_format($items->unique(fn ($item) => $item->product?->id)->sum(fn ($item) => $item->product?->stock_quantity ?? 0)) }}</div>
                                     </td>
                                     <td>{{ $product?->fabric ?? 'N/A' }}</td>

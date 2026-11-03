@@ -33,6 +33,7 @@ body.order-receipt-page{background:radial-gradient(ellipse at 0 10%,#fff0c9 0,tr
 .order-receipt-page table thead th{background:#dff1fc;color:#17466a;border-color:#cde4f2;font-size:11px;font-weight:800}
 .order-receipt-page table tbody td{border-color:#e4edf4;color:#365a73;font-size:12px;line-height:1.7}
 .order-receipt-page table tbody tr:nth-child(even){background:#f7fbfe}
+.order-receipt-page table .product-name{font-size:12px;font-weight:400;line-height:1.5;text-transform:none}
 .order-receipt-page .table-hint{font-size:11px;color:#8aa1b1}
 .order-receipt-page .table-shell{border:1px solid #ddeaf2;border-radius:9px}
 @media(max-width:700px){.order-receipt-page .receipt-head{padding:20px;grid-template-columns:1fr;gap:16px}.receipt-brand{grid-column:auto}.order-receipt-page .order-id{text-align:left}.order-receipt-page .receipt-head h1{font-size:21px!important}.order-receipt-page .section{padding:20px 16px}.receipt-brand img{width:70px;height:70px}.receipt-brand strong{font-size:20px}}
