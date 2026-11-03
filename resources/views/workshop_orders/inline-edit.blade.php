@@ -327,7 +327,7 @@
         const fragment = document.createElement('template');
         fragment.innerHTML = template.innerHTML.replaceAll('__NEW__', String(++newRowIndex));
         const row = fragment.content.querySelector('tr');
-        document.querySelector('[data-workshop-rows]').appendChild(row);
+        document.querySelector('[data-workshop-rows]').prepend(row);
         setupRow(row);
         return row;
     }

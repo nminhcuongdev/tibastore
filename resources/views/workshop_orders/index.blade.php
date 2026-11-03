@@ -330,6 +330,8 @@
             <a href="{{ route('workshop-orders.index', ['supply_source' => $supplySource]) }}">Xem tất cả đặt hàng</a>
         </p>
     @endif
+    <div class="workshop-add-row-actions"><button type="button" data-add-inline-row>+ Thêm dòng sản phẩm</button></div>
+
     <div class="table-shell">
         <table>
             <thead>
@@ -431,14 +433,12 @@
                     </tr>
                 @empty
                     <tr>
-                        <td class="empty" colspan="16">Nhập mã và thông tin vào dòng trống bên dưới để tạo đặt hàng mới.</td>
+                        <td class="empty" colspan="16">Nhập mã và thông tin vào dòng trống bên trên để tạo đặt hàng mới.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
-
-    <div class="workshop-add-row-actions"><button type="button" data-add-inline-row>+ Thêm dòng sản phẩm</button></div>
 
     @if ($orders->hasPages())
         <nav class="pagination" aria-label="Phân trang">
