@@ -52,7 +52,7 @@ class OrderPurchasePlanTest extends TestCase
             $product = Product::create(['code' => $code, 'name' => 'Test', 'size' => $size, 'fabric' => '', 'stock_quantity' => 0]);
             $lines[] = ['product_id' => $product->id, 'quantity' => $quantity];
         }
-        $plan = ['expected_date' => '2035-04-01', 'lines' => $lines, 'applied_lines' => $lines];
+        $plan = ['expected_date' => '2035-04-01', 'lines' => $lines, 'applied_lines' => $lines, 'updated_once' => true];
         $items = array_map(fn ($line) => $line + ['size_pending' => false, 'rental_price' => 10000,
             'fulfillment_source' => 'mua_ngoai', 'purchase_plan' => $plan], $lines);
         $this->post('/orders', ['closer_name' => 'Test', 'order_name' => $code, 'pickup_date' => '2035-04-02',
@@ -63,7 +63,9 @@ class OrderPurchasePlanTest extends TestCase
         $this->assertSame(18, (int) $order->items()->sum('quantity'));
         $workshop = WorkshopOrder::where('customer_order_id', $order->id)->firstOrFail();
         $this->assertSame($lines, $order->items->first()->purchase_plan['applied_lines']);
+        $this->assertTrue($order->items->first()->purchase_plan['updated_once']);
         $this->assertArrayNotHasKey('applied_lines', $workshop->purchase_plan);
+        $this->assertArrayNotHasKey('updated_once', $workshop->purchase_plan);
         $this->assertSame(18, $workshop->quantity);
         $this->assertSame(4, ProductExpectedReceipt::where('workshop_order_id', $workshop->id)->count());
         app(OrderInventoryService::class)->syncDueOrders(Carbon::parse('2035-04-05'));

@@ -625,6 +625,7 @@ class OrderController extends Controller
             'items.*.purchase_plan.lines.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.purchase_plan.lines.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.purchase_plan.applied_lines' => ['nullable', 'array', 'max:100'],
+            'items.*.purchase_plan.updated_once' => ['sometimes', 'boolean'],
             'items.*.purchase_plan.applied_lines.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.purchase_plan.applied_lines.*.quantity' => ['required', 'integer', 'min:0'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],

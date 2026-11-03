@@ -1554,10 +1554,10 @@
         @include('orders.purchase-size-merge')
         function setupPurchasePlan(block, savedPlan) {
             if (typeof savedPlan === 'string') { try { savedPlan = JSON.parse(savedPlan); } catch (_) { savedPlan = null; } }
-            block.appliedPurchaseLines = savedPlan?.applied_lines || [];
-            let inferLegacyApplied = !!savedPlan && !savedPlan.applied_lines;
+            let purchaseApplied = savedPlan?.updated_once === true;
+            block.appliedPurchaseLines = purchaseApplied ? (savedPlan.applied_lines || []) : [];
             const box = document.createElement('div'); box.className = 'purchase-plan'; box.hidden = true;
-            box.innerHTML = `<strong>Size cần mua thêm</strong><div data-purchase-lines></div><button type="button" class="button secondary" data-add-purchase>+ Thêm size cần mua</button><button type="button" class="button secondary" data-apply-purchase>Update vào đơn</button><span data-apply-purchase-state role="status"></span><label>Ngày dự kiến nhận<input data-purchase-date type="date"></label><small>Bấm Update vào đơn để bổ sung phần mua thêm, giữ nguyên size và ghi chú đã nhập. Lưu đơn để cập nhật Đặt hàng và dự kiến ở Kho. Hàng chỉ vào tồn thực tế khi bấm Đẩy lên kho hoặc nhập tay tại Kho.</small>`;
+            box.innerHTML = `<strong>Size cần mua thêm</strong><div data-purchase-lines></div><button type="button" class="button secondary" data-add-purchase>+ Thêm size cần mua</button><button type="button" class="button secondary" data-apply-purchase>Update vào đơn</button><span data-apply-purchase-state role="status"></span><label>Ngày dự kiến nhận<input data-purchase-date type="date"></label><small>Bấm Update vào đơn để cộng phần mua thêm đúng một lần. Sau khi cập nhật, phần mua thêm sẽ khóa để tránh cộng trùng; giữ nguyên size và ghi chú đã nhập. Lưu đơn để cập nhật Đặt hàng và dự kiến ở Kho. Hàng chỉ vào tồn thực tế khi bấm Đẩy lên kho hoặc nhập tay tại Kho.</small>`;
             block.querySelector('.product-picker-cell').appendChild(box);
             const lines = box.querySelector('[data-purchase-lines]');
             const date = box.querySelector('[data-purchase-date]'); date.value = savedPlan?.expected_date || '';
@@ -1566,7 +1566,7 @@
             box.insertBefore(addWarehouseSize, box.querySelector('label'));
             let code = null;
             function savePlan() {
-                block.purchasePlan = {expected_date:date.value, applied_lines:block.appliedPurchaseLines, lines:Array.from(lines.children).map(row => ({
+                block.purchasePlan = {expected_date:date.value, updated_once:purchaseApplied, applied_lines:block.appliedPurchaseLines, lines:Array.from(lines.children).map(row => ({
                     product_id:Number(row.querySelector('select').value), quantity:Number(row.querySelector('input').value)
                 }))};
                 renumberRows();
@@ -1590,25 +1590,23 @@
                 if (group) addWarehouseSize.href = @json(route('products.show', ['product' => '__PRODUCT__'])).replace('__PRODUCT__', group.items[0].id);
                 box.hidden = !needed;
                 if (code !== block.dataset.productCode) {
-                    if (code !== null) { savedPlan = null; block.appliedPurchaseLines = []; inferLegacyApplied = false; }
+                    if (code !== null) { savedPlan = null; block.appliedPurchaseLines = []; purchaseApplied = false; }
                     code = block.dataset.productCode;
                     lines.replaceChildren();
                     (savedPlan?.lines?.length ? savedPlan.lines : [{}]).forEach(addLine);
                 }
                 box.querySelectorAll('input,select,button').forEach(input => input.disabled = !needed);
                 date.required = needed; date.max = pickupDateInput.value;
-                if (inferLegacyApplied && block.querySelector('.size-row')) {
-                    const current = Array.from(block.querySelectorAll('.size-row')).filter(row => !isPendingRow(row));
-                    block.appliedPurchaseLines = (savedPlan?.lines || []).map(line => ({product_id:line.product_id,
-                        quantity:Math.min(Number(line.quantity), current.filter(row => Number(row.querySelector('[data-product-id]').value) === Number(line.product_id))
-                            .reduce((sum, row) => sum + Number(row.querySelector('[data-quantity]').value), 0))}));
-                    inferLegacyApplied = false;
-                }
+                box.querySelector('[data-apply-purchase]').disabled = !needed || purchaseApplied;
+                lines.querySelectorAll('input,select,button').forEach(input => input.disabled = !needed || purchaseApplied);
+                box.querySelector('[data-add-purchase]').disabled = !needed || purchaseApplied;
+                if (purchaseApplied) box.querySelector('[data-apply-purchase-state]').textContent = 'Đã cộng phần mua thêm vào đơn. Chỉ cập nhật một lần.';
                 savePlan();
             }
             box.addEventListener('input', savePlan); box.addEventListener('change', savePlan);
             box.querySelector('[data-add-purchase]').addEventListener('click', () => { addLine(); savePlan(); });
             box.querySelector('[data-apply-purchase]').addEventListener('click', () => {
+                if (purchaseApplied) return;
                 const state = box.querySelector('[data-apply-purchase-state]');
                 const group = productOptions.find(item => item.code === block.dataset.productCode);
                 const quantities = new Map();
@@ -1665,8 +1663,10 @@
                     }
                 }
                 block.appliedPurchaseLines = result.applied;
+                purchaseApplied = true;
                 savePlan(); renumberRows(); refreshProductChoices();
-                state.textContent = result.additions.length ? 'Đã bổ sung phần mua thêm, giữ nguyên các dòng trước đó. Bấm Lưu đơn để lưu.' : 'Phần mua thêm đã có trong đơn, không cộng trùng.';
+                box.querySelector('[data-apply-purchase]').disabled = true;
+                state.textContent = 'Đã cộng phần mua thêm vào đơn một lần. Bấm Lưu đơn để lưu.';
             });
             block.querySelector('[data-supply-choice]').addEventListener('change', () => { refresh(); refreshProductChoices(); });
             block.addEventListener('product-updated', refresh);
