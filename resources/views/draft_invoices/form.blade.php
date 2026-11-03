@@ -238,7 +238,12 @@
         });
     }
     document.getElementById('discount-type').addEventListener('change', function () { recalculate(); changed(); });
-    window.addEventListener('beforeprint', preparePrint);
+    const pageTitle = document.title;
+    window.addEventListener('beforeprint', () => {
+        preparePrint();
+        document.title = '\u200b';
+    });
+    window.addEventListener('afterprint', () => { document.title = pageTitle; });
     document.getElementById('print-invoice').addEventListener('click', function () { if (!form.reportValidity()) return; preparePrint(); window.print(); });
     form.addEventListener('submit', function () { dirty = false; });
     window.addEventListener('beforeunload', function (event) { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
