@@ -178,6 +178,9 @@ class WorkshopOrderController extends Controller
         app(\App\Services\WorkshopOrderUndoService::class)->record($request->user()->id, $workshopOrder, function ($locked) use ($request) {
             $locked->fill($this->validatedData($request, $locked));
             if ($locked->isDirty()) $locked->save();
+            if ($locked->purchase_plan && $locked->size_quantities !== null && !$locked->stocked_at) {
+                app(\App\Services\WorkshopReceiptService::class)->syncForecast($locked);
+            }
             return $locked;
         });
         app(\App\Services\OrderInventoryService::class)->syncDueOrders();
@@ -204,6 +207,12 @@ class WorkshopOrderController extends Controller
     /**
      * Đổi nhanh trạng thái ngay trên danh sách, không phải mở form sửa.
      */
+    public function updateCustomerOrder(Request $request, WorkshopOrder $workshopOrder): JsonResponse
+    {
+        app(\App\Services\WorkshopReceiptService::class)->updateCustomerOrder($workshopOrder);
+        return response()->json(['message' => 'Đã cập nhật phần chênh lệch vào đơn khách, không cộng trùng.']);
+    }
+
     public function updateStatus(Request $request, WorkshopOrder $workshopOrder): RedirectResponse
     {
         $data = $request->validate([
@@ -249,7 +258,7 @@ class WorkshopOrderController extends Controller
         $message = DB::transaction(function () use ($workshopOrder, $request) {
             $item = WorkshopOrder::whereKey($workshopOrder->id)->lockForUpdate()->firstOrFail();
             if ($item->stocked_at) return 'Dòng này đã được đẩy lên kho trước đó, không cộng thêm.';
-            $lines = $item->purchase_plan['lines'] ?? $item->size_quantities;
+            $lines = $item->size_quantities ?? ($item->purchase_plan['lines'] ?? null);
             if (!$lines || $item->product_code === WorkshopOrder::NO_PRODUCT_CODE) {
                 throw \Illuminate\Validation\ValidationException::withMessages(['size_quantities' => 'Hãy chọn mã hàng, nhập size và số lượng từng size rồi lưu dòng trước khi đẩy lên kho.']);
             }
@@ -389,7 +398,7 @@ class WorkshopOrderController extends Controller
             }
         }
         if ($existing?->purchase_plan) {
-            foreach (['product_code', 'supply_source', 'quantity', 'size_note', 'returned_date'] as $field) {
+            foreach (['product_code', 'supply_source'] as $field) {
                 $saved = $field === 'returned_date' ? $existing->returned_date?->toDateString() : $existing->$field;
                 if (array_key_exists($field, $data) && (string) $data[$field] !== (string) $saved) {
                     throw \Illuminate\Validation\ValidationException::withMessages([

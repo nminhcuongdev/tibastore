@@ -49,6 +49,13 @@ class OrderPurchasePlanService
                 $active[] = $workshop->id;
                 continue;
             }
+            if ($workshop->size_quantities !== null && $workshop->purchase_plan === $plan) {
+                $quantities = collect($workshop->size_quantities)->groupBy('product_id')
+                    ->map(fn ($rows) => (int) $rows->sum('quantity'))->all();
+                $products = Product::whereIn('id', array_keys($quantities))->get()->keyBy('id');
+            } elseif ($workshop->size_quantities !== null) {
+                $workshop->size_quantities = null;
+            }
             $workshop->fill(['order_name' => $order->order_name, 'purchase_plan' => $plan,
                 'quantity' => array_sum($quantities), 'returned_date' => $plan['expected_date'],
                 'size_note' => collect($quantities)->map(fn ($qty, $id) => $products[$id]->size.': '.$qty)->implode(', ')]);

@@ -204,24 +204,42 @@
         }
         function addSizeLine(data = {}) {
             const line = document.createElement('div'); line.className = 'workshop-size-line';
-            const select = document.createElement('select'); select.setAttribute('aria-label', 'Size nhập kho');
+            const select = document.createElement('select'); select.required = true; select.setAttribute('aria-label', 'Size nhập kho');
             const empty = document.createElement('option'); empty.value = ''; empty.textContent = 'Chọn size'; select.appendChild(empty);
             const product = catalog.find(item => item.code.toLowerCase() === codeInput.value.trim().toLowerCase());
             (product?.sizes || []).forEach(size => { const option = document.createElement('option'); option.value = size.id; option.textContent = size.size; select.appendChild(option); });
             select.value = data.product_id || '';
-            const quantity = document.createElement('input'); quantity.type = 'number'; quantity.min = '1'; quantity.step = '1'; quantity.value = data.quantity || 1; quantity.setAttribute('aria-label', 'Số lượng size nhập kho');
+            const quantity = document.createElement('input'); quantity.required = true; quantity.type = 'number'; quantity.min = '1'; quantity.step = '1'; quantity.value = data.quantity || 1; quantity.setAttribute('aria-label', 'Số lượng size nhập kho');
             const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = '×'; remove.setAttribute('aria-label', 'Xóa size nhập kho');
-            remove.addEventListener('click', () => { line.remove(); sizeChanged(); });
+            remove.addEventListener('click', () => {
+                if (sizeList.children.length === 1) { state.textContent = 'Cần giữ ít nhất một size thực nhận.'; return; }
+                line.remove(); sizeChanged();
+            });
             line.append(select, quantity, remove); sizeList.appendChild(line);
-            if (managed || row.dataset.stocked === '1') { select.disabled = true; quantity.disabled = true; remove.disabled = true; }
+            if (row.dataset.stocked === '1') { select.disabled = true; quantity.disabled = true; remove.disabled = true; }
         }
         savedSizes.forEach(addSizeLine);
-        addSize.hidden = managed || row.dataset.stocked === '1';
+        addSize.hidden = row.dataset.stocked === '1';
         addSize.addEventListener('click', () => addSizeLine());
         sizeList.addEventListener('change', sizeChanged); sizeList.addEventListener('input', sizeChanged);
         codeInput.addEventListener('change', () => { if (!managed && row.dataset.stocked !== '1') { sizeList.replaceChildren(); savedSizes = []; } });
         if (managed) {
-            const hint = document.createElement('small'); hint.textContent = 'Size và số lượng đồng bộ từ kế hoạch mua trên đơn khách.'; sizeEditor.appendChild(hint);
+            const hint = document.createElement('small'); hint.textContent = 'Sửa số lượng thực nhận để nhập kho. Đơn khách chỉ đổi khi bấm Update vào đơn.'; sizeEditor.appendChild(hint);
+            const updateOrder = document.createElement('button'); updateOrder.type = 'button'; updateOrder.textContent = 'Update vào đơn';
+            sizeEditor.appendChild(updateOrder);
+            updateOrder.addEventListener('click', async () => {
+                if (saving || row.classList.contains('has-changes')) { state.textContent = 'Vui lòng chờ tự lưu xong rồi cập nhật đơn.'; return; }
+                updateOrder.disabled = true;
+                try {
+                    const body = new FormData(); body.append('_token', form.querySelector('[name=_token]').value);
+                    const url = @json(route('workshop-orders.update-customer-order', ['workshopOrder' => '__ID__'])).replace('__ID__', row.dataset.orderId);
+                    const response = await fetch(url, {method:'POST',body,credentials:'same-origin',headers:{Accept:'application/json'}});
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.errors ? Object.values(data.errors).flat().join(' ') : data.message);
+                    state.textContent = data.message; state.style.color = '';
+                } catch (error) { state.textContent = error.message; state.style.color = '#b42318'; }
+                finally { updateOrder.disabled = false; }
+            });
         }
         const stockButton = document.createElement('button'); stockButton.type = 'button'; stockButton.className = 'inline-save';
         row.querySelector('[data-stock-cell]').appendChild(stockButton);
@@ -257,12 +275,12 @@
         form.addEventListener('submit', event => { event.preventDefault(); clearTimeout(saveTimer); saveRow(); });
         async function saveRow() {
             if (saving || !row.isConnected || !row.classList.contains('has-changes')) return;
-            if (!form.checkValidity()) { state.textContent = 'Chưa lưu: vui lòng kiểm tra các ô bắt buộc.'; return; }
+            if (!form.checkValidity() || !Array.from(sizeList.querySelectorAll('input,select')).every(input => input.checkValidity())) { state.textContent = 'Chưa lưu: vui lòng kiểm tra các ô bắt buộc.'; return; }
             saving = true;
             const sentRevision = revision, sentImage = pendingImage;
             const body = new FormData(form);
             const sizes = readSizes();
-            if (!managed) body.set('size_quantities', JSON.stringify(sizes));
+            if (sizes.length) body.set('size_quantities', JSON.stringify(sizes));
             if (pendingImage) body.append('image', pendingImage);
             state.textContent = 'Đang lưu…';
             try {
@@ -317,7 +335,7 @@
             finally {
                 saving = false;
                 if (revision !== sentRevision) { clearTimeout(saveTimer); saveTimer = setTimeout(saveRow, 650); }
-                if (managed || row.dataset.stocked === '1') sizeList.querySelectorAll('input,select,button').forEach(input => input.disabled = true);
+                if (row.dataset.stocked === '1') sizeList.querySelectorAll('input,select,button').forEach(input => input.disabled = true);
             }
         }
     }

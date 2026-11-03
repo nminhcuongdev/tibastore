@@ -16,6 +16,48 @@ class OrderPurchasePlanTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_workshop_actual_receipt_edits_only_update_customer_order_when_requested(): void
+    {
+        $this->actingAs(User::create(['code' => 'actual-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $code = 'ACTUAL-'.bin2hex(random_bytes(4));
+        $product = Product::create(['code' => $code, 'name' => 'Test', 'size' => 'M', 'fabric' => '', 'stock_quantity' => 10]);
+        $plan = ['expected_date' => '2039-01-01', 'lines' => [['product_id' => $product->id, 'quantity' => 3]],
+            'applied_lines' => [['product_id' => $product->id, 'quantity' => 3]], 'updated_once' => true];
+        $this->post('/orders', ['closer_name' => 'Test', 'order_name' => $code, 'pickup_date' => '2039-01-02',
+            'event_date' => '2039-01-03', 'return_date' => '2039-01-04', 'status' => Order::DEFAULT_STATUS,
+            'source' => Order::DEFAULT_SOURCE, 'items' => [['product_id' => $product->id, 'quantity' => 13,
+                'rental_price' => 10000, 'note' => 'Giữ ghi chú', 'fulfillment_source' => 'mua_ngoai', 'purchase_plan' => $plan]]])
+            ->assertSessionHasNoErrors();
+        $order = Order::where('order_name', $code)->firstOrFail();
+        $workshop = WorkshopOrder::where('customer_order_id', $order->id)->firstOrFail();
+        $edit = ['product_code' => $code, 'supply_source' => 'mua_ngoai', 'quantity' => 5, 'unit_price' => 0,
+            'status' => WorkshopOrder::STATUS_NOT_YET, 'size_quantities' => [['product_id' => $product->id, 'quantity' => 5]]];
+        $this->putJson('/workshop-orders/'.$workshop->id, $edit)->assertOk()->assertJsonPath('quantity', 5);
+        $this->assertSame(13, (int) $order->items()->sum('quantity'));
+        app(\App\Services\OrderPurchasePlanService::class)->sync($order->fresh());
+        $this->assertSame(5, $workshop->fresh()->quantity);
+        $this->assertSame(5, ProductExpectedReceipt::where('workshop_order_id', $workshop->id)->firstOrFail()->expected_receive_quantity);
+        $this->postJson('/workshop-orders/'.$workshop->id.'/update-customer-order')->assertOk();
+        $this->assertSame(15, (int) $order->items()->sum('quantity'));
+        $this->assertSame(150000, $order->fresh()->total_amount);
+        $this->assertSame('Giữ ghi chú', $order->items()->first()->note);
+        $this->postJson('/workshop-orders/'.$workshop->id.'/update-customer-order')->assertOk();
+        $this->assertSame(15, (int) $order->items()->sum('quantity'));
+        $edit['size_quantities'][0]['quantity'] = 2;
+        $this->putJson('/workshop-orders/'.$workshop->id, $edit)->assertOk()->assertJsonPath('quantity', 2);
+        $this->assertSame(15, (int) $order->items()->sum('quantity'));
+        $this->postJson('/workshop-orders/'.$workshop->id.'/update-customer-order')->assertOk();
+        $this->assertSame(12, (int) $order->items()->sum('quantity'));
+        $edit['size_quantities'][0]['quantity'] = 4;
+        $this->putJson('/workshop-orders/'.$workshop->id, $edit)->assertOk();
+        $this->postJson('/workshop-orders/'.$workshop->id.'/stock')->assertOk();
+        $this->assertSame(14, $product->fresh()->stock_quantity);
+        $this->assertSame(12, (int) $order->items()->sum('quantity'));
+        $this->postJson('/workshop-orders/'.$workshop->id.'/stock')->assertOk();
+        $this->assertSame(14, $product->fresh()->stock_quantity);
+    }
+
     public function test_additional_purchase_preserves_existing_stock_size_and_notes_when_saved_again(): void
     {
         $this->actingAs(User::create(['code' => 'append-'.bin2hex(random_bytes(4)), 'name' => 'Test',

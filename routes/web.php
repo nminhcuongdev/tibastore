@@ -69,6 +69,8 @@ Route::middleware('auth')->group(function () {
         ->name('workshop-orders.status');
     Route::post('/workshop-orders/{workshopOrder}/stock', [WorkshopOrderController::class, 'pushToStock'])
         ->name('workshop-orders.stock');
+    Route::post('/workshop-orders/{workshopOrder}/update-customer-order', [WorkshopOrderController::class, 'updateCustomerOrder'])
+        ->name('workshop-orders.update-customer-order');
     Route::post('/workshop-stock-transfers/{transfer}/undo', [WorkshopOrderController::class, 'undoStockTransfer'])
         ->name('workshop-orders.undo-stock');
     Route::delete('/workshop-stock-transfers/{transfer}', [WorkshopOrderController::class, 'deleteStockTransfer'])
