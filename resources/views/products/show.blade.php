@@ -285,14 +285,9 @@
                 <div class="metric-label">Còn trong kho</div>
                 <div class="metric-value" data-stock-metric-quantity>{{ number_format($totalQuantity) }}</div>
             </div>
-            <div class="metric">
-                <div class="metric-label">Số size</div>
-                <div class="metric-value" data-stock-metric-sizes>{{ number_format($variants->total()) }}</div>
-            </div>
-            <div class="metric">
-                <div class="metric-label">Mã hàng</div>
-                <div class="metric-value"><span class="click-copy" data-copy-value="{{ $product->code }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $product->code }}</span></div>
-            </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin:12px 0 20px;">
+            @include('partials.personal-history', ['historySection' => 'products'])
         </div>
 
         <p class="muted">Tổng số hàng = còn trong kho + đang cho thuê. Chưa cộng hàng nhập dự kiến; hàng mất/hỏng đã kiểm không nằm trong số đang cho thuê.</p>

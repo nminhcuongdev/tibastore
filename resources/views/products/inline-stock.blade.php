@@ -73,11 +73,17 @@
             document.querySelector('[data-stock-metric-quantity]').textContent = total.toLocaleString('vi-VN');
             const totalMetric = document.querySelector('[data-stock-metric-total]');
             totalMetric.textContent = (total + Number(totalMetric.dataset.rented)).toLocaleString('vi-VN');
-            document.querySelector('[data-stock-metric-sizes]').textContent = data.variants.length;
             if (sent === revision) { dirty = false; state.textContent = 'Đã lưu kho'; }
         } catch(error) { state.textContent = 'Chưa lưu: ' + error.message; }
         finally { saving = false; if (sent !== revision) { clearTimeout(timer); timer = setTimeout(save, 800); } }
     }
     window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
+    document.addEventListener('personal-history-request', event => {
+        if (dirty || saving) {
+            event.preventDefault();
+            const historyState = document.querySelector('[data-personal-state]');
+            if (historyState) historyState.textContent = 'Vui lòng chờ thay đổi kho tự lưu xong trước khi hoàn tác hoặc làm lại.';
+        }
+    });
 })();
 </script>
