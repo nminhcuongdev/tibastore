@@ -1220,10 +1220,8 @@
                 const hasKeyword = normalizeSearch(group.code + ' ' + group.name + ' ' + group.items.map(item => item.category || '').join(' ')).includes(normalizedKeyword);
                 const hasCategory = !category || group.items.some(item => item.category === category);
 
-                // Cho phép chọn lại mã đã có (thêm khối cùng mã với giá khác).
-                const hasStock = block.querySelector('[data-supply-choice]').value !== 'stock' || group.items.some(product => stockLimit(product) > 0);
-
-                return hasKeyword && hasStock && hasCategory;
+                // Mã mới tạo hoặc hết tồn vẫn cần tìm được để chọn nguồn od.
+                return hasKeyword && hasCategory;
             }).slice(0, 20);
 
             suggestions.innerHTML = '';
@@ -1248,7 +1246,9 @@
                 name.className = 'product-name';
                 name.textContent = group.name;
                 meta.className = 'product-meta';
-                meta.textContent = `${group.items.filter(product => stockLimit(product) > 0).length}/${group.items.length} size còn tồn`;
+                const stockedSizes = group.items.filter(product => stockLimit(product) > 0).length;
+                meta.textContent = stockedSizes ? `${stockedSizes}/${group.items.length} size còn tồn`
+                    : 'Chưa có tồn khả dụng — chọn nguồn od hoặc nhập kho trước';
                 info.append(code, name, meta);
                 button.append(buildSuggestionThumb(group), info);
                 button.addEventListener('click', () => selectProductCode(block, group.code));
@@ -1371,6 +1371,9 @@
             const selectedInfo = block.querySelector('[data-selected-info]');
             const group = productOptions.find(item => item.code === block.dataset.productCode);
             selectedInfo.textContent = group ? group.name : 'Chưa chọn sản phẩm';
+            if (group && !group.items.some(product => stockLimit(product) > 0)) {
+                selectedInfo.textContent += ' — Chưa có tồn khả dụng. Chọn nguồn Cần od – Xưởng / Mua ngoài, hoặc nhập kho trước khi dùng Sẵn kho.';
+            }
             selectedInfo.style.display = 'block';
             const image = block.querySelector('[data-code-preview]');
             const product = group && group.items.find(item => item.image_url);
@@ -1755,7 +1758,7 @@
                 event.preventDefault();
                 const code = searchInput.value.trim().toLowerCase();
                 const group = productOptions.find(item => item.code.toLowerCase() === code);
-                if (group && (block.querySelector('[data-supply-choice]').value !== 'stock' || group.items.some(product => stockLimit(product) > 0))) {
+                if (group) {
                     categorySelect.value = '';
                     selectProductCode(block, group.code);
                 } else {
