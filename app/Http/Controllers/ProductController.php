@@ -151,6 +151,7 @@ class ProductController extends Controller
                 : collect(),
             'mode' => 'create',
             'existingCodes' => $this->existingCodeSuggestions(),
+            'categoryOptions' => Product::whereNotNull('category')->distinct()->orderBy('category')->pluck('category'),
         ]);
     }
 
@@ -407,7 +408,7 @@ class ProductController extends Controller
             }
         }
 
-        DB::transaction(function () use ($data, $variants) {
+        $createdProduct = DB::transaction(function () use ($data, $variants) {
             foreach ($variants as $variant) {
                 $product = Product::create([
                     'code' => $data['code'],
@@ -427,10 +428,11 @@ class ProductController extends Controller
                     $this->recordStockImport($product, $product->stock_quantity, 0, $product->stock_quantity);
                 }
             }
+            return $product;
         });
 
         return redirect()
-            ->back()
+            ->route('products.show', $createdProduct)
             ->with('status', 'Đã thêm sản phẩm vào kho.');
     }
 
@@ -636,7 +638,7 @@ class ProductController extends Controller
                     ->ignore($productId),
             ],
             'name' => ['required', 'string', 'max:255'],
-            'image' => ['nullable', 'image', 'max:2048'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
             'stock_quantity' => ['nullable', 'integer', 'min:0'],
             'expected_receipts' => ['nullable', 'array'],
             'expected_receipts.*.expected_receive_date' => ['nullable', 'date'],
@@ -650,7 +652,7 @@ class ProductController extends Controller
             'code.unique' => 'Cặp mã sản phẩm và size đã tồn tại.',
             'name.required' => 'Vui lòng nhập tên sản phẩm.',
             'image.image' => 'Hình ảnh phải là tệp ảnh hợp lệ.',
-            'image.max' => 'Hình ảnh không được vượt quá 2MB.',
+            'image.max' => 'Hình ảnh không được vượt quá 5MB.',
             'stock_quantity.required' => 'Vui lòng nhập số lượng tồn.',
             'stock_quantity.integer' => 'Số lượng tồn phải là số nguyên.',
             'stock_quantity.min' => 'Số lượng tồn không được âm.',
@@ -761,7 +763,7 @@ class ProductController extends Controller
         $data = $request->validate([
             'code' => ['required', 'string', 'max:50'],
             'name' => ['required', 'string', 'max:255'],
-            'image' => ['nullable', 'image', 'max:2048'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
             'category' => ['nullable', 'string', 'max:255'],
             'rental_price' => ['nullable', 'integer', 'min:0'],
             'variants' => ['required', 'array', 'min:1'],
@@ -775,7 +777,7 @@ class ProductController extends Controller
             'code.required' => 'Vui lòng nhập mã sản phẩm.',
             'name.required' => 'Vui lòng nhập tên sản phẩm.',
             'image.image' => 'Hình ảnh phải là tệp ảnh hợp lệ.',
-            'image.max' => 'Hình ảnh không được vượt quá 2MB.',
+            'image.max' => 'Hình ảnh không được vượt quá 5MB.',
             'rental_price.integer' => 'Giá thuê phải là số.',
             'rental_price.min' => 'Giá thuê không được âm.',
             'variants.required' => 'Vui lòng thêm ít nhất một size.',

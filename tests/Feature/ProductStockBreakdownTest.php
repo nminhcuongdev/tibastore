@@ -12,6 +12,25 @@ class ProductStockBreakdownTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_create_product_with_image_and_schedule_opens_created_product_without_adding_expected_stock(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+        $this->actingAs(User::create(['code' => 'image-create-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $code = 'PICCREATE-'.bin2hex(random_bytes(4));
+        $image = \Illuminate\Http\UploadedFile::fake()->createWithContent('clipboard.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII='));
+        $this->post('/products', ['code' => $code, 'name' => 'Ảnh mới', 'image' => $image,
+            'variants' => [['size' => 'S', 'stock_quantity' => 0, 'expected_receipts' => [
+                ['expected_receive_date' => '2032-01-01', 'expected_receive_quantity' => 3]]]]])
+            ->assertSessionHasNoErrors()->assertRedirect();
+        $product = Product::where('code', $code)->firstOrFail();
+        $this->assertSame(0, $product->stock_quantity);
+        $this->assertSame(3, $product->expectedReceipts->first()->expected_receive_quantity);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($product->image_path);
+        $this->get(route('products.show', $product))->assertOk()->assertSee(asset('storage/'.$product->image_path));
+        $this->get('/products/create')->assertOk()->assertSee('Ctrl+V')->assertSee('Dự kiến hàng về')->assertSee('product_image_preview');
+    }
+
     public function test_deleting_od_removes_its_schedule_and_pending_receipt(): void
     {
         $this->actingAs(User::create(['code' => 'delete-schedule-'.bin2hex(random_bytes(4)), 'name' => 'Test',

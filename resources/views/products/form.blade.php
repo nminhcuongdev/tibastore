@@ -68,8 +68,8 @@
             box-shadow: 0 18px 45px rgba(30, 64, 175, .08);
             display: grid;
             gap: 24px;
-            grid-template-columns: minmax(0, 1fr) 240px;
-            max-width: 980px;
+            grid-template-columns: minmax(0, 1fr) 280px;
+            max-width: 1200px;
             padding: 24px;
         }
 
@@ -417,7 +417,8 @@
 
                 <div class="field">
                     <label for="category">Danh mục</label>
-                    <input id="category" name="category" type="text" value="{{ old('category', $product->category) }}" placeholder="Váy dạ hội, áo dài, vest...">
+                    <input id="category" name="category" type="text" list="product-categories" value="{{ old('category', $product->category) }}" placeholder="Chọn hoặc nhập danh mục mới">
+                    <datalist id="product-categories">@foreach(($categoryOptions ?? []) as $category)<option value="{{ $category }}">@endforeach</datalist>
                     @error('category') <div class="error">{{ $message }}</div> @enderror
                 </div>
 
@@ -460,7 +461,7 @@
                                         <input id="variants_{{ $index }}_size" data-size name="variants[{{ $index }}][size]" type="text" value="{{ $variant['size'] ?? '' }}" placeholder="S, M, L, XL, Free size..." required>
                                     </div>
                                     <div class="field">
-                                        <label for="variants_{{ $index }}_stock_quantity">Số lượng</label>
+                                        <label for="variants_{{ $index }}_stock_quantity">Tồn kho hiện tại</label>
                                         <input id="variants_{{ $index }}_stock_quantity" data-stock name="variants[{{ $index }}][stock_quantity]" type="number" min="0" step="1" value="{{ $variant['stock_quantity'] ?? 0 }}" placeholder="0">
                                     </div>
                                     <div class="field">
@@ -469,7 +470,7 @@
                                     </div>
                                     <div class="expected-receipts" data-expected-receipts>
                                         <div class="expected-receipts-head">
-                                            <label>Dự kiến nhận hàng</label>
+                                            <label>Dự kiến hàng về</label>
                                             <button class="button secondary icon" data-add-expected-receipt type="button">+</button>
                                         </div>
                                         <div class="expected-receipt-rows" data-expected-receipt-rows>
@@ -530,7 +531,7 @@
                     <div class="field full">
                         <div class="expected-receipts" data-expected-receipts>
                             <div class="expected-receipts-head">
-                                <label>Dự kiến nhận hàng</label>
+                                <label>Dự kiến hàng về</label>
                                 <button class="button secondary icon" data-add-expected-receipt type="button">+</button>
                             </div>
                             <div class="expected-receipt-rows" data-expected-receipt-rows>
@@ -553,19 +554,21 @@
                     </div>
                 @endif
 
-                <div class="field">
-                    <label for="image">Hình ảnh</label>
-                    <input id="image" name="image" type="file" accept="image/*">
-                    @error('image') <div class="error">{{ $message }}</div> @enderror
-                </div>
             </div>
 
-            <div class="preview">
+            <div style="display:grid;gap:12px;align-content:start;">
+                <label for="image"><b>Ảnh sản phẩm</b></label>
+                <input id="image" name="image" type="file" accept="image/jpeg,image/png,image/gif,image/webp">
+                <div class="preview" id="product_image_preview" tabindex="0" aria-label="Ảnh sản phẩm. Nhấn Ctrl+V để dán ảnh.">
                 @if ($product->image_path)
                     <img src="{{ asset('storage/' . $product->image_path) }}" alt="{{ $product->name }}">
                 @else
                     Chưa có hình ảnh
                 @endif
+                </div>
+                <small>Chọn ảnh từ thiết bị hoặc copy ảnh rồi nhấn Ctrl+V. Tối đa 5MB.</small>
+                <span id="product_image_error" role="alert" style="color:#b42318"></span>
+                @error('image') <div class="error">{{ $message }}</div> @enderror
             </div>
 
             <div class="actions">
@@ -575,6 +578,29 @@
         </form>
     </main>
     <script>
+        const productImageInput = document.getElementById('image');
+        const productImagePreview = document.getElementById('product_image_preview');
+        const productImageError = document.getElementById('product_image_error');
+        let productPreviewUrl = null;
+        function showProductImage(file, pasted = false) {
+            if (!file) return;
+            if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+                productImageError.textContent = 'Chọn ảnh JPG, PNG, GIF hoặc WebP tối đa 5MB.';
+                if (!pasted) productImageInput.value = '';
+                return;
+            }
+            if (pasted) { const transfer = new DataTransfer(); transfer.items.add(file); productImageInput.files = transfer.files; }
+            if (productPreviewUrl) URL.revokeObjectURL(productPreviewUrl);
+            productPreviewUrl = URL.createObjectURL(file);
+            const image = document.createElement('img'); image.src = productPreviewUrl; image.alt = 'Ảnh sản phẩm vừa chọn';
+            productImagePreview.replaceChildren(image); productImageError.textContent = '';
+        }
+        productImageInput.addEventListener('change', () => showProductImage(productImageInput.files[0]));
+        productImageInput.closest('form').addEventListener('paste', event => {
+            const item = Array.from(event.clipboardData?.items || []).find(item => item.type.startsWith('image/'));
+            if (item) { event.preventDefault(); showProductImage(item.getAsFile(), true); }
+        });
+        window.addEventListener('pagehide', () => { if (productPreviewUrl) URL.revokeObjectURL(productPreviewUrl); });
         const mode = @json($mode);
         const existingCodes = @json($existingCodes ?? [], JSON_UNESCAPED_UNICODE);
         const sizeRows = document.getElementById('size_rows');
@@ -679,7 +705,7 @@
                         <input id="variants_${index}_size" data-size name="variants[${index}][size]" type="text" placeholder="S, M, L, XL, Free size..." required>
                     </div>
                     <div class="field">
-                        <label for="variants_${index}_stock_quantity">Số lượng</label>
+                        <label for="variants_${index}_stock_quantity">Tồn kho hiện tại</label>
                         <input id="variants_${index}_stock_quantity" data-stock name="variants[${index}][stock_quantity]" type="number" min="0" step="1" placeholder="0">
                     </div>
                     <div class="field">
@@ -688,7 +714,7 @@
                     </div>
                     <div class="expected-receipts" data-expected-receipts>
                         <div class="expected-receipts-head">
-                            <label>Dự kiến nhận hàng</label>
+                            <label>Dự kiến hàng về</label>
                             <button class="button secondary icon" data-add-expected-receipt type="button">+</button>
                         </div>
                         <div class="expected-receipt-rows" data-expected-receipt-rows>
