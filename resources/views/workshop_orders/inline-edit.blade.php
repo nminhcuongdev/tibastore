@@ -185,12 +185,20 @@
             const editor = document.createElement('form');
             const title = document.createElement('h3'); title.textContent = 'Tạo mã hàng mới'; editor.appendChild(title);
             const fields = {};
-            [['code', 'Mã hàng', 50], ['name', 'Tên sản phẩm', 255], ['size', 'Size', 50]].forEach(([name, text, max]) => {
+            [['code', 'Mã hàng', 50], ['name', 'Tên sản phẩm', 255], ['category', 'Danh mục', 255], ['size', 'Size', 50]].forEach(([name, text, max]) => {
                 const label = document.createElement('label'); label.textContent = text;
-                const input = document.createElement('input'); input.required = true; input.maxLength = max;
+                const input = document.createElement('input'); input.required = name !== 'category'; input.maxLength = max;
                 input.style.cssText = 'display:block;width:100%;box-sizing:border-box;margin:6px 0 14px;padding:10px';
                 fields[name] = input; label.appendChild(input); editor.appendChild(label);
             });
+            const categories = document.createElement('datalist'); categories.id = 'workshop-create-categories';
+            [...new Set(catalog.map(product => product.category).filter(category => category && category !== 'Chưa phân loại'))]
+                .sort((a, b) => a.localeCompare(b, 'vi')).forEach(category => {
+                    const option = document.createElement('option'); option.value = category; categories.appendChild(option);
+                });
+            fields.category.setAttribute('list', categories.id);
+            fields.category.placeholder = 'Chọn danh mục có sẵn hoặc nhập danh mục mới';
+            editor.appendChild(categories);
             fields.code.value = codeInput.value === @json(\App\Models\WorkshopOrder::NO_PRODUCT_CODE) ? '' : codeInput.value;
             const hint = document.createElement('p'); hint.textContent = 'Mã mới có tồn kho bằng 0. Bạn có thể thêm các size khác trong Kho.';
             const message = document.createElement('p'); message.setAttribute('role', 'alert');

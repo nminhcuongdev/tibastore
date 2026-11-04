@@ -36,11 +36,13 @@ class WorkshopInlineEditTest extends TestCase
     {
         $this->actingAs(User::create(['code' => 'quick-'.bin2hex(random_bytes(4)), 'name' => 'Test',
             'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
-        $data = ['code' => 'NEW-'.bin2hex(random_bytes(4)), 'name' => 'Áo mới', 'size' => 'M'];
+        $data = ['code' => 'NEW-'.bin2hex(random_bytes(4)), 'name' => 'Áo mới', 'size' => 'M', 'category' => 'Áo dài'];
         $this->postJson(route('workshop-orders.create-product'), $data)->assertCreated()
-            ->assertJsonPath('code', $data['code'])->assertJsonPath('sizes.0.size', 'M');
+            ->assertJsonPath('code', $data['code'])->assertJsonPath('sizes.0.size', 'M')->assertJsonPath('category', 'Áo dài');
         $product = Product::where('code', $data['code'])->firstOrFail();
         $this->assertSame(0, $product->stock_quantity);
+        $this->assertSame('Áo dài', $product->category);
+        $this->get('/workshop-orders')->assertOk()->assertSee('Chọn danh mục có sẵn hoặc nhập danh mục mới');
         $this->postJson('/workshop-orders', ['product_code' => $product->code,
             'supply_source' => WorkshopOrder::SUPPLY_OUTSIDE, 'quantity' => 2,
             'status' => WorkshopOrder::DEFAULT_STATUS])->assertCreated()->assertJsonPath('product_name', $data['name']);

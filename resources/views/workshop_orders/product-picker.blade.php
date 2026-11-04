@@ -9,7 +9,14 @@
 <script>
 (function () {
 const catalog = @json($productCodes);
-document.addEventListener('workshop-product-created', event => catalog.push(event.detail));
+document.addEventListener('workshop-product-created', event => {
+    catalog.push(event.detail);
+    const category = event.detail.category;
+    if (category && !Array.from(pickerCategory.options).some(option => option.value === category)) {
+        const option = document.createElement('option'); option.value = category; option.textContent = category;
+        pickerCategory.appendChild(option);
+    }
+});
 const body = document.querySelector('[data-workshop-rows]');
     const picker = document.getElementById('workshop-product-picker');
     const pickerSearch = document.getElementById('picker-search');
