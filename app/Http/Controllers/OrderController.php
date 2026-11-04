@@ -434,9 +434,6 @@ class OrderController extends Controller
 
     public function update(Request $request, Order $order): RedirectResponse
     {
-        $request->validate(['return_query' => ['nullable', 'string', 'max:4096']]);
-        parse_str($request->input('return_query') ?? '', $returnParameters);
-
         $this->inventory->syncDueOrders();
 
         $data = $this->validatedData($request, $order);
@@ -475,11 +472,14 @@ class OrderController extends Controller
             $this->inventory->applyStatusAdjustment($lockedOrder);
         });
 
-        if ($redirect = $this->redirectToDuplicatePurchase($order, 'Đã cập nhật đơn hàng.')) return $redirect;
-
-        return redirect()
-            ->route('orders.index', $returnParameters)
+        $response = redirect()
+            ->route('orders.show', $order)
             ->with('status', 'Đã cập nhật đơn hàng.');
+        if ($warning = app(\App\Services\WorkshopDuplicateService::class)->warningForOrder($order->id)) {
+            $response->with('workshop_duplicate_warning', $warning);
+        }
+
+        return $response;
     }
 
     private function redirectToDuplicatePurchase(Order $order, string $message): ?RedirectResponse

@@ -37,7 +37,10 @@ class OrderDayPeriodTest extends TestCase
         $this->get('/orders/'.$order->id)->assertOk()->assertSee('24/10/2031')->assertSee('25/10/2031 Sáng');
         $this->get('/orders/'.$order->id.'/edit')->assertOk()->assertDontSee('name="event_period"', false)->assertSee('Buổi trả');
         $data['return_period'] = 'chieu';
-        $this->put('/orders/'.$order->id, $data)->assertSessionHasNoErrors()->assertRedirect();
+        $data['return_query'] = 'q=previous-search&page=2';
+        $this->put('/orders/'.$order->id, $data)->assertSessionHasNoErrors()
+            ->assertRedirect(route('orders.show', $order))->assertSessionHas('status', 'Đã cập nhật đơn hàng.');
+        $this->get(route('orders.show', $order))->assertOk()->assertSee('In / chụp đơn')->assertSee('25/10/2031 Chiều');
         $this->assertSame('chieu', $order->fresh()->return_period);
         $data['return_period'] = 'invalid';
         $this->postJson('/orders', $data)->assertUnprocessable()->assertJsonValidationErrors('return_period');

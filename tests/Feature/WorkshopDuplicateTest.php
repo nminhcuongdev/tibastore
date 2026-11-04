@@ -60,7 +60,8 @@ class WorkshopDuplicateTest extends TestCase
         $destination = route('workshop-orders.index', ['focus' => $linked->id, 'duplicates' => 1]).'#workshop-row-'.$linked->id;
         $response->assertRedirect($destination);
         $this->get($response->headers->get('Location'))->assertOk()->assertSee('Cảnh báo: phần od của đơn này trùng');
-        $this->put('/orders/'.$customer->id, $data)->assertSessionHasNoErrors()->assertRedirect($destination);
+        $this->put('/orders/'.$customer->id, $data)->assertSessionHasNoErrors()
+            ->assertRedirect(route('orders.show', $customer))->assertSessionHas('workshop_duplicate_warning');
         $this->get($destination)->assertViewHas('orders', fn ($rows) => $rows->pluck('id')->sort()->values()->all()
             === collect([$manual->id, $linked->id])->sort()->values()->all());
         $this->assertSame(route('orders.show', $customer), $linked->customer_order_url);
