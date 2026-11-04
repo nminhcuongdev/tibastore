@@ -1749,10 +1749,13 @@
                 renderSelectedInfo(block);
                 clearRowError(block);
                 updateAddSizeButton(block);
-                renderSuggestions(block, searchInput.value);
+                if (searchInput.value.trim()) renderSuggestions(block, searchInput.value);
+                else block.querySelector('[data-suggestions]').style.display = 'none';
             });
 
-            searchInput.addEventListener('focus', () => renderSuggestions(block, searchInput.value));
+            searchInput.addEventListener('focus', () => {
+                block.querySelector('[data-suggestions]').style.display = 'none';
+            });
             searchInput.addEventListener('keydown', event => {
                 if (event.key !== 'Enter') return;
                 event.preventDefault();
@@ -1761,7 +1764,7 @@
                 if (group) {
                     categorySelect.value = '';
                     selectProductCode(block, group.code);
-                } else {
+                } else if (code) {
                     renderSuggestions(block, searchInput.value);
                 }
             });
