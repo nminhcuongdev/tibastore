@@ -441,6 +441,22 @@ class WorkshopOrderController extends Controller
             'category' => 'Chưa phân loại', 'sizes' => [['id' => $product->id, 'size' => $product->size]], 'image' => null], 201);
     }
 
+    public function suggestProductCode(Request $request): JsonResponse
+    {
+        $data = $request->validate(['code' => ['nullable', 'string', 'max:50']]);
+        $code = trim($data['code'] ?? '');
+        $prefix = preg_replace('/[0-9]+$/', '', $code);
+        if ($prefix === '' || $code === WorkshopOrder::NO_PRODUCT_CODE) $prefix = 'SP';
+        $prefix = mb_substr($prefix, 0, 40);
+        $used = Product::pluck('code')->mapWithKeys(fn ($value) => [mb_strtolower(trim($value)) => true])->all();
+        $number = 1;
+        do {
+            $suggestion = $prefix.str_pad((string) $number++, 3, '0', STR_PAD_LEFT);
+        } while (isset($used[mb_strtolower($suggestion)]));
+
+        return response()->json(['code' => $suggestion, 'exists' => isset($used[mb_strtolower($code)])]);
+    }
+
     /** Danh sách mã để chọn: gộp theo mã vì một mã gồm nhiều size. */
     private function productCodes(): array
     {

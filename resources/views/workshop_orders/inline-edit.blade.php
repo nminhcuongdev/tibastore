@@ -195,10 +195,38 @@
             const hint = document.createElement('p'); hint.textContent = 'Mã mới có tồn kho bằng 0. Bạn có thể thêm các size khác trong Kho.';
             const message = document.createElement('p'); message.setAttribute('role', 'alert');
             const submit = document.createElement('button'); submit.type = 'submit'; submit.textContent = 'Tạo mã và chọn';
+            const suggest = document.createElement('button'); suggest.type = 'button'; suggest.textContent = 'Gợi ý mã chưa dùng';
+            const codeStatus = document.createElement('p'); codeStatus.setAttribute('role', 'status');
+            fields.code.after(suggest, codeStatus);
+            let suggestionRevision = 0, suggestionTimer;
+            async function checkCode(useSuggestion = false) {
+                const revision = ++suggestionRevision;
+                const original = fields.code.value;
+                codeStatus.textContent = 'Đang kiểm tra mã…';
+                try {
+                    const url = new URL(@json(route('workshop-orders.suggest-product-code')));
+                    url.searchParams.set('code', original.trim());
+                    const response = await fetch(url, {credentials:'same-origin', headers:{Accept:'application/json'}});
+                    const data = await response.json();
+                    if (!response.ok) throw new Error('Chưa lấy được gợi ý mã. Vui lòng thử lại.');
+                    if (revision !== suggestionRevision || fields.code.value !== original || !dialog.open) return;
+                    if (useSuggestion) fields.code.value = data.code;
+                    const duplicate = !useSuggestion && data.exists;
+                    fields.code.setCustomValidity(duplicate ? 'Mã đã tồn tại. Hãy chọn mã gợi ý hoặc nhập mã khác.' : '');
+                    codeStatus.textContent = duplicate ? 'Mã đã tồn tại. Gợi ý mã chưa dùng: ' + data.code
+                        : (useSuggestion ? 'Đã chọn mã chưa dùng: ' + data.code : 'Gợi ý mã chưa dùng: ' + data.code);
+                } catch (error) { if (revision === suggestionRevision) codeStatus.textContent = error.message; }
+            }
+            fields.code.addEventListener('input', () => {
+                suggestionRevision++; fields.code.setCustomValidity(''); clearTimeout(suggestionTimer);
+                suggestionTimer = setTimeout(() => checkCode(), 300);
+            });
+            suggest.addEventListener('click', () => { clearTimeout(suggestionTimer); checkCode(true); });
             const cancel = document.createElement('button'); cancel.type = 'button'; cancel.textContent = 'Hủy';
             cancel.addEventListener('click', () => dialog.close());
             editor.append(hint, message, submit, cancel); dialog.appendChild(editor); document.body.appendChild(dialog);
             dialog.addEventListener('close', () => dialog.remove()); dialog.showModal(); fields.code.focus();
+            checkCode(!fields.code.value.trim());
             editor.addEventListener('submit', async event => {
                 event.preventDefault(); submit.disabled = true; cancel.disabled = true;
                 try {

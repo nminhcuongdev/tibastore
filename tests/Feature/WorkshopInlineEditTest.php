@@ -14,6 +14,24 @@ class WorkshopInlineEditTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_code_suggestion_skips_existing_and_discontinued_codes(): void
+    {
+        $this->actingAs(User::create(['code' => 'suggest-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $prefix = 'SUG-'.bin2hex(random_bytes(4)).'-';
+        foreach (['001', '002'] as $suffix) {
+            Product::create(['code' => $prefix.$suffix, 'name' => 'Test', 'size' => 'M',
+                'fabric' => '', 'stock_quantity' => 0, 'discontinued_at' => $suffix === '002' ? now() : null]);
+        }
+        $url = route('workshop-orders.suggest-product-code');
+        $this->getJson($url.'?'.http_build_query(['code' => $prefix.'001']))->assertOk()
+            ->assertJsonPath('exists', true)->assertJsonPath('code', $prefix.'003');
+        $this->getJson($url.'?'.http_build_query(['code' => strtolower($prefix).'002']))->assertOk()
+            ->assertJsonPath('exists', true)->assertJsonPath('code', strtolower($prefix).'003');
+        $suggestion = $this->getJson($url)->assertOk()->json('code');
+        $this->assertFalse(Product::where('code', $suggestion)->exists());
+    }
+
     public function test_create_product_from_workshop_then_save_order_without_adding_stock(): void
     {
         $this->actingAs(User::create(['code' => 'quick-'.bin2hex(random_bytes(4)), 'name' => 'Test',
