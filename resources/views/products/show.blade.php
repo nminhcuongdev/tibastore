@@ -275,7 +275,7 @@
         <div class="summary">
             <div class="metric">
                 <div class="metric-label">Tổng số hàng</div>
-                <div class="metric-value">{{ number_format($totalQuantity + $totalRented) }}</div>
+                <div class="metric-value" data-stock-metric-total data-rented="{{ $totalRented }}">{{ number_format($totalQuantity + $totalRented) }}</div>
             </div>
             <div class="metric">
                 <div class="metric-label">Đang cho thuê</div>
@@ -283,11 +283,11 @@
             </div>
             <div class="metric">
                 <div class="metric-label">Còn trong kho</div>
-                <div class="metric-value">{{ number_format($totalQuantity) }}</div>
+                <div class="metric-value" data-stock-metric-quantity>{{ number_format($totalQuantity) }}</div>
             </div>
             <div class="metric">
                 <div class="metric-label">Số size</div>
-                <div class="metric-value">{{ number_format($variants->total()) }}</div>
+                <div class="metric-value" data-stock-metric-sizes>{{ number_format($variants->total()) }}</div>
             </div>
             <div class="metric">
                 <div class="metric-label">Mã hàng</div>
@@ -322,94 +322,7 @@
             </form>
         </div>
 
-        <div class="table-shell">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Hình ảnh</th>
-                        <th>Mã sản phẩm</th>
-                        <th>Tên sản phẩm</th>
-                        <th>
-                            <a href="{{ route('products.show', array_merge(['product' => $product], request()->except('page'), ['sort' => 'quantity', 'direction' => $sort === 'quantity' && $direction === 'asc' ? 'desc' : 'asc'])) }}">
-                                Còn trong kho {{ $sort === 'quantity' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}
-                            </a>
-                        </th>
-                        <th>Đang cho thuê</th>
-                        <th>Tổng số hàng</th>
-                        <th>Danh mục</th>
-                        <th>Ngày dự kiến nhận</th>
-                        <th>SL nhận dự kiến</th>
-                        <th>
-                            <a href="{{ route('products.show', array_merge(['product' => $product], request()->except('page'), ['sort' => 'size', 'direction' => $sort === 'size' && $direction === 'asc' ? 'desc' : 'asc'])) }}">
-                                Size {{ $sort === 'size' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}
-                            </a>
-                        </th>
-                        <th>Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($variants as $variant)
-                        <tr class="clickable" data-href="{{ route('products.track', $variant) }}">
-                            <td>
-                                <div class="thumb">
-                                    @if ($variant->image_path)
-                                        <img src="{{ asset('storage/' . $variant->image_path) }}" alt="{{ $variant->name }}">
-                                    @else
-                                        CHƯA CÓ ẢNH
-                                    @endif
-                                </div>
-                            </td>
-                            <td class="code"><span class="click-copy" data-copy-value="{{ $variant->code }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $variant->code }}</span></td>
-                            <td>
-                                <div class="name">{{ $variant->name }}</div>
-                                <div class="muted">Cập nhật: {{ $variant->updated_at?->format('d/m/Y') }}</div>
-                            </td>
-                            <td>
-                                {{ number_format($variant->stock_quantity) }}
-                                @if (! empty($pendingInspection[$variant->id]))
-                                    <div class="pending-check" title="Đã về kho, chưa kiểm">
-                                        {{ number_format($pendingInspection[$variant->id]) }} chờ kiểm
-                                    </div>
-                                @endif
-                            </td>
-                            <td>{{ number_format($rentedByProduct[$variant->id] ?? 0) }}</td>
-                            <td>{{ number_format($variant->stock_quantity + ($rentedByProduct[$variant->id] ?? 0)) }}</td>
-                            <td>{{ $variant->category ?: 'N/A' }}</td>
-                            <td>
-                                @forelse ($variant->expectedReceipts->whereNull('received_at') as $receipt)
-                                    <div>{{ $receipt->expected_receive_date?->format('d/m/Y') }}</div>
-                                @empty
-                                    N/A
-                                @endforelse
-                            </td>
-                            <td>
-                                @forelse ($variant->expectedReceipts->whereNull('received_at') as $receipt)
-                                    <div>{{ number_format($receipt->expected_receive_quantity) }}</div>
-                                @empty
-                                    0
-                                @endforelse
-                            </td>
-                            <td>{{ $variant->size }}</td>
-                            <td>
-                                <div class="row-actions">
-                                    <a class="link-action" href="{{ route('products.track', $variant) }}">Theo dõi</a>
-                                    <a class="link-action" href="{{ route('products.edit', $variant) }}">Sửa</a>
-                                    <form method="POST" action="{{ route('products.destroy', $variant) }}" onsubmit="return confirm('Xóa sản phẩm này khỏi kho?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="danger" type="submit">Xóa</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td class="empty" colspan="11">Chưa có sản phẩm phù hợp.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+        @include('products.inline-stock')
 
         @if ($variants->hasPages())
             <nav class="pagination" aria-label="Phân trang">

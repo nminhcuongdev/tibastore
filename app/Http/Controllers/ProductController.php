@@ -198,7 +198,7 @@ class ProductController extends Controller
             ->with('expectedReceipts')
             ->where('code', $product->code)
             ->orderBy($sortMap[$sort], $direction)
-            ->paginate(20)
+            ->paginate(max(20, Product::where('code', $product->code)->count()), ['*'], 'page', 1)
             ->withQueryString();
 
         $totalQuantity = Product::where('code', $product->code)->sum('stock_quantity');
@@ -328,6 +328,57 @@ class ProductController extends Controller
         }
 
         return [$from, $to];
+    }
+
+    public function inlineStock(Request $request, Product $product): \Illuminate\Http\JsonResponse
+    {
+        $data = $request->validate([
+            'code' => ['required', 'string', 'max:50'], 'name' => ['required', 'string', 'max:255'],
+            'category' => ['nullable', 'string', 'max:255'], 'rental_price_text' => ['nullable', 'string', 'max:255'],
+            'variants' => ['required', 'array', 'min:1', 'max:100'],
+            'variants.*.id' => ['nullable', 'integer', 'distinct'],
+            'variants.*.size' => ['required', 'string', 'max:50'],
+            'variants.*.stock_quantity' => ['required', 'integer', 'min:0'],
+            'variants.*.original_quantity' => ['nullable', 'integer', 'min:0'],
+        ]);
+        $sizes = collect($data['variants'])->map(fn ($line) => mb_strtolower(trim($line['size'])));
+        if ($sizes->duplicates()->isNotEmpty() || $sizes->contains('')) throw \Illuminate\Validation\ValidationException::withMessages(['variants' => 'Size không được để trống hoặc trùng nhau.']);
+        $result = DB::transaction(function () use ($data, $product, $request) {
+            $anchor = Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
+            $code = $anchor->code;
+            $variants = Product::where('code', $code)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+            if ($data['code'] !== $code && Product::where('code', $data['code'])->exists()) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['code' => 'Mã mới đã tồn tại. Hãy chọn mã khác.']);
+            }
+            if (collect($data['variants'])->pluck('id')->filter()->map(fn ($id) => (int) $id)->sort()->values()->all() !== $variants->keys()->map(fn ($id) => (int) $id)->sort()->values()->all()) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['variants' => 'Danh sách size đã thay đổi. Hãy tải lại trang.']);
+            }
+            $shared = Product::withRentalPriceText(collect($data)->only(['code', 'name', 'category', 'rental_price_text'])->all());
+            foreach ($data['variants'] as $line) {
+                if (empty($line['id'])) continue;
+                $variant = $variants[$line['id']];
+                if (!isset($line['original_quantity']) || (int) $line['original_quantity'] !== (int) $variant->stock_quantity) {
+                    throw \Illuminate\Validation\ValidationException::withMessages(['variants' => 'Tồn kho vừa thay đổi ở nơi khác. Hãy tải lại trang trước khi sửa.']);
+                }
+            }
+            foreach ($data['variants'] as $line) {
+                if ($variants->contains(fn ($variant) => (int) $variant->id !== (int) ($line['id'] ?? 0) && mb_strtolower($variant->size) === mb_strtolower(trim($line['size'])))) {
+                    throw \Illuminate\Validation\ValidationException::withMessages(['variants' => 'Tên size đã tồn tại. Hãy chọn tên khác.']);
+                }
+            }
+            $saved = [];
+            foreach ($data['variants'] as $line) {
+                $variant = empty($line['id']) ? new Product(['fabric' => '', 'image_path' => $anchor->image_path]) : $variants[$line['id']];
+                $previous = (int) $variant->stock_quantity;
+                $variant->fill($shared + ['size' => trim($line['size']), 'stock_quantity' => $line['stock_quantity']]); $variant->save();
+                $difference = (int) $variant->stock_quantity - $previous;
+                if ($difference > 0) $this->recordStockImport($variant, $difference, $previous, (int) $variant->stock_quantity);
+                elseif ($difference < 0) $this->recordDirectStockChange($variant, $difference, $previous, (int) $variant->stock_quantity);
+                $saved[] = ['id' => $variant->id, 'stock_quantity' => $variant->stock_quantity];
+            }
+            return $saved;
+        });
+        return response()->json(['variants' => $result, 'message' => 'Đã lưu kho']);
     }
 
     public function store(Request $request): RedirectResponse
