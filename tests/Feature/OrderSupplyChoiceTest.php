@@ -47,6 +47,9 @@ class OrderSupplyChoiceTest extends TestCase
         $this->post('/orders', $data)->assertSessionHasNoErrors()->assertRedirect();
         $order = Order::where('product_id', $product->id)->latest('id')->firstOrFail();
         $this->assertSame('stock', $order->items->first()->fulfillment_source);
+        $staleUrl = route('workshop-orders.create', ['customer_order_id' => $order->id,
+            'product_code' => $product->code, 'supply_source' => 'mua_ngoai']);
+        $this->get($staleUrl)->assertRedirect(route('orders.edit', $order))->assertSessionHas('error');
         $data['items'][0]['fulfillment_source'] = 'mua_ngoai';
         $this->put('/orders/'.$order->id, $data)->assertSessionHasNoErrors()->assertRedirect();
         $this->assertSame('mua_ngoai', $order->fresh()->items->first()->fulfillment_source);

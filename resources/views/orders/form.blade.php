@@ -1752,20 +1752,33 @@
             checkOd.addEventListener('click', () => loadRelatedOd(true));
             supplyChoice.value = blockData.fulfillment_source || 'stock';
             setupPurchasePlan(block, blockData.purchase_plan);
+            let odDirty = false;
             function updateOdLink() {
                 loadRelatedOd();
                 const needed = supplyChoice.value !== 'stock';
                 const link = block.querySelector('[data-od-link]');
                 const savedOrderId = @json($order->id);
-                link.hidden = !needed || !savedOrderId || !block.dataset.productCode;
-                block.querySelector('[data-od-hint]').hidden = !needed;
+                const canOpen = needed && savedOrderId && block.dataset.productCode && !odDirty
+                    && block.dataset.productCode === blockData.code && supplyChoice.value === (blockData.fulfillment_source || 'stock');
+                link.hidden = !canOpen;
+                link.style.display = canOpen ? '' : 'none';
+                const hint = block.querySelector('[data-od-hint]');
+                hint.hidden = !needed || !!canOpen;
+                hint.style.display = hint.hidden ? 'none' : 'block';
                 sourceBox.classList.toggle('needs-od', needed);
                 const url = new URL(@json(route('workshop-orders.create')));
                 url.searchParams.set('customer_order_id', savedOrderId || '');
                 url.searchParams.set('product_code', block.dataset.productCode || '');
                 url.searchParams.set('supply_source', supplyChoice.value);
-                link.href = url.toString();
+                if (canOpen) link.href = url.toString(); else link.removeAttribute('href');
             }
+            block.addEventListener('input', () => { odDirty = true; updateOdLink(); });
+            block.addEventListener('change', () => { odDirty = true; updateOdLink(); });
+            block.querySelector('[data-od-link]').addEventListener('click', event => {
+                if (!event.currentTarget.hasAttribute('href')) {
+                    event.preventDefault(); showBlockInfo(block, 'Hãy lưu đơn khách trước khi mở đặt hàng od.');
+                }
+            });
             supplyChoice.addEventListener('change', () => { renumberRows(); updateOdLink(); });
             block.addEventListener('input', updateOdLink);
             block.addEventListener('change', updateOdLink);

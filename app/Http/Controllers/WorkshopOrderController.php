@@ -110,7 +110,10 @@ class WorkshopOrderController extends Controller
             $code = (string) $request->query('product_code');
             $lines = $customerOrder->items->filter(fn ($line) => $line->product?->code === $code
                 && $line->fulfillment_source === $source);
-            abort_if($lines->isEmpty(), 422, 'Hãy lưu lựa chọn cần od trên đơn khách trước khi mở đặt hàng.');
+            if ($lines->isEmpty()) {
+                return redirect()->route('orders.edit', $customerOrder)
+                    ->with('error', 'Lựa chọn mã hoặc nguồn cần od chưa được lưu. Hãy lưu đơn khách rồi mở lại Đến đặt hàng od.');
+            }
             $existing = WorkshopOrder::where('customer_order_id', $customerOrder->id)
                 ->where('product_code', $code)->where('supply_source', $source)->first();
             if ($existing) {
