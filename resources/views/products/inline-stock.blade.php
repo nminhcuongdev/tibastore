@@ -1,4 +1,6 @@
 <style>
+.stock-editor a { color: #2563eb; text-decoration: underline; text-underline-offset: 3px; }
+.stock-editor a:hover { color: #1d4ed8; }
 .stock-editor{display:grid;grid-template-columns:minmax(220px,1fr) minmax(450px,2fr);gap:24px;padding:20px;background:white;border:1px solid #dce5f1;border-radius:12px}.stock-editor input{box-sizing:border-box;width:100%;min-width:0;padding:9px;border:1px solid #cbd9ec;border-radius:7px;font:inherit}.stock-identity{display:grid;gap:12px;align-content:start}.stock-identity label{display:grid;gap:5px}.stock-sizes{display:grid;gap:10px}.stock-size-line,.stock-size-head{display:grid;grid-template-columns:minmax(80px,1fr) 110px 100px 100px 90px;gap:10px;align-items:center}.stock-size-head{font-weight:700;font-size:13px}.stock-editor .thumb{width:120px;height:140px}.stock-size-notes{grid-column:1/-1;font-size:12px;color:#64748b}.stock-save-state{grid-column:1/-1;font-size:13px;color:#334155}@media(max-width:900px){.stock-editor{grid-template-columns:1fr}.stock-sizes{overflow:auto}.stock-size-line,.stock-size-head{min-width:540px}}
 </style>
 <form class="stock-editor" data-stock-editor action="{{ route('products.inline-stock', $product) }}">
@@ -31,32 +33,7 @@
         @endforeach
         </div>
         <button type="button" class="link-action" data-add-stock-size>+ Thêm size</button>
-        <section style="padding:14px;border:1px solid #cbd9ec;border-radius:8px;background:#f6f9ff" aria-label="Dự kiến hàng về">
-            <strong>Dự kiến hàng về</strong>
-            @php
-                $sizeNames = $variants->pluck('size', 'id');
-            @endphp
-            @forelse($incomingWorkshopOrders as $incoming)
-                @php
-                    $incomingLines = $incoming->size_quantities ?? $incoming->purchase_plan['lines'] ?? [];
-                    $incomingSizes = collect($incomingLines)->map(fn ($line) => ($sizeNames[$line['product_id']] ?? 'Size chưa xác định').': '.$line['quantity'])->implode(', ');
-                @endphp
-                <div style="margin-top:10px" data-incoming-workshop="{{ $incoming->id }}">
-                    <b>{{ $incoming->returned_date->format('d/m/Y') }}</b> — {{ $incomingSizes ?: ($incoming->size_note ?: 'Chưa ghi size') }}
-                    <div class="muted">{{ $incoming->order_name ?: 'Chưa có tên đơn' }} · {{ $incoming->supplySourceLabel() }} · {{ $incoming->statusLabel() }}
-                        <a href="{{ route('workshop-orders.index', ['focus' => $incoming->id, 'supply_source' => $incoming->supply_source]) }}#workshop-row-{{ $incoming->id }}" target="_blank" rel="noopener">Xem đặt hàng ↗</a>
-                    </div>
-                </div>
-            @empty
-                <div class="muted" style="margin-top:8px">Chưa có lịch hàng về từ Đặt hàng.</div>
-            @endforelse
-            @foreach($variants as $variant)
-                @foreach($variant->expectedReceipts->whereNull('received_at')->whereNull('workshop_order_id') as $receipt)
-                    <div class="muted" style="margin-top:8px">{{ $receipt->expected_receive_date?->format('d/m/Y') }} — {{ $variant->size }}: {{ $receipt->expected_receive_quantity }} (dự kiến nhập tại Kho)</div>
-                @endforeach
-            @endforeach
-            <small style="display:block;margin-top:10px">Chỉ là lịch dự kiến. Chưa cộng vào tồn kho hoặc đổi số lượng đơn khách.</small>
-        </section>
+        @include('products.incoming-schedule')
     </div>
     <span class="stock-save-state" role="status" data-stock-state>Sửa trực tiếp, thay đổi được tự động lưu. Số lượng nhập là hàng còn trong kho.</span>
 </form>
@@ -103,6 +80,23 @@
         finally { saving = false; if (sent !== revision) { clearTimeout(timer); timer = setTimeout(save, 800); } }
     }
     window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
+    let refreshingSchedule = false;
+    async function refreshSchedule() {
+        if (refreshingSchedule || document.hidden) return;
+        refreshingSchedule = true;
+        try {
+            const response = await fetch(@json(route('products.incoming-schedule', $product)), {credentials:'same-origin', cache:'no-store'});
+            if (!response.ok || response.redirected) return;
+            const html = await response.text();
+            const template = document.createElement('template'); template.innerHTML = html;
+            const section = template.content.querySelector('[data-incoming-schedule]');
+            if (section) form.querySelector('[data-incoming-schedule]').replaceWith(section);
+        } catch (_) { /* Keep the existing schedule until the next successful refresh. */ }
+        finally { refreshingSchedule = false; }
+    }
+    window.addEventListener('focus', refreshSchedule);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshSchedule(); });
+    setInterval(refreshSchedule, 20000);
     document.addEventListener('personal-history-request', event => {
         if (dirty || saving) {
             event.preventDefault();

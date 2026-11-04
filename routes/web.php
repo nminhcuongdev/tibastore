@@ -47,6 +47,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/products/daily-stock', [ProductController::class, 'inventoryCalendar'])->name('products.daily-stock');
     Route::get('/products/{product}/track', [ProductController::class, 'track'])->name('products.track');
     Route::patch('/products/{product}/inline-stock', [ProductController::class, 'inlineStock'])->name('products.inline-stock');
+    Route::get('/products/{product}/incoming-schedule', [ProductController::class, 'incomingSchedule'])->name('products.incoming-schedule');
     // Phai dat truoc Route::resource de khong bi nuot boi products/{product}.
     Route::patch('/products/{product}/discontinued', [ProductController::class, 'toggleDiscontinued'])
         ->name('products.discontinued');

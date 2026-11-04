@@ -383,6 +383,15 @@ class ProductController extends Controller
         return response()->json(['variants' => $result, 'message' => 'Đã lưu kho']);
     }
 
+    public function incomingSchedule(Product $product): View
+    {
+        return view('products.incoming-schedule', [
+            'variants' => Product::with('expectedReceipts')->where('code', $product->code)->get(),
+            'incomingWorkshopOrders' => \App\Models\WorkshopOrder::where('product_code', $product->code)
+                ->whereNull('stocked_at')->whereNotNull('returned_date')->orderBy('returned_date')->get(),
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validatedStoreData($request);

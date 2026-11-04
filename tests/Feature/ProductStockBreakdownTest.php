@@ -12,6 +12,22 @@ class ProductStockBreakdownTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_deleting_od_removes_its_schedule_and_pending_receipt(): void
+    {
+        $this->actingAs(User::create(['code' => 'delete-schedule-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $product = Product::create(['code' => 'DELSCHED-'.bin2hex(random_bytes(4)), 'name' => 'Test', 'fabric' => '', 'size' => 'M', 'stock_quantity' => 2]);
+        $od = \App\Models\WorkshopOrder::create(['product_code' => $product->code, 'supply_source' => 'mua_ngoai',
+            'returned_date' => '2026-11-06', 'quantity' => 1, 'status' => 'da_od', 'size_note' => 'M: 1']);
+        $receipt = $product->expectedReceipts()->create(['workshop_order_id' => $od->id, 'expected_receive_date' => '2026-11-06', 'expected_receive_quantity' => 1]);
+        $url = route('products.incoming-schedule', $product);
+        $this->get($url)->assertOk()->assertSee('data-incoming-workshop="'.$od->id.'"', false);
+        $this->delete(route('workshop-orders.destroy', $od))->assertRedirect();
+        $this->assertNull($receipt->fresh());
+        $this->get($url)->assertOk()->assertDontSee('data-incoming-workshop="'.$od->id.'"', false)->assertDontSee('06/11/2026');
+        $this->assertSame(2, $product->fresh()->stock_quantity);
+    }
+
     public function test_workshop_schedule_is_only_a_note_until_stock_is_explicitly_transferred(): void
     {
         $this->actingAs(User::create(['code' => 'schedule-'.bin2hex(random_bytes(4)), 'name' => 'Test',
