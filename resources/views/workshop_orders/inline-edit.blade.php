@@ -202,9 +202,6 @@
             fields.category.autocomplete = 'off';
             fields.category.placeholder = 'Chọn danh mục có sẵn hoặc nhập danh mục mới';
             fields.category.closest('label').after(categories);
-            const categoryHint = document.createElement('small');
-            categoryHint.textContent = 'Gõ để tìm danh mục. Chọn từ danh sách hoặc nhập tên danh mục mới.';
-            categories.after(categoryHint);
             const normalizeCategory = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase().trim();
             function closeCategories() { categories.hidden = true; fields.category.setAttribute('aria-expanded', 'false'); }
             function renderCategories() {
