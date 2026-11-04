@@ -1559,6 +1559,7 @@
         function setupPurchasePlan(block, savedPlan) {
             if (typeof savedPlan === 'string') { try { savedPlan = JSON.parse(savedPlan); } catch (_) { savedPlan = null; } }
             let purchaseApplied = savedPlan?.updated_once === true;
+            let selectedWorkshopId = savedPlan?.workshop_order_id || null;
             block.appliedPurchaseLines = purchaseApplied ? (savedPlan.applied_lines || []) : [];
             const box = document.createElement('div'); box.className = 'purchase-plan'; box.hidden = true;
             box.innerHTML = `<strong>Size cần mua thêm</strong><div data-purchase-lines></div><button type="button" class="button secondary" data-add-purchase>+ Thêm size cần mua</button><button type="button" class="button secondary" data-apply-purchase>Update vào đơn</button><span data-apply-purchase-state role="status"></span><label>Ngày dự kiến nhận<input data-purchase-date type="date"></label><small>Sửa size, số lượng rồi bấm Update vào đơn. Chỉ điều chỉnh phần chênh lệch so với lần cập nhật trước, không cộng trùng khi bấm lại. Lưu đơn để cập nhật Đặt hàng và dự kiến ở Kho. Hàng chỉ vào tồn thực tế khi bấm Đẩy lên kho hoặc nhập tay tại Kho.</small>`;
@@ -1570,7 +1571,7 @@
             box.insertBefore(addWarehouseSize, box.querySelector('label'));
             let code = null;
             function savePlan() {
-                block.purchasePlan = {expected_date:date.value, updated_once:purchaseApplied, applied_lines:block.appliedPurchaseLines, lines:Array.from(lines.children).map(row => ({
+                block.purchasePlan = {workshop_order_id:selectedWorkshopId, expected_date:date.value, updated_once:purchaseApplied, applied_lines:block.appliedPurchaseLines, lines:Array.from(lines.children).map(row => ({
                     product_id:Number(row.querySelector('select').value), quantity:Number(row.querySelector('input').value)
                 }))};
                 renumberRows();
@@ -1594,7 +1595,7 @@
                 if (group) addWarehouseSize.href = @json(route('products.show', ['product' => '__PRODUCT__'])).replace('__PRODUCT__', group.items[0].id);
                 box.hidden = !needed;
                 if (code !== block.dataset.productCode) {
-                    if (code !== null) { savedPlan = null; block.appliedPurchaseLines = []; purchaseApplied = false; }
+                    if (code !== null) { savedPlan = null; block.appliedPurchaseLines = []; purchaseApplied = false; selectedWorkshopId = null; }
                     code = block.dataset.productCode;
                     lines.replaceChildren();
                     (savedPlan?.lines?.length ? savedPlan.lines : [{}]).forEach(addLine);
@@ -1606,6 +1607,19 @@
             }
             box.addEventListener('input', savePlan); box.addEventListener('change', savePlan);
             box.querySelector('[data-add-purchase]').addEventListener('click', () => { addLine(); savePlan(); });
+            block.applyExistingOd = item => {
+                const group = productOptions.find(group => group.code === block.dataset.productCode);
+                if (!item.lines?.length || item.lines.some(line => !group?.items.some(product => Number(product.id) === Number(line.product_id)))) {
+                    showBlockInfo(block, 'Dòng od chưa có size khớp trong Kho. Hãy bổ sung size bên Đặt hàng rồi kiểm tra lại.'); return;
+                }
+                selectedWorkshopId = item.id;
+                lines.replaceChildren(); item.lines.forEach(addLine);
+                date.value = item.expected_date || pickupDateInput.value;
+                savePlan();
+                box.querySelector('[data-apply-purchase]').click();
+                block.dispatchEvent(new Event('change', {bubbles:true}));
+                box.querySelector('[data-apply-purchase-state]').textContent = 'Đã lấy size và số lượng từ od #' + item.id + '. Bấm Lưu đơn để lưu liên kết, không tạo od mới.';
+            };
             box.querySelector('[data-apply-purchase]').addEventListener('click', () => {
                 const state = box.querySelector('[data-apply-purchase-state]');
                 const group = productOptions.find(item => item.code === block.dataset.productCode);
@@ -1745,7 +1759,12 @@
                             + ' · Ngày đặt: ' + (item.ordered_date || 'Chưa ghi') + (item.stocked ? ' · Đã nhập kho' : '');
                         const link = document.createElement('a'); link.href = item.url; link.target = '_blank'; link.rel = 'noopener';
                         link.textContent = 'Xem dòng đặt hàng ↗';
-                        details.append(summary, info, link); relatedOd.appendChild(details);
+                        const apply = document.createElement('button'); apply.type = 'button'; apply.className = 'button secondary';
+                        const otherOrder = item.customer_order_id && Number(item.customer_order_id) !== Number(@json($order->id));
+                        apply.textContent = otherOrder ? 'Đã thuộc đơn khách khác' : 'Chọn od này — Update vào đơn';
+                        apply.disabled = !!otherOrder;
+                        apply.addEventListener('click', () => block.applyExistingOd(item));
+                        details.append(summary, info, link); relatedOd.append(details, apply);
                     });
                 } catch (error) { if (requestId === relatedRequest) relatedOd.textContent = error.message; }
             }

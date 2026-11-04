@@ -39,8 +39,29 @@ class OrderPurchasePlanService
                 }
                 $quantities[$product->id] = ($quantities[$product->id] ?? 0) + (int) $line['quantity'];
             }
-            $workshop = WorkshopOrder::firstOrNew(['customer_order_id' => $order->id,
-                'product_code' => $first->product->code, 'supply_source' => $first->fulfillment_source]);
+            $selectedId = $plan['workshop_order_id'] ?? null;
+            unset($plan['workshop_order_id']);
+            if ($selectedId) {
+                $workshop = WorkshopOrder::whereKey($selectedId)->lockForUpdate()->firstOrFail();
+                if ($workshop->product_code !== $first->product->code || $workshop->supply_source !== $first->fulfillment_source
+                    || ($workshop->customer_order_id && $workshop->customer_order_id !== $order->id)) {
+                    throw ValidationException::withMessages(['items' => 'Dòng od đã chọn không khớp mã, nguồn hoặc đã thuộc đơn khách khác.']);
+                }
+                $actual = collect($workshop->size_quantities ?? $workshop->purchase_plan['lines'] ?? [])
+                    ->groupBy('product_id')->map(fn ($rows) => (int) $rows->sum('quantity'))->sortKeys()->all();
+                $requested = collect($quantities)->sortKeys()->all();
+                if ($actual !== $requested) {
+                    throw ValidationException::withMessages(['items' => 'Size hoặc số lượng od đã thay đổi. Hãy kiểm tra và chọn lại dòng od.']);
+                }
+                $workshop->customer_order_id = $order->id;
+                if ($workshop->stocked_at && !$workshop->purchase_plan) {
+                    $workshop->purchase_plan = $plan;
+                    $workshop->save();
+                }
+            } else {
+                $workshop = WorkshopOrder::firstOrNew(['customer_order_id' => $order->id,
+                    'product_code' => $first->product->code, 'supply_source' => $first->fulfillment_source]);
+            }
             if ($workshop->exists && $workshop->purchase_plan && ($workshop->stocked_at
                 || ProductExpectedReceipt::where('workshop_order_id', $workshop->id)->whereNotNull('received_at')->exists())) {
                 if ($workshop->purchase_plan !== $plan) {

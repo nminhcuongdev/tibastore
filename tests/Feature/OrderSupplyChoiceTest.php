@@ -15,6 +15,34 @@ class OrderSupplyChoiceTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_selecting_existing_od_links_it_without_creating_duplicate_or_changing_status(): void
+    {
+        $this->actingAs(User::create(['code' => 'adopt-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $product = Product::create(['code' => 'ADOPT-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'fabric' => '', 'size' => 'M', 'stock_quantity' => 20]);
+        $od = WorkshopOrder::create(['product_code' => $product->code, 'supply_source' => WorkshopOrder::SUPPLY_OUTSIDE,
+            'quantity' => 5, 'status' => WorkshopOrder::STATUS_ORDERED, 'size_quantities' => [['product_id' => $product->id, 'quantity' => 5]],
+            'image_path' => 'workshop-orders/existing.jpg']);
+        $data = ['closer_name' => 'Test', 'order_name' => $product->code,
+            'pickup_date' => '2032-03-03', 'event_date' => '2032-03-04', 'return_date' => '2032-03-05',
+            'source' => Order::DEFAULT_SOURCE, 'status' => Order::DEFAULT_STATUS,
+            'items' => [['product_id' => $product->id, 'quantity' => 5, 'fulfillment_source' => 'mua_ngoai',
+                'purchase_plan' => ['workshop_order_id' => $od->id, 'expected_date' => '2032-03-02',
+                    'lines' => [['product_id' => $product->id, 'quantity' => 5]]]]]];
+        $this->post('/orders', $data)->assertSessionHasNoErrors()->assertRedirect();
+        $order = Order::where('order_name', $product->code)->latest('id')->firstOrFail();
+        $this->assertSame($order->id, $od->fresh()->customer_order_id);
+        $this->assertSame(WorkshopOrder::STATUS_ORDERED, $od->fresh()->status);
+        $this->assertSame('workshop-orders/existing.jpg', $od->fresh()->image_path);
+        $this->put('/orders/'.$order->id, $data)->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertSame(1, WorkshopOrder::where('product_code', $product->code)->count());
+        $this->assertSame(5, $order->fresh()->items->sum('quantity'));
+        $data['order_name'] .= '-other';
+        $this->postJson('/orders', $data)->assertUnprocessable()->assertJsonValidationErrors('items');
+        $this->assertSame($order->id, $od->fresh()->customer_order_id);
+    }
+
     public function test_related_workshop_suggestions_filter_by_code_and_source_without_changing_orders(): void
     {
         $this->actingAs(User::create(['code' => 'related-'.bin2hex(random_bytes(4)), 'name' => 'Test',
