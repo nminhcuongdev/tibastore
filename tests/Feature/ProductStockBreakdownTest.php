@@ -12,6 +12,23 @@ class ProductStockBreakdownTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_inline_stock_image_is_saved_to_all_sizes(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+        $this->actingAs(User::create(['code' => 'inlinepic-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $s = Product::create(['code' => 'INLINEPIC-'.bin2hex(random_bytes(4)), 'name' => 'Test', 'fabric' => '', 'size' => 'S', 'stock_quantity' => 2]);
+        $m = Product::create(['code' => $s->code, 'name' => 'Test', 'fabric' => '', 'size' => 'M', 'stock_quantity' => 1]);
+        $image = \Illuminate\Http\UploadedFile::fake()->createWithContent('pasted.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII='));
+        $this->post(route('products.inline-stock', $s), ['_method' => 'PATCH', 'code' => $s->code, 'name' => 'Test', 'image' => $image,
+            'variants' => [['id' => $s->id, 'size' => 'S', 'stock_quantity' => 2, 'original_quantity' => 2],
+                ['id' => $m->id, 'size' => 'M', 'stock_quantity' => 1, 'original_quantity' => 1]]], ['Accept' => 'application/json'])->assertOk();
+        $this->assertNotNull($s->fresh()->image_path);
+        $this->assertSame($s->fresh()->image_path, $m->fresh()->image_path);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($s->fresh()->image_path);
+        $this->assertSame(2, $s->fresh()->stock_quantity);
+    }
+
     public function test_create_product_with_image_and_schedule_opens_created_product_without_adding_expected_stock(): void
     {
         \Illuminate\Support\Facades\Storage::fake('public');

@@ -343,10 +343,13 @@ class ProductController extends Controller
             'variants.*.size' => ['required', 'string', 'max:50'],
             'variants.*.stock_quantity' => ['required', 'integer', 'min:0'],
             'variants.*.original_quantity' => ['nullable', 'integer', 'min:0'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
         ]);
         $sizes = collect($data['variants'])->map(fn ($line) => mb_strtolower(trim($line['size'])));
         if ($sizes->duplicates()->isNotEmpty() || $sizes->contains('')) throw \Illuminate\Validation\ValidationException::withMessages(['variants' => 'Size không được để trống hoặc trùng nhau.']);
-        $result = DB::transaction(function () use ($data, $product, $request) {
+        $uploadedPath = null;
+        try {
+        $result = DB::transaction(function () use ($data, $product, $request, &$uploadedPath) {
             $anchor = Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
             $code = $anchor->code;
             $variants = Product::where('code', $code)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
@@ -369,6 +372,10 @@ class ProductController extends Controller
                     throw \Illuminate\Validation\ValidationException::withMessages(['variants' => 'Tên size đã tồn tại. Hãy chọn tên khác.']);
                 }
             }
+            if ($request->hasFile('image')) {
+                $uploadedPath = $request->file('image')->store('products', 'public');
+                $shared['image_path'] = $uploadedPath;
+            }
             $saved = [];
             foreach ($data['variants'] as $line) {
                 $variant = empty($line['id']) ? new Product(['fabric' => '', 'image_path' => $anchor->image_path]) : $variants[$line['id']];
@@ -381,6 +388,10 @@ class ProductController extends Controller
             }
             return $saved;
         });
+        } catch (\Throwable $exception) {
+            if ($uploadedPath) \Illuminate\Support\Facades\Storage::disk('public')->delete($uploadedPath);
+            throw $exception;
+        }
         return response()->json(['variants' => $result, 'message' => 'Đã lưu kho']);
     }
 

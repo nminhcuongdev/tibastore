@@ -6,11 +6,13 @@
 <form class="stock-editor" data-stock-editor action="{{ route('products.inline-stock', $product) }}">
     @csrf
     <div class="stock-identity">
-        <div class="thumb">@php
+        <div class="thumb" data-stock-image tabindex="0" aria-label="Ảnh sản phẩm. Nhấn Ctrl+V để dán ảnh.">@php
             $image = $variants->first(fn ($variant) => filled($variant->image_path));
         @endphp
             @if($image)<img src="{{ asset('storage/'.$image->image_path) }}" alt="{{ $product->name }}">@else CHƯA CÓ ẢNH @endif
         </div>
+        <input data-stock-image-file type="file" accept="image/jpeg,image/png,image/gif,image/webp" aria-label="Tải ảnh sản phẩm từ máy tính">
+        <small>Chọn ảnh từ máy hoặc copy ảnh rồi nhấn Ctrl+V. Tối đa 5MB.</small>
         <label>Mã sản phẩm<input name="code" value="{{ $product->code }}" required maxlength="50"></label>
         <label>Tên sản phẩm<input name="name" value="{{ $product->name }}" required maxlength="255"></label>
         <label>Danh mục<input name="category" value="{{ $product->category }}" maxlength="255"></label>
@@ -41,6 +43,25 @@
 (() => {
     const form = document.querySelector('[data-stock-editor]'), lines = form.querySelector('[data-stock-lines]'), state = form.querySelector('[data-stock-state]');
     let timer, saving = false, revision = 0, dirty = false;
+    let pendingImage = null, previewUrl = null;
+    const imageFile = form.querySelector('[data-stock-image-file]'), imageBox = form.querySelector('[data-stock-image]');
+    function acceptStockImage(file) {
+        if (!file) return;
+        if (!['image/jpeg','image/png','image/gif','image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+            state.textContent = 'Chọn ảnh JPG, PNG, GIF hoặc WebP tối đa 5MB.'; imageFile.value = ''; return;
+        }
+        pendingImage = file;
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        previewUrl = URL.createObjectURL(file);
+        const image = document.createElement('img'); image.src = previewUrl; image.alt = 'Ảnh vừa chọn'; imageBox.replaceChildren(image);
+        changed();
+    }
+    imageFile.addEventListener('change', () => acceptStockImage(imageFile.files[0]));
+    form.addEventListener('paste', event => {
+        const item = Array.from(event.clipboardData?.items || []).find(item => item.type.startsWith('image/'));
+        if (item) { event.preventDefault(); acceptStockImage(item.getAsFile()); }
+    });
+    window.addEventListener('pagehide', () => { if (previewUrl) URL.revokeObjectURL(previewUrl); });
     function changed() { revision++; dirty = true; clearTimeout(timer); state.textContent = 'Chờ tự lưu…'; timer = setTimeout(save, 800); }
     form.addEventListener('input', changed); form.addEventListener('change', changed);
     form.addEventListener('submit', event => { event.preventDefault(); save(); });
@@ -52,8 +73,9 @@
     });
     async function save() {
         if (saving || !dirty || !form.checkValidity()) return;
-        saving = true; const sent = revision;
+        saving = true; const sent = revision, sentImage = pendingImage;
         const body = new FormData(form); body.append('_method', 'PATCH');
+        if (sentImage) body.append('image', sentImage);
         const rows = Array.from(lines.querySelectorAll('[data-stock-line]'));
         rows.forEach((row, index) => {
             if (row.dataset.id) body.append(`variants[${index}][id]`, row.dataset.id);
@@ -66,6 +88,7 @@
             const response = await fetch(form.action, {method:'POST', body, credentials:'same-origin', headers:{Accept:'application/json'}});
             const data = await response.json();
             if (!response.ok) throw new Error(data.errors ? Object.values(data.errors).flat().join(' ') : data.message);
+            if (pendingImage === sentImage) { pendingImage = null; imageFile.value = ''; }
             data.variants.forEach((variant, index) => {
                 rows[index].dataset.id = variant.id; rows[index].dataset.original = variant.stock_quantity;
                 rows[index].querySelector('[data-size-total]').textContent = Number(rows[index].querySelector('[data-stock]').value) + Number(rows[index].dataset.rented);
