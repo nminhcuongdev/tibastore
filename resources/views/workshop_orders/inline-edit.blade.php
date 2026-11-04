@@ -303,6 +303,16 @@
         const sizeCell = row.querySelector('[name=size_note]').closest('td');
         const sizeEditor = document.createElement('div'); sizeEditor.className = 'workshop-size-editor';
         const sizeList = document.createElement('div');
+        const totalQuantity = row.querySelector('[name=quantity]');
+        const quantityHint = document.createElement('small'); quantityHint.style.display = 'block';
+        totalQuantity.after(quantityHint);
+        function refreshQuantityEditing() {
+            const stocked = row.dataset.stocked === '1';
+            const multipleSizes = sizeList.children.length > 1;
+            totalQuantity.readOnly = stocked || multipleSizes;
+            quantityHint.textContent = stocked ? 'Đã nhập kho. Tạo dòng bổ sung để tăng số lượng.'
+                : (multipleSizes ? 'Tổng tự tính. Sửa số lượng ở từng size.' : '');
+        }
         const addSize = document.createElement('button'); addSize.type = 'button'; addSize.textContent = '+ Thêm size và số lượng';
         sizeEditor.append(sizeList, addSize); sizeCell.appendChild(sizeEditor);
         const addWarehouseSize = document.createElement('a');
@@ -329,6 +339,7 @@
             }));
         }
         function sizeChanged() {
+            refreshQuantityEditing();
             const lines = readSizes();
             if (lines.length) {
                 row.querySelector('[name=quantity]').value = lines.reduce((sum, line) => sum + line.quantity, 0);
@@ -350,13 +361,15 @@
                 line.remove(); sizeChanged();
             });
             line.append(select, quantity, remove); sizeList.appendChild(line);
+            refreshQuantityEditing();
             if (row.dataset.stocked === '1') { select.disabled = true; quantity.disabled = true; remove.disabled = true; }
         }
         savedSizes.forEach(addSizeLine);
+        refreshQuantityEditing();
         addSize.hidden = row.dataset.stocked === '1';
         addSize.addEventListener('click', () => addSizeLine());
         sizeList.addEventListener('change', sizeChanged); sizeList.addEventListener('input', sizeChanged);
-        codeInput.addEventListener('change', () => { if (!managed && row.dataset.stocked !== '1') { sizeList.replaceChildren(); savedSizes = []; } });
+        codeInput.addEventListener('change', () => { if (!managed && row.dataset.stocked !== '1') { sizeList.replaceChildren(); savedSizes = []; refreshQuantityEditing(); } });
         if (managed) {
             const hint = document.createElement('small'); hint.textContent = 'Sửa số lượng thực nhận để nhập kho. Đơn khách chỉ đổi khi bấm Update vào đơn.'; sizeEditor.appendChild(hint);
             const updateOrder = document.createElement('button'); updateOrder.type = 'button'; updateOrder.textContent = 'Update vào đơn';
@@ -391,12 +404,16 @@
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.errors ? Object.values(data.errors).flat().join(' ') : data.message);
                 row.dataset.stocked = '1'; row.querySelector('[name=status]').value = 'da_ve'; colorRow(); state.textContent = data.message;
+                refreshQuantityEditing();
                 addSize.hidden = true; sizeList.querySelectorAll('input,select,button').forEach(input => input.disabled = true);
             } catch (error) { state.textContent = error.message; state.style.color = '#b42318'; }
             finally { updateStockButton(); }
         });
         function changed(event) {
             if (!event.target.matches('input,textarea,select')) return;
+            if (event.target === totalQuantity && row.dataset.stocked !== '1' && sizeList.children.length === 1) {
+                sizeList.querySelector('input').value = totalQuantity.value;
+            }
             row.classList.add('has-changes'); state.textContent = 'Chờ tự lưu…'; scheduleSave(); state.style.color = '';
             row.querySelector('[data-row-total]').textContent = format(Number(row.querySelector('[name=quantity]').value) * Number(row.querySelector('[name=unit_price]').value));
             if (event.target.name === 'product_code') {
