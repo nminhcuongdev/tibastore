@@ -209,6 +209,8 @@ class ProductController extends Controller
             'product' => $product,
             'pendingInspection' => $this->inventory->pendingInspectionQuantities($variants->pluck('id')->all()),
             'variants' => $variants,
+            'incomingWorkshopOrders' => \App\Models\WorkshopOrder::where('product_code', $product->code)
+                ->whereNull('stocked_at')->whereNotNull('returned_date')->orderBy('returned_date')->get(),
             'totalQuantity' => $totalQuantity,
             'rentedByProduct' => $rentedByProduct,
             'totalRented' => array_sum($rentedByProduct),

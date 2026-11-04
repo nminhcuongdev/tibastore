@@ -12,6 +12,23 @@ class ProductStockBreakdownTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_workshop_schedule_is_only_a_note_until_stock_is_explicitly_transferred(): void
+    {
+        $this->actingAs(User::create(['code' => 'schedule-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $product = Product::create(['code' => 'SCHED-'.bin2hex(random_bytes(4)), 'name' => 'Test', 'fabric' => '', 'size' => 'XXL', 'stock_quantity' => 0]);
+        $od = \App\Models\WorkshopOrder::create(['product_code' => $product->code, 'supply_source' => 'mua_ngoai',
+            'returned_date' => '2026-11-06', 'quantity' => 2, 'status' => 'da_od',
+            'size_quantities' => [['product_id' => $product->id, 'quantity' => 2]]]);
+        $this->get(route('products.show', $product))->assertOk()->assertSee('Dự kiến hàng về')
+            ->assertSee('06/11/2026')->assertSee('XXL: 2')->assertSee('data-incoming-workshop="'.$od->id.'"', false);
+        $this->assertSame(0, $product->fresh()->stock_quantity);
+        $this->assertNull($od->fresh()->stocked_at);
+        $this->postJson(route('workshop-orders.stock', $od))->assertOk();
+        $this->assertSame(2, $product->fresh()->stock_quantity);
+        $this->get(route('products.show', $product))->assertOk()->assertDontSee('data-incoming-workshop="'.$od->id.'"', false);
+    }
+
     public function test_grouped_stock_can_be_edited_inline_without_changing_rental_links(): void
     {
         $this->actingAs(User::create(['code' => 'inline-stock-'.bin2hex(random_bytes(4)), 'name' => 'Test',

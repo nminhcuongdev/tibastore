@@ -4,7 +4,9 @@
 <form class="stock-editor" data-stock-editor action="{{ route('products.inline-stock', $product) }}">
     @csrf
     <div class="stock-identity">
-        <div class="thumb">@php($image = $variants->first(fn ($variant) => filled($variant->image_path)))
+        <div class="thumb">@php
+            $image = $variants->first(fn ($variant) => filled($variant->image_path));
+        @endphp
             @if($image)<img src="{{ asset('storage/'.$image->image_path) }}" alt="{{ $product->name }}">@else CHƯA CÓ ẢNH @endif
         </div>
         <label>Mã sản phẩm<input name="code" value="{{ $product->code }}" required maxlength="50"></label>
@@ -24,14 +26,37 @@
                 <a href="{{ route('products.track', $variant) }}" class="link-action">Theo dõi</a>
                 <div class="stock-size-notes">
                     @if(!empty($pendingInspection[$variant->id]))<span>{{ $pendingInspection[$variant->id] }} chờ kiểm. </span>@endif
-                    @foreach($variant->expectedReceipts->whereNull('received_at') as $receipt)
-                        <span>Dự kiến {{ $receipt->expected_receive_date?->format('d/m/Y') }}: {{ $receipt->expected_receive_quantity }}. </span>
-                    @endforeach
                 </div>
             </div>
         @endforeach
         </div>
         <button type="button" class="link-action" data-add-stock-size>+ Thêm size</button>
+        <section style="padding:14px;border:1px solid #cbd9ec;border-radius:8px;background:#f6f9ff" aria-label="Dự kiến hàng về">
+            <strong>Dự kiến hàng về</strong>
+            @php
+                $sizeNames = $variants->pluck('size', 'id');
+            @endphp
+            @forelse($incomingWorkshopOrders as $incoming)
+                @php
+                    $incomingLines = $incoming->size_quantities ?? $incoming->purchase_plan['lines'] ?? [];
+                    $incomingSizes = collect($incomingLines)->map(fn ($line) => ($sizeNames[$line['product_id']] ?? 'Size chưa xác định').': '.$line['quantity'])->implode(', ');
+                @endphp
+                <div style="margin-top:10px" data-incoming-workshop="{{ $incoming->id }}">
+                    <b>{{ $incoming->returned_date->format('d/m/Y') }}</b> — {{ $incomingSizes ?: ($incoming->size_note ?: 'Chưa ghi size') }}
+                    <div class="muted">{{ $incoming->order_name ?: 'Chưa có tên đơn' }} · {{ $incoming->supplySourceLabel() }} · {{ $incoming->statusLabel() }}
+                        <a href="{{ route('workshop-orders.index', ['focus' => $incoming->id, 'supply_source' => $incoming->supply_source]) }}#workshop-row-{{ $incoming->id }}" target="_blank" rel="noopener">Xem đặt hàng ↗</a>
+                    </div>
+                </div>
+            @empty
+                <div class="muted" style="margin-top:8px">Chưa có lịch hàng về từ Đặt hàng.</div>
+            @endforelse
+            @foreach($variants as $variant)
+                @foreach($variant->expectedReceipts->whereNull('received_at')->whereNull('workshop_order_id') as $receipt)
+                    <div class="muted" style="margin-top:8px">{{ $receipt->expected_receive_date?->format('d/m/Y') }} — {{ $variant->size }}: {{ $receipt->expected_receive_quantity }} (dự kiến nhập tại Kho)</div>
+                @endforeach
+            @endforeach
+            <small style="display:block;margin-top:10px">Chỉ là lịch dự kiến. Chưa cộng vào tồn kho hoặc đổi số lượng đơn khách.</small>
+        </section>
     </div>
     <span class="stock-save-state" role="status" data-stock-state>Sửa trực tiếp, thay đổi được tự động lưu. Số lượng nhập là hàng còn trong kho.</span>
 </form>
