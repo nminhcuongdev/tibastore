@@ -46,7 +46,10 @@ class OrderDayPeriodTest extends TestCase
         $this->postJson('/orders', $data)->assertUnprocessable()->assertJsonValidationErrors('return_period');
         unset($data['return_period']);
         $this->put('/orders/'.$order->id, $data)->assertSessionHasNoErrors();
-        $this->assertNull($order->fresh()->return_period);
+        $this->assertSame('sang', $order->fresh()->return_period);
+        $data['return_period'] = '';
+        $this->put('/orders/'.$order->id, $data)->assertSessionHasNoErrors();
+        $this->assertSame('sang', $order->fresh()->return_period);
         $data['discount_amount'] = 100001;
         $this->postJson('/orders', $data)->assertUnprocessable()->assertJsonValidationErrors('discount_amount');
         $data['discount_amount'] = -1;

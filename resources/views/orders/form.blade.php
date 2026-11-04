@@ -554,9 +554,8 @@
                 @error('return_date') <div class="error">{{ $message }}</div> @enderror
                 <label for="return_period">Buổi trả</label>
                 <select id="return_period" name="return_period">
-                    <option value="">Chưa chọn buổi</option>
                     @foreach (\App\Models\Order::dayPeriods() as $value => $label)
-                        <option value="{{ $value }}" @selected(old('return_period', $order->return_period) === $value)>{{ $label }}</option>
+                        <option value="{{ $value }}" @selected((old('return_period', $order->return_period) ?: 'sang') === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
                 @error('return_period') <div class="error">{{ $message }}</div> @enderror
@@ -2177,7 +2176,7 @@
             set('phone', d.phone); set('address', d.address);
             set('region', d.region); set('carrier', d.carrier);
             set('pickup_date', d.pickup_date); set('event_date', d.event_date); set('return_date', d.return_date);
-            set('return_period', d.return_period);
+            set('return_period', d.return_period || 'sang');
             set('status', d.status); set('source', d.source);
             set('shipping_fee', d.shipping_fee); set('payment_1', d.payment_1); set('payment_2', d.payment_2);
             set('discount_amount', d.discount_amount);

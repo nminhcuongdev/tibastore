@@ -259,6 +259,7 @@ class OrderController extends Controller
 
     public function availability(Request $request): JsonResponse
     {
+        if (!$request->filled('return_period')) $request->merge(['return_period' => 'sang']);
         $this->inventory->syncDueOrders();
 
         $data = $request->validate([
@@ -624,6 +625,7 @@ class OrderController extends Controller
 
     private function validatedData(Request $request, ?Order $order = null): array
     {
+        if (!$request->filled('return_period')) $request->merge(['return_period' => 'sang']);
         if (is_array($request->input('items'))) {
             $request->merge(['items' => array_map(function ($item) {
                 if (is_array($item) && isset($item['purchase_plan']) && is_string($item['purchase_plan'])) {
