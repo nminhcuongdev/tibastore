@@ -480,6 +480,7 @@
         <form id="order_form" class="form-shell" method="POST" action="{{ $mode === 'create' ? route('orders.store') : route('orders.update', $order) }}">
             <div class="order-editor-section"><span>01</span><div><h2>Thông tin khách hàng</h2><p>Người đặt, liên hệ và ghi chú cho đơn hàng</p></div></div>
             @csrf
+            <input type="hidden" name="_autosave_token" value="{{ old('_autosave_token', (string) \Illuminate\Support\Str::uuid()) }}">
             @if ($mode === 'edit')
                 <input type="hidden" name="return_query" value="{{ old('return_query', request('return_query', '')) }}">
             @endif
@@ -646,7 +647,7 @@
         const productOptions = @json($productOptions, JSON_UNESCAPED_UNICODE);
         const initialItems = @json($initialItems->values(), JSON_UNESCAPED_UNICODE);
         const availabilityUrl = @json(route('orders.availability'));
-        const currentOrderId = @json($mode === 'edit' ? $order->id : null);
+        let currentOrderId = @json($mode === 'edit' ? $order->id : null);
         const itemsContainer = document.getElementById('order_items');
         const addItemButton = document.getElementById('add_item_button');
         const orderForm = document.getElementById('order_form');
@@ -1753,14 +1754,14 @@
                         const summary = document.createElement('summary');
                         summary.textContent = '#' + item.id + ' · ' + (item.order_name || 'Chưa có tên đơn') + ' · ' + item.quantity + ' · ' + item.status;
                         const info = document.createElement('p');
-                        const sameOrder = item.customer_order_id && Number(item.customer_order_id) === Number(@json($order->id));
+                        const sameOrder = item.customer_order_id && Number(item.customer_order_id) === Number(currentOrderId);
                         info.textContent = (sameOrder ? 'Thuộc đơn khách này. ' : 'Đối chiếu với đơn bạn đang lên. ')
                             + 'Size: ' + (item.size_note || 'Chưa ghi') + ' · Nhà cung cấp: ' + (item.supplier || 'Chưa ghi')
                             + ' · Ngày đặt: ' + (item.ordered_date || 'Chưa ghi') + (item.stocked ? ' · Đã nhập kho' : '');
                         const link = document.createElement('a'); link.href = item.url; link.target = '_blank'; link.rel = 'noopener';
                         link.textContent = 'Xem dòng đặt hàng ↗';
                         const apply = document.createElement('button'); apply.type = 'button'; apply.className = 'button secondary';
-                        const otherOrder = item.customer_order_id && Number(item.customer_order_id) !== Number(@json($order->id));
+                        const otherOrder = item.customer_order_id && Number(item.customer_order_id) !== Number(currentOrderId);
                         apply.textContent = otherOrder ? 'Đã thuộc đơn khách khác' : 'Chọn od này — Update vào đơn';
                         apply.disabled = !!otherOrder;
                         apply.addEventListener('click', () => block.applyExistingOd(item));
@@ -1776,7 +1777,7 @@
                 loadRelatedOd();
                 const needed = supplyChoice.value !== 'stock';
                 const link = block.querySelector('[data-od-link]');
-                const savedOrderId = @json($order->id);
+                const savedOrderId = currentOrderId;
                 const canOpen = needed && savedOrderId && block.dataset.productCode && !odDirty
                     && block.dataset.productCode === blockData.code && supplyChoice.value === (blockData.fulfillment_source || 'stock');
                 link.hidden = !canOpen;
@@ -1793,6 +1794,10 @@
             }
             block.addEventListener('input', () => { odDirty = true; updateOdLink(); });
             block.addEventListener('change', () => { odDirty = true; updateOdLink(); });
+            block.addEventListener('order-autosaved', () => {
+                odDirty = false; blockData.code = block.dataset.productCode;
+                blockData.fulfillment_source = supplyChoice.value; updateOdLink(); loadRelatedOd(true);
+            });
             block.querySelector('[data-od-link]').addEventListener('click', event => {
                 if (!event.currentTarget.hasAttribute('href')) {
                     event.preventDefault(); showBlockInfo(block, 'Hãy lưu đơn khách trước khi mở đặt hàng od.');
@@ -2097,7 +2102,7 @@
         // Khi sửa, mỗi đơn có một khoá riêng để nháp của đơn này không đè lên đơn khác.
         const EDIT_DRAFT_PREFIX = 'tibastore_order_edit_draft_v1_';
         const isCreate = @json($mode === 'create');
-        const DRAFT_KEY = @json(
+        let DRAFT_KEY = @json(
             $mode === 'create'
                 ? 'tibastore_order_create_draft_v1'
                 : 'tibastore_order_edit_draft_v1_' . $order->id
@@ -2128,6 +2133,7 @@
             });
             const val = id => { const el = document.getElementById(id); return el ? el.value : ''; };
             return {
+                autosave_token: orderForm.querySelector('[name=_autosave_token]').value,
                 closer_name: val('closer_name'), order_name: val('order_name'),
                 note: val('note'),
                 phone: val('phone'), address: val('address'),
@@ -2170,6 +2176,7 @@
         pruneOldEditDrafts();
 
         function restoreTopFields(d) {
+            if (d.autosave_token) orderForm.querySelector('[name=_autosave_token]').value = d.autosave_token;
             const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
             set('closer_name', d.closer_name); set('order_name', d.order_name);
             set('note', d.note);
@@ -2277,12 +2284,8 @@
 
         // Đơn thực sự được gửi (không bị chặn validate) → xoá nháp.
         // Thành công sẽ chuyển trang; nếu lỗi validate thì old() sẽ dựng lại + lưu nháp mới.
-        orderForm.addEventListener('submit', event => {
-            if (! event.defaultPrevented) {
-                clearDraft();
-            }
-        });
         @include('orders.form-history')
+        @include('orders.autosave')
     </script>
     </div>
 </div>

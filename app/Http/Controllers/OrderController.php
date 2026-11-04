@@ -341,24 +341,37 @@ class OrderController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
+        $request->validate(['_autosave_token' => ['nullable', 'uuid']]);
+        $autosaveKey = $request->filled('_autosave_token') ? hash('sha256', $request->user()->id.':'.$request->input('_autosave_token')) : null;
+        if ($autosaveKey && ($existing = Order::where('autosave_key', $autosaveKey)->first())) {
+            return $this->update($request, $existing);
+        }
         $this->inventory->syncDueOrders();
 
         $data = $this->validatedData($request);
         $items = $data['items'];
         $orderData = $this->orderData($data, $items);
 
-        $order = DB::transaction(function () use ($items, $orderData) {
-            $order = Order::create($orderData);
-            $order->items()->createMany($items);
-            $order->load('items');
-            app(\App\Services\OrderPurchasePlanService::class)->sync($order);
+        try {
+            $order = DB::transaction(function () use ($items, $orderData, $autosaveKey) {
+                $order = Order::create($orderData);
+                if ($autosaveKey) { $order->autosave_key = $autosaveKey; $order->save(); }
+                $order->items()->createMany($items);
+                $order->load('items');
+                app(\App\Services\OrderPurchasePlanService::class)->sync($order);
 
-            $this->inventory->applyStatusAdjustment($order);
+                $this->inventory->applyStatusAdjustment($order);
 
-            return $order;
-        });
+                return $order;
+            });
+        } catch (\Illuminate\Database\QueryException $exception) {
+            if (!$autosaveKey || !($existing = Order::where('autosave_key', $autosaveKey)->first())) throw $exception;
+            return $this->update($request, $existing);
+        }
+
+        if ($request->wantsJson()) return $this->savedOrderResponse($order, 201);
 
         if ($redirect = $this->redirectToDuplicatePurchase($order, 'Đã tạo đơn hàng.')) return $redirect;
 
@@ -446,7 +459,7 @@ class OrderController extends Controller
         ]);
     }
 
-    public function update(Request $request, Order $order): RedirectResponse
+    public function update(Request $request, Order $order): RedirectResponse|JsonResponse
     {
         $this->inventory->syncDueOrders();
 
@@ -486,6 +499,8 @@ class OrderController extends Controller
             $this->inventory->applyStatusAdjustment($lockedOrder);
         });
 
+        if ($request->wantsJson()) return $this->savedOrderResponse($order);
+
         $response = redirect()
             ->route('orders.show', $order)
             ->with('status', 'Đã cập nhật đơn hàng.');
@@ -494,6 +509,13 @@ class OrderController extends Controller
         }
 
         return $response;
+    }
+
+    private function savedOrderResponse(Order $order, int $status = 200): JsonResponse
+    {
+        return response()->json(['id' => $order->id, 'update_url' => route('orders.update', $order),
+            'edit_url' => route('orders.edit', $order), 'show_url' => route('orders.show', $order),
+            'warning' => app(\App\Services\WorkshopDuplicateService::class)->warningForOrder($order->id)['message'] ?? null], $status);
     }
 
     private function redirectToDuplicatePurchase(Order $order, string $message): ?RedirectResponse
