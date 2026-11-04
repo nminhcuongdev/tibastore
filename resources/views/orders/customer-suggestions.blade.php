@@ -7,6 +7,15 @@
     const fields = ['order_name', 'phone', 'address'].map(id => document.getElementById(id));
     const popup = document.getElementById('customer-suggestions');
     const results = popup.querySelector('[data-customer-results]');
+    const sourceInput = document.getElementById('source');
+    let sourceEdited = @json(old('source') !== null);
+    sourceInput.addEventListener('change', event => { if (event.isTrusted) sourceEdited = true; });
+    function fillPreviousSource(customer) {
+        if (!@json($mode === 'create') || sourceEdited || !customer.source) return;
+        if (!Array.from(sourceInput.options).some(option => option.value === customer.source)) return;
+        sourceInput.value = customer.source;
+        sourceInput.dispatchEvent(new Event('change', {bubbles:true}));
+    }
     let active = null, timer, controller, revision = 0;
     fields.forEach(input => { input.autocomplete = 'off'; input.setAttribute('aria-controls', popup.id); input.setAttribute('aria-expanded', 'false'); });
     function close() {
@@ -35,10 +44,17 @@
             try {
                 const url = new URL(@json(route('orders.customer-suggestions')));
                 url.searchParams.set('field', field); url.searchParams.set('q', query);
+                if (@json($order->id)) url.searchParams.set('exclude_order_id', @json($order->id));
                 const response = await fetch(url, {signal:controller.signal, credentials:'same-origin', headers:{Accept:'application/json'}});
                 if (!response.ok) return;
                 const customers = await response.json();
                 if (ticket !== revision || active !== input) return;
+                const normalizeName = value => String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+                const exact = customers.filter(customer => field === 'phone'
+                    ? String(customer.phone || '').replace(/\D/g, '') === query.replace(/\D/g, '')
+                    : field === 'order_name' && normalizeName(customer.order_name) === normalizeName(query));
+                const identities = new Set(exact.map(customer => String(customer.phone || '').replace(/\D/g, '') || normalizeName(customer.order_name)));
+                if (exact.length && identities.size === 1) fillPreviousSource(exact[0]);
                 results.replaceChildren();
                 customers.forEach(customer => {
                     const button = document.createElement('button'); button.type = 'button';
@@ -46,9 +62,14 @@
                     const phone = document.createElement('span'); phone.textContent = 'SĐT: ' + (customer.phone || 'Chưa có');
                     const address = document.createElement('span'); address.textContent = 'Địa chỉ: ' + (customer.address || 'Chưa có');
                     button.append(name, phone, address);
+                    if (customer.source_label) {
+                        const previousSource = document.createElement('span'); previousSource.textContent = 'Nguồn lần gần nhất: ' + customer.source_label;
+                        button.appendChild(previousSource);
+                    }
                     button.addEventListener('click', () => {
                         const source = active;
                         close();
+                        fillPreviousSource(customer);
                         ['phone', 'address'].forEach(id => {
                             if (!customer[id]) return;
                             const target = document.getElementById(id); target.value = customer[id];

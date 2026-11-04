@@ -12,6 +12,27 @@ class CustomerSuggestionsTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_returning_customer_source_follows_latest_order_across_address_changes(): void
+    {
+        $this->actingAs(User::create(['code' => 'source-'.bin2hex(random_bytes(5)),
+            'name' => 'Test', 'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $key = 'Repeat'.bin2hex(random_bytes(5));
+        $product = Product::create(['code' => $key, 'name' => 'Test', 'size' => 'M', 'fabric' => '', 'stock_quantity' => 1]);
+        $data = ['closer_name' => 'Test', 'order_name' => $key, 'product_id' => $product->id,
+            'pickup_date' => '2031-01-01', 'event_date' => '2031-01-02', 'return_date' => '2031-01-03',
+            'phone' => '0987 654-321', 'address' => 'Địa chỉ cũ', 'source' => 'khm_page', 'status' => Order::DEFAULT_STATUS];
+        Order::create($data);
+        $url = '/orders/customer-suggestions?'.http_build_query(['field' => 'order_name', 'q' => $key]);
+        foreach (['khc_page', 'khc_sale', 'khm_sale'] as $source) {
+            $latest = Order::create(array_replace($data, ['source' => $source, 'address' => 'Địa chỉ '.$source]));
+            $rows = $this->getJson($url)->assertOk()->json();
+            foreach ($rows as $row) $this->assertSame($source, $row['source']);
+        }
+        Order::create(array_replace($data, ['source' => 'khm_page', 'status' => 'huy_don']));
+        $this->getJson($url)->assertOk()->assertJsonPath('0.source', 'khm_sale');
+        $this->getJson($url.'&exclude_order_id='.$latest->id)->assertOk()->assertJsonPath('0.source', 'khc_sale');
+    }
+
     public function test_customer_contacts_can_be_found_by_name_phone_and_address_without_duplicates(): void
     {
         $this->actingAs(User::create(['code' => 'contacts-'.bin2hex(random_bytes(5)),

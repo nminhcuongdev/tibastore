@@ -23,11 +23,12 @@ class OrderController extends Controller
         $data = $request->validate([
             'field' => ['required', 'in:order_name,phone,address'],
             'q' => ['nullable', 'string', 'max:500'],
+            'exclude_order_id' => ['nullable', 'integer'],
         ]);
         $term = trim($data['q'] ?? '');
         if (mb_strlen($term) < 2) return response()->json([]);
 
-        $query = Order::query()->where(function ($query) {
+        $query = Order::query()->when($data['exclude_order_id'] ?? null, fn ($query, $id) => $query->where('id', '!=', $id))->where(function ($query) {
             $query->whereNotNull('phone')->where('phone', '<>', '')
                 ->orWhere(fn ($query) => $query->whereNotNull('address')->where('address', '<>', ''));
         });
@@ -43,7 +44,19 @@ class OrderController extends Controller
         $customers = $query->select('order_name', 'phone', 'address')
             ->selectRaw('MAX(id) AS latest_id')->groupBy('order_name', 'phone', 'address')
             ->orderByDesc('latest_id')->limit(10)->get()
-            ->map(fn ($order) => $order->only(['order_name', 'phone', 'address']));
+            ->map(function ($order) use ($data) {
+                $previous = Order::query()->where('status', '!=', 'huy_don')
+                    ->when($data['exclude_order_id'] ?? null, fn ($query, $id) => $query->where('id', '!=', $id));
+                $digits = preg_replace('/[^0-9]/', '', $order->phone ?? '');
+                if ($digits !== '') {
+                    $previous->whereRaw("REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '.', ''), '(', ''), ')', '') = ?", [$digits]);
+                } else {
+                    $previous->where('order_name', $order->order_name)->where(fn ($query) => $query->whereNull('phone')->orWhere('phone', ''));
+                }
+                $latest = $previous->orderByDesc('id')->first(['source']);
+                return $order->only(['order_name', 'phone', 'address']) + ['source' => $latest?->source,
+                    'source_label' => Order::sources()[$latest?->source] ?? null];
+            });
 
         return response()->json($customers)->header('Cache-Control', 'no-store');
     }
