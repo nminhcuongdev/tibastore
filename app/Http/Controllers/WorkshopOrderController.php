@@ -257,7 +257,12 @@ class WorkshopOrderController extends Controller
     {
         $message = DB::transaction(function () use ($workshopOrder, $request) {
             $item = WorkshopOrder::whereKey($workshopOrder->id)->lockForUpdate()->firstOrFail();
-            if ($item->stocked_at) return 'Dòng này đã được đẩy lên kho trước đó, không cộng thêm.';
+            if ($item->image_path && $item->product_code !== WorkshopOrder::NO_PRODUCT_CODE) {
+                foreach (Product::where('code', $item->product_code)->orderBy('id')->lockForUpdate()->get() as $variant) {
+                    if ($variant->image_path !== $item->image_path) $variant->update(['image_path' => $item->image_path]);
+                }
+            }
+            if ($item->stocked_at) return $item->image_path ? 'Đã cập nhật ảnh vào kho. Số lượng không cộng thêm.' : 'Dòng này đã được đẩy lên kho trước đó, không cộng thêm.';
             $lines = $item->size_quantities ?? ($item->purchase_plan['lines'] ?? null);
             if (!$lines || $item->product_code === WorkshopOrder::NO_PRODUCT_CODE) {
                 throw \Illuminate\Validation\ValidationException::withMessages(['size_quantities' => 'Hãy chọn mã hàng, nhập size và số lượng từng size rồi lưu dòng trước khi đẩy lên kho.']);
@@ -289,7 +294,7 @@ class WorkshopOrderController extends Controller
                 'previous_status' => $item->status, 'lines' => $snapshot, 'user_id' => $request->user()->id,
                 'transferred_at' => $transferredAt, 'can_undo' => !empty($snapshot)]);
             $item->update(['stocked_at' => $transferredAt, 'status' => WorkshopOrder::STATUS_ARRIVED]);
-            return 'Đã cộng số lượng từng size vào kho.';
+            return $item->image_path ? 'Đã cộng số lượng từng size và cập nhật ảnh vào kho.' : 'Đã cộng số lượng từng size vào kho.';
         });
         return $request->wantsJson() ? response()->json(['message' => $message]) : back()->with('status', $message);
     }

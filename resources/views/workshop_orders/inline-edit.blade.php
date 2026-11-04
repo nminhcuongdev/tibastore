@@ -391,8 +391,8 @@
         const stockButton = document.createElement('button'); stockButton.type = 'button'; stockButton.className = 'inline-save';
         row.querySelector('[data-stock-cell]').appendChild(stockButton);
         function updateStockButton() {
-            stockButton.textContent = row.dataset.stocked === '1' ? 'Đã đẩy lên kho' : 'Đẩy lên kho';
-            stockButton.disabled = !row.dataset.stockUrl || row.dataset.stocked === '1';
+            stockButton.textContent = row.dataset.stocked === '1' ? (customImage ? 'Cập nhật ảnh lên kho' : 'Đã đẩy lên kho') : 'Đẩy lên kho';
+            stockButton.disabled = !row.dataset.stockUrl || (row.dataset.stocked === '1' && !customImage);
         }
         updateStockButton();
         stockButton.addEventListener('click', async () => {
@@ -469,6 +469,7 @@
                 if (pendingImage === sentImage) {
                     if (pendingImage) customImage = data.image || null;
                     pendingImage = null; upload.value = '';
+                    updateStockButton();
                     if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
                 }
                 row.dataset.orderId = data.id;

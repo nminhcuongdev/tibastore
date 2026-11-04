@@ -13,6 +13,32 @@ class WorkshopStockTransferTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_stock_transfer_syncs_image_to_all_sizes_and_retry_only_updates_image(): void
+    {
+        $this->actingAs(User::create(['code' => 'img-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $code = 'IMG-'.bin2hex(random_bytes(4));
+        $m = Product::create(['code' => $code, 'name' => 'Test', 'size' => 'M', 'fabric' => '', 'stock_quantity' => 0]);
+        $l = Product::create(['code' => $code, 'name' => 'Test', 'size' => 'L', 'fabric' => '', 'stock_quantity' => 0,
+            'image_path' => 'products/old.jpg']);
+        $item = WorkshopOrder::create(['product_code' => $code, 'supply_source' => WorkshopOrder::SUPPLY_OUTSIDE,
+            'quantity' => 2, 'status' => WorkshopOrder::STATUS_NOT_YET, 'image_path' => 'workshop-orders/flower.jpg',
+            'size_quantities' => [['product_id' => $m->id, 'quantity' => 2]]]);
+        $url = route('workshop-orders.stock', $item);
+        $this->postJson($url)->assertOk();
+        $this->assertSame('workshop-orders/flower.jpg', $m->fresh()->image_path);
+        $this->assertSame('workshop-orders/flower.jpg', $l->fresh()->image_path);
+        $this->assertSame(2, $m->fresh()->stock_quantity);
+        $this->assertSame(0, $l->fresh()->stock_quantity);
+        $item->update(['image_path' => 'workshop-orders/new-flower.jpg']);
+        $this->postJson($url)->assertOk();
+        $this->assertSame('workshop-orders/new-flower.jpg', $m->fresh()->image_path);
+        $this->assertSame('workshop-orders/new-flower.jpg', $l->fresh()->image_path);
+        $this->assertSame(2, $m->fresh()->stock_quantity);
+        $this->assertSame(1, StockImportHistory::where('product_id', $m->id)->count());
+        $this->get('/workshop-orders?supply_source=mua_ngoai')->assertOk()->assertSee('Cập nhật ảnh lên kho');
+    }
+
     public function test_size_quantities_are_saved_and_stock_transfer_is_idempotent(): void
     {
         $this->actingAs(User::create(['code' => 'push-'.bin2hex(random_bytes(4)), 'name' => 'Test',
