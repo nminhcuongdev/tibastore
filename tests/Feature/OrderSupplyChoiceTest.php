@@ -15,6 +15,25 @@ class OrderSupplyChoiceTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_related_workshop_suggestions_filter_by_code_and_source_without_changing_orders(): void
+    {
+        $this->actingAs(User::create(['code' => 'related-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $code = 'RELATED-'.bin2hex(random_bytes(4));
+        $data = ['product_code' => $code, 'supply_source' => WorkshopOrder::SUPPLY_OUTSIDE,
+            'quantity' => 3, 'size_note' => 'M: 3', 'order_name' => 'Đơn đã od', 'status' => WorkshopOrder::STATUS_ORDERED];
+        $match = WorkshopOrder::create($data);
+        WorkshopOrder::create(array_replace($data, ['supply_source' => WorkshopOrder::SUPPLY_WORKSHOP]));
+        WorkshopOrder::create(array_replace($data, ['product_code' => $code.'-OTHER']));
+        $this->getJson(route('workshop-orders.related-orders', ['code' => $code, 'supply_source' => WorkshopOrder::SUPPLY_OUTSIDE]))
+            ->assertOk()->assertJsonCount(1)->assertJsonPath('0.id', $match->id)->assertJsonPath('0.status', 'Đã od')
+            ->assertJsonPath('0.quantity', 3)->assertJsonPath('0.size_note', 'M: 3');
+        $this->assertSame(WorkshopOrder::STATUS_ORDERED, $match->fresh()->status);
+        $this->assertNull($match->fresh()->customer_order_id);
+        $this->getJson(route('workshop-orders.related-orders', ['code' => $code, 'supply_source' => 'invalid']))
+            ->assertUnprocessable();
+    }
+
     public function test_supply_choice_defaults_to_stock_and_prefills_linked_order_without_duplicates(): void
     {
         $this->actingAs(User::create(['code' => 'supply-'.bin2hex(random_bytes(4)), 'name' => 'Test',

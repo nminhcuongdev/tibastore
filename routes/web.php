@@ -80,6 +80,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/workshop-orders/redo-last-edit', [WorkshopOrderController::class, 'redoLastEdit'])->name('workshop-orders.redo-last-edit');
     Route::post('/workshop-orders/create-product', [WorkshopOrderController::class, 'createProduct'])->name('workshop-orders.create-product');
     Route::get('/workshop-orders/suggest-product-code', [WorkshopOrderController::class, 'suggestProductCode'])->name('workshop-orders.suggest-product-code');
+    Route::get('/workshop-orders/related-orders', [WorkshopOrderController::class, 'relatedOrders'])->name('workshop-orders.related-orders');
     Route::resource('workshop-orders', WorkshopOrderController::class)->except(['show']);
 
     Route::middleware('role:admin')->group(function () {

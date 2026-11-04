@@ -1706,9 +1706,54 @@
             sourceBox.innerHTML = `<label>Nguồn hàng mã này</label><select data-supply-choice aria-label="Nguồn hàng mã này"><option value="stock">Sẵn kho</option><option value="xuong_may">Cần od – Xưởng</option><option value="mua_ngoai">Cần od – Mua ngoài</option></select><a data-od-link target="_blank" rel="noopener" hidden>Đến đặt hàng od ↗</a><small data-od-hint hidden>Lưu đơn trước để mở đúng mã và số lượng cần đặt.</small>`;
             block.querySelector('.product-picker-cell').appendChild(sourceBox);
             const supplyChoice = block.querySelector('[data-supply-choice]');
+            const checkOd = document.createElement('button'); checkOd.type = 'button'; checkOd.className = 'button secondary';
+            checkOd.textContent = 'Kiểm tra đã od';
+            const relatedOd = document.createElement('div'); relatedOd.setAttribute('aria-live', 'polite');
+            sourceBox.append(checkOd, relatedOd);
+            let relatedKey = '', relatedRequest = 0;
+            async function loadRelatedOd(force = false) {
+                const code = block.dataset.productCode;
+                const source = supplyChoice.value;
+                const needed = source !== 'stock' && !!code;
+                checkOd.hidden = !needed; relatedOd.hidden = !needed;
+                const key = needed ? code + '|' + source : '';
+                if (!force && key === relatedKey) return;
+                relatedKey = key;
+                const requestId = ++relatedRequest;
+                relatedOd.replaceChildren();
+                if (!needed) return;
+                relatedOd.textContent = 'Đang kiểm tra các dòng đặt hàng…';
+                try {
+                    const url = new URL(@json(route('workshop-orders.related-orders')));
+                    url.searchParams.set('code', code); url.searchParams.set('supply_source', source);
+                    const response = await fetch(url, {credentials:'same-origin', headers:{Accept:'application/json'}});
+                    if (!response.ok) throw new Error('Chưa kiểm tra được. Bấm Kiểm tra đã od để thử lại.');
+                    const rows = await response.json();
+                    if (requestId !== relatedRequest || !block.isConnected) return;
+                    relatedOd.replaceChildren();
+                    const title = document.createElement('p');
+                    title.textContent = rows.length ? 'Các dòng đặt hàng cùng mã và nguồn (mới nhất):' : 'Chưa tìm thấy dòng đặt hàng cùng mã và nguồn.';
+                    relatedOd.appendChild(title);
+                    rows.forEach(item => {
+                        const details = document.createElement('details');
+                        const summary = document.createElement('summary');
+                        summary.textContent = '#' + item.id + ' · ' + (item.order_name || 'Chưa có tên đơn') + ' · ' + item.quantity + ' · ' + item.status;
+                        const info = document.createElement('p');
+                        const sameOrder = item.customer_order_id && Number(item.customer_order_id) === Number(@json($order->id));
+                        info.textContent = (sameOrder ? 'Thuộc đơn khách này. ' : 'Đối chiếu với đơn bạn đang lên. ')
+                            + 'Size: ' + (item.size_note || 'Chưa ghi') + ' · Nhà cung cấp: ' + (item.supplier || 'Chưa ghi')
+                            + ' · Ngày đặt: ' + (item.ordered_date || 'Chưa ghi') + (item.stocked ? ' · Đã nhập kho' : '');
+                        const link = document.createElement('a'); link.href = item.url; link.target = '_blank'; link.rel = 'noopener';
+                        link.textContent = 'Xem dòng đặt hàng ↗';
+                        details.append(summary, info, link); relatedOd.appendChild(details);
+                    });
+                } catch (error) { if (requestId === relatedRequest) relatedOd.textContent = error.message; }
+            }
+            checkOd.addEventListener('click', () => loadRelatedOd(true));
             supplyChoice.value = blockData.fulfillment_source || 'stock';
             setupPurchasePlan(block, blockData.purchase_plan);
             function updateOdLink() {
+                loadRelatedOd();
                 const needed = supplyChoice.value !== 'stock';
                 const link = block.querySelector('[data-od-link]');
                 const savedOrderId = @json($order->id);

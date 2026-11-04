@@ -466,6 +466,21 @@ class WorkshopOrderController extends Controller
         return response()->json(['code' => $suggestion, 'exists' => isset($used[mb_strtolower($code)])]);
     }
 
+    public function relatedOrders(Request $request): JsonResponse
+    {
+        $data = $request->validate(['code' => ['required', 'string', 'max:50'],
+            'supply_source' => ['required', Rule::in(array_keys(WorkshopOrder::supplySources()))]]);
+        $rows = WorkshopOrder::where('product_code', $data['code'])->where('supply_source', $data['supply_source'])
+            ->orderByDesc('id')->limit(20)->get();
+        return response()->json($rows->map(fn ($item) => [
+            'id' => $item->id, 'order_name' => $item->order_name, 'customer_order_id' => $item->customer_order_id,
+            'quantity' => $item->quantity, 'size_note' => $item->size_note, 'supplier' => $item->source,
+            'ordered_date' => $item->ordered_date?->format('d/m/Y'), 'status' => $item->statusLabel(),
+            'stocked' => (bool) $item->stocked_at,
+            'url' => route('workshop-orders.index', ['focus' => $item->id, 'supply_source' => $item->supply_source]).'#workshop-row-'.$item->id,
+        ]));
+    }
+
     /** Danh sách mã để chọn: gộp theo mã vì một mã gồm nhiều size. */
     private function productCodes(): array
     {
