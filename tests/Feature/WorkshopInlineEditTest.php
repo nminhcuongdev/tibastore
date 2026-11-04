@@ -14,6 +14,24 @@ class WorkshopInlineEditTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_create_product_from_workshop_then_save_order_without_adding_stock(): void
+    {
+        $this->actingAs(User::create(['code' => 'quick-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $data = ['code' => 'NEW-'.bin2hex(random_bytes(4)), 'name' => 'Áo mới', 'size' => 'M'];
+        $this->postJson(route('workshop-orders.create-product'), $data)->assertCreated()
+            ->assertJsonPath('code', $data['code'])->assertJsonPath('sizes.0.size', 'M');
+        $product = Product::where('code', $data['code'])->firstOrFail();
+        $this->assertSame(0, $product->stock_quantity);
+        $this->postJson('/workshop-orders', ['product_code' => $product->code,
+            'supply_source' => WorkshopOrder::SUPPLY_OUTSIDE, 'quantity' => 2,
+            'status' => WorkshopOrder::DEFAULT_STATUS])->assertCreated()->assertJsonPath('product_name', $data['name']);
+        $this->postJson(route('workshop-orders.create-product'), $data)->assertUnprocessable()->assertJsonValidationErrors('code');
+        $this->postJson(route('workshop-orders.create-product'), ['code' => ' ', 'name' => '', 'size' => ''])
+            ->assertUnprocessable()->assertJsonValidationErrors(['code', 'name', 'size']);
+        $this->assertSame(1, Product::where('code', $data['code'])->count());
+    }
+
     public function test_new_order_defaults_to_vietnam_date_and_preserves_manual_dates(): void
     {
         $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-02 18:30:00', 'UTC'));

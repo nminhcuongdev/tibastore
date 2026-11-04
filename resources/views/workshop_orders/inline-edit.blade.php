@@ -176,6 +176,44 @@
         });
         const form = row.querySelector('[data-inline-edit]');
         const state = row.querySelector('[data-save-state]');
+        const createProduct = document.createElement('button');
+        createProduct.type = 'button'; createProduct.textContent = '+ Tạo mã mới';
+        codeInput.closest('td').appendChild(createProduct);
+        createProduct.addEventListener('click', () => {
+            const dialog = document.createElement('dialog');
+            dialog.style.cssText = 'width:420px;max-width:90vw;border:1px solid #cbd5e1;border-radius:12px;padding:24px';
+            const editor = document.createElement('form');
+            const title = document.createElement('h3'); title.textContent = 'Tạo mã hàng mới'; editor.appendChild(title);
+            const fields = {};
+            [['code', 'Mã hàng', 50], ['name', 'Tên sản phẩm', 255], ['size', 'Size', 50]].forEach(([name, text, max]) => {
+                const label = document.createElement('label'); label.textContent = text;
+                const input = document.createElement('input'); input.required = true; input.maxLength = max;
+                input.style.cssText = 'display:block;width:100%;box-sizing:border-box;margin:6px 0 14px;padding:10px';
+                fields[name] = input; label.appendChild(input); editor.appendChild(label);
+            });
+            fields.code.value = codeInput.value === @json(\App\Models\WorkshopOrder::NO_PRODUCT_CODE) ? '' : codeInput.value;
+            const hint = document.createElement('p'); hint.textContent = 'Mã mới có tồn kho bằng 0. Bạn có thể thêm các size khác trong Kho.';
+            const message = document.createElement('p'); message.setAttribute('role', 'alert');
+            const submit = document.createElement('button'); submit.type = 'submit'; submit.textContent = 'Tạo mã và chọn';
+            const cancel = document.createElement('button'); cancel.type = 'button'; cancel.textContent = 'Hủy';
+            cancel.addEventListener('click', () => dialog.close());
+            editor.append(hint, message, submit, cancel); dialog.appendChild(editor); document.body.appendChild(dialog);
+            dialog.addEventListener('close', () => dialog.remove()); dialog.showModal(); fields.code.focus();
+            editor.addEventListener('submit', async event => {
+                event.preventDefault(); submit.disabled = true; cancel.disabled = true;
+                try {
+                    const body = new FormData(); body.append('_token', form.querySelector('[name=_token]').value);
+                    Object.entries(fields).forEach(([name, input]) => body.append(name, input.value.trim()));
+                    const response = await fetch(@json(route('workshop-orders.create-product')), {method:'POST', body, credentials:'same-origin', headers:{Accept:'application/json'}});
+                    const product = await response.json();
+                    if (!response.ok) throw new Error(product.errors ? Object.values(product.errors).flat().join(' ') : product.message);
+                    catalog.push(product); document.dispatchEvent(new CustomEvent('workshop-product-created', {detail:product})); codeInput.value = product.code;
+                    codeInput.dispatchEvent(new Event('change', {bubbles:true}));
+                    refreshCodeLink(); refreshWarehouseSizeLink(); dialog.close();
+                } catch (error) { message.textContent = error.message || 'Chưa tạo được mã. Vui lòng thử lại.'; }
+                finally { submit.disabled = false; cancel.disabled = false; }
+            });
+        });
         let saveTimer, saving = false, revision = 0;
         function scheduleSave() {
             revision++;

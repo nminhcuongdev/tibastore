@@ -427,9 +427,21 @@ class WorkshopOrderController extends Controller
         return $data;
     }
 
-    /**
-     * Danh sách mã để chọn: gộp theo mã vì một mã gồm nhiều size.
-     */
+    public function createProduct(Request $request): JsonResponse
+    {
+        $request->merge(['code' => trim((string) $request->input('code'))]);
+        $data = $request->validate([
+            'code' => ['required', 'string', 'max:50', Rule::notIn([WorkshopOrder::NO_PRODUCT_CODE]), Rule::unique('products', 'code')],
+            'name' => ['required', 'string', 'max:255'],
+            'size' => ['required', 'string', 'max:50'],
+        ], ['code.unique' => 'Mã hàng đã tồn tại trong kho.']);
+        $product = Product::create($data + ['stock_quantity' => 0, 'fabric' => '', 'rental_price' => 0]);
+
+        return response()->json(['code' => $product->code, 'name' => $product->name,
+            'category' => 'Chưa phân loại', 'sizes' => [['id' => $product->id, 'size' => $product->size]], 'image' => null], 201);
+    }
+
+    /** Danh sách mã để chọn: gộp theo mã vì một mã gồm nhiều size. */
     private function productCodes(): array
     {
         return Product::query()

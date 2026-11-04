@@ -78,6 +78,7 @@ Route::middleware('auth')->group(function () {
         ->name('workshop-orders.delete-stock-history');
     Route::post('/workshop-orders/undo-last-edit', [WorkshopOrderController::class, 'undoLastEdit'])->name('workshop-orders.undo-last-edit');
     Route::post('/workshop-orders/redo-last-edit', [WorkshopOrderController::class, 'redoLastEdit'])->name('workshop-orders.redo-last-edit');
+    Route::post('/workshop-orders/create-product', [WorkshopOrderController::class, 'createProduct'])->name('workshop-orders.create-product');
     Route::resource('workshop-orders', WorkshopOrderController::class)->except(['show']);
 
     Route::middleware('role:admin')->group(function () {

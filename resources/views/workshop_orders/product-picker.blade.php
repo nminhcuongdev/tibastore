@@ -9,6 +9,7 @@
 <script>
 (function () {
 const catalog = @json($productCodes);
+document.addEventListener('workshop-product-created', event => catalog.push(event.detail));
 const body = document.querySelector('[data-workshop-rows]');
     const picker = document.getElementById('workshop-product-picker');
     const pickerSearch = document.getElementById('picker-search');
