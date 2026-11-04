@@ -1726,6 +1726,8 @@
             const searchInput = block.querySelector('[data-search]');
             const selectedInfo = block.querySelector('[data-selected-info]');
             const categorySelect = block.querySelector('[data-category]');
+            categorySelect.before(searchInput);
+            categorySelect.options[0].textContent = 'Lọc danh mục (không bắt buộc)';
             [...new Set(productOptions.flatMap(group => group.items.map(item => item.category)).filter(Boolean))].sort((a,b) => a.localeCompare(b,'vi')).forEach(category => { const option = document.createElement('option'); option.value = category; option.textContent = category; categorySelect.appendChild(option); });
             categorySelect.addEventListener('change', () => renderSuggestions(block, ''));
 
@@ -1734,6 +1736,7 @@
             block.querySelector('[data-block-days]').value = blockData.days || 1;
 
             searchInput.addEventListener('input', () => {
+                categorySelect.value = '';
                 if (block.dataset.productCode) {
                     block.dataset.productCode = '';
                     clearSizeRows(block);
@@ -1747,6 +1750,18 @@
             });
 
             searchInput.addEventListener('focus', () => renderSuggestions(block, searchInput.value));
+            searchInput.addEventListener('keydown', event => {
+                if (event.key !== 'Enter') return;
+                event.preventDefault();
+                const code = searchInput.value.trim().toLowerCase();
+                const group = productOptions.find(item => item.code.toLowerCase() === code);
+                if (group && (block.querySelector('[data-supply-choice]').value !== 'stock' || group.items.some(product => stockLimit(product) > 0))) {
+                    categorySelect.value = '';
+                    selectProductCode(block, group.code);
+                } else {
+                    renderSuggestions(block, searchInput.value);
+                }
+            });
 
             block.querySelector('[data-add-size]').addEventListener('click', () => addSizeForBlock(block));
 
