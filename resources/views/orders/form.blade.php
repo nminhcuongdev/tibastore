@@ -624,7 +624,7 @@
             <div class="field full">
                 <div id="stock_conflict" class="stock-conflict" style="display:none"></div>
                 <div id="turnaround_warning" class="stock-conflict" role="alert" style="display:none"></div>
-                <div class="order-entry-wrap"><table class="order-entry-table"><colgroup><col style="width:4%"><col style="width:23%"><col style="width:11%"><col style="width:31%"><col style="width:10%"><col style="width:7%"><col style="width:10%"><col style="width:4%"></colgroup><thead><tr><th>STT</th><th>Mã / Ảnh</th><th>Tên sản phẩm</th><th>Size · Số lượng · Ghi chú</th><th>Giá thuê</th><th>Số ngày</th><th>Thành tiền</th><th></th></tr></thead><tbody id="order_items" class="order-items"></tbody></table></div>
+                <div class="order-entry-wrap"><table class="order-entry-table"><colgroup><col style="width:4%"><col style="width:31%"><col style="width:23%"><col style="width:14%"><col style="width:10%"><col style="width:14%"><col style="width:4%"></colgroup><thead><tr><th>STT</th><th>Mã / Ảnh</th><th>Size · Số lượng · Ghi chú</th><th>Giá thuê</th><th>Số ngày</th><th>Thành tiền</th><th></th></tr></thead><tbody id="order_items" class="order-items"></tbody></table></div>
                 <div class="items-actions">
                     <button id="add_item_button" class="button secondary" type="button">+ Thêm sản phẩm</button>
                 </div>
@@ -1707,7 +1707,6 @@
             block.innerHTML = `
                 <td class="entry-number"><span data-block-number></span><div class="drag-handle" data-drag-handle title="Kéo để sắp xếp">&#8942;&#8942;</div></td>
                 <td class="product-picker-cell"><label class="entry-sr-only" for="${searchId}">Mã hàng</label><select data-category aria-label="Lọc danh mục"><option value="">Tất cả danh mục</option></select><input id="${searchId}" data-search type="search" autocomplete="off" placeholder="Nhập mã hoặc tên…" required><button class="entry-code-thumb" data-size-thumb type="button" disabled aria-label="Phóng to ảnh sản phẩm"><img data-code-preview alt="" hidden></button><div data-suggestions class="product-suggestions"></div><div data-row-error class="error row-error"></div></td>
-                <td><div data-selected-info class="selected-product-info"></div></td>
                 <td><div data-size-rows class="size-rows"></div><div style="margin:12px 0;padding:10px 12px;background:#eff6ff;border:1px solid #c3d4ed;border-radius:8px;color:#1e3a5f;font-weight:800" role="status">Tổng số lượng: <span data-block-quantity>0</span></div><button class="button secondary" data-add-size type="button" disabled>+ Thêm size</button></td>
                 <td><label class="entry-sr-only">Giá thuê</label><input data-block-rental type="number" min="0" step="1000" value="0" aria-label="Giá thuê mã hàng"></td>
                 <td><input data-block-days type="text" inputmode="decimal" value="1" required aria-label="Số ngày thuê mã hàng" placeholder="1,5"></td>
@@ -1717,6 +1716,8 @@
             itemIndex += 1;
 
             const sourceBox = document.createElement('div'); sourceBox.className = 'entry-supply-choice';
+            const productInfo = document.createElement('div'); productInfo.dataset.selectedInfo = ''; productInfo.className = 'selected-product-info';
+            block.querySelector('.product-picker-cell').appendChild(productInfo);
             sourceBox.innerHTML = `<label>Nguồn hàng mã này</label><select data-supply-choice aria-label="Nguồn hàng mã này"><option value="stock">Sẵn kho</option><option value="xuong_may">Cần od – Xưởng</option><option value="mua_ngoai">Cần od – Mua ngoài</option></select><a data-od-link target="_blank" rel="noopener" hidden>Đến đặt hàng od ↗</a><small data-od-hint hidden>Lưu đơn trước để mở đúng mã và số lượng cần đặt.</small>`;
             block.querySelector('.product-picker-cell').appendChild(sourceBox);
             const supplyChoice = block.querySelector('[data-supply-choice]');
