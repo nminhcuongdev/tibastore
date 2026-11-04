@@ -2183,5 +2183,6 @@
     </div>
 </div>
 @include('orders.list-position')
+@include('orders.customer-suggestions')
 </body>
 </html>

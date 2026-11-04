@@ -51,6 +51,7 @@ Route::middleware('auth')->group(function () {
         ->name('products.discontinued');
     Route::resource('products', ProductController::class);
     Route::post('/orders/availability', [OrderController::class, 'availability'])->name('orders.availability');
+    Route::get('/orders/customer-suggestions', [OrderController::class, 'customerSuggestions'])->name('orders.customer-suggestions');
     Route::get('/orders/{order}/modal-data', [OrderController::class, 'modalData'])->name('orders.modal-data');
     Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
     Route::patch('/orders/{order}/payment-status', [OrderController::class, 'updatePaymentStatus'])->name('orders.payment-status');

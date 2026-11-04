@@ -18,6 +18,36 @@ class OrderController extends Controller
     {
     }
 
+    public function customerSuggestions(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'field' => ['required', 'in:order_name,phone,address'],
+            'q' => ['nullable', 'string', 'max:500'],
+        ]);
+        $term = trim($data['q'] ?? '');
+        if (mb_strlen($term) < 2) return response()->json([]);
+
+        $query = Order::query()->where(function ($query) {
+            $query->whereNotNull('phone')->where('phone', '<>', '')
+                ->orWhere(fn ($query) => $query->whereNotNull('address')->where('address', '<>', ''));
+        });
+        $pattern = '%'.addcslashes($term, '\\%_').'%';
+        if ($data['field'] === 'phone') {
+            $digits = preg_replace('/[^0-9]/', '', $term);
+            if (strlen($digits) < 2) return response()->json([]);
+            $query->whereRaw("REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '.', ''), '(', ''), ')', '') LIKE ?", ['%'.$digits.'%']);
+        } else {
+            $query->where($data['field'], 'like', $pattern);
+        }
+
+        $customers = $query->select('order_name', 'phone', 'address')
+            ->selectRaw('MAX(id) AS latest_id')->groupBy('order_name', 'phone', 'address')
+            ->orderByDesc('latest_id')->limit(10)->get()
+            ->map(fn ($order) => $order->only(['order_name', 'phone', 'address']));
+
+        return response()->json($customers)->header('Cache-Control', 'no-store');
+    }
+
     public function index(Request $request): View
     {
         $this->inventory->syncDueOrders();
