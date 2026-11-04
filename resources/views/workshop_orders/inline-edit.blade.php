@@ -187,6 +187,22 @@
         const sizeList = document.createElement('div');
         const addSize = document.createElement('button'); addSize.type = 'button'; addSize.textContent = '+ Thêm size và số lượng';
         sizeEditor.append(sizeList, addSize); sizeCell.appendChild(sizeEditor);
+        const addWarehouseSize = document.createElement('a');
+        addWarehouseSize.className = 'workshop-add-warehouse-size';
+        addWarehouseSize.textContent = 'Thêm size trong Kho ↗';
+        addWarehouseSize.target = '_blank'; addWarehouseSize.rel = 'noopener';
+        sizeEditor.appendChild(addWarehouseSize);
+        function refreshWarehouseSizeLink() {
+            const product = catalog.find(item => item.code.trim().toLowerCase() === codeInput.value.trim().toLowerCase());
+            const url = product?.sizes?.length
+                ? @json(route('products.show', ['product' => '__PRODUCT__'])).replace('__PRODUCT__', product.sizes[0].id)
+                : (row.dataset.warehouseCode === codeInput.value ? row.dataset.warehouseUrl : null);
+            addWarehouseSize.hidden = !url;
+            if (url) addWarehouseSize.href = url; else addWarehouseSize.removeAttribute('href');
+        }
+        refreshWarehouseSizeLink();
+        codeInput.addEventListener('input', refreshWarehouseSizeLink);
+        codeInput.addEventListener('change', refreshWarehouseSizeLink);
         const managed = row.dataset.managedPlan === '1';
         let savedSizes = JSON.parse(row.dataset.sizeQuantities || '[]');
         function readSizes() {
@@ -325,6 +341,7 @@
                 row.dataset.warehouseCode = data.product_code || '';
                 row.dataset.warehouseUrl = data.product_url || '';
                 refreshCodeLink(); refreshNameLink();
+                refreshWarehouseSizeLink();
                 applyDuplicateWarnings(data.duplicate_rows || {});
                 if (revision === sentRevision) {
                     row.classList.remove('has-changes');
