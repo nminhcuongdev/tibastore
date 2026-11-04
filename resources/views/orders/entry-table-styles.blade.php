@@ -14,6 +14,12 @@
     .order-entry-table .product-picker-cell [data-search]:focus { background: #a64000; border-color: #7e3000; outline: 3px solid #ffc58c; outline-offset: 2px; }
     .order-entry-table input, .order-entry-table select { width: 100%; min-width: 0; padding: 7px; font-size: 12px !important; border-radius: 5px; }
     .order-entry-table input[data-block-rental], .order-entry-table input[data-block-days] { text-align: right; }
+    .order-entry-table input[data-block-rental] { appearance: textfield; -moz-appearance: textfield; }
+    .order-entry-table input[data-block-rental]::-webkit-inner-spin-button,
+    .order-entry-table input[data-block-rental]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .order-entry-table input[data-block-rental], .order-entry-table input[data-block-days],
+    .order-entry-table [data-block-subtotal] { font-variant-numeric: tabular-nums; }
+    .order-entry-table .entry-amount { white-space: nowrap; }
     .order-entry-table .entry-number { text-align: center; color: #8b99ad; }
     .order-entry-table .drag-handle { padding: 8px 0; margin: 5px 0 0; font-size: 17px; justify-content: center; }
     .order-entry-table .entry-code-thumb { display: block; width: 72px; height: 82px; border: 1px solid #e0e7ef; background: white; margin: 9px auto 0; padding: 3px; border-radius: 6px; }

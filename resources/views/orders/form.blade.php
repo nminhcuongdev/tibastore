@@ -624,7 +624,7 @@
             <div class="field full">
                 <div id="stock_conflict" class="stock-conflict" style="display:none"></div>
                 <div id="turnaround_warning" class="stock-conflict" role="alert" style="display:none"></div>
-                <div class="order-entry-wrap"><table class="order-entry-table"><colgroup><col style="width:4%"><col style="width:31%"><col style="width:23%"><col style="width:14%"><col style="width:10%"><col style="width:14%"><col style="width:4%"></colgroup><thead><tr><th>STT</th><th>Mã / Ảnh</th><th>Size · Số lượng · Ghi chú</th><th>Giá thuê</th><th>Số ngày</th><th>Thành tiền</th><th></th></tr></thead><tbody id="order_items" class="order-items"></tbody></table></div>
+                <div class="order-entry-wrap"><table class="order-entry-table"><colgroup><col style="width:4%"><col><col style="width:23%"><col style="width:100px"><col style="width:76px"><col style="width:116px"><col style="width:4%"></colgroup><thead><tr><th>STT</th><th>Mã / Ảnh</th><th>Size · Số lượng · Ghi chú</th><th>Giá thuê</th><th>Số ngày</th><th>Thành tiền</th><th></th></tr></thead><tbody id="order_items" class="order-items"></tbody></table></div>
                 <div class="items-actions">
                     <button id="add_item_button" class="button secondary" type="button">+ Thêm sản phẩm</button>
                 </div>
