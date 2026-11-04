@@ -211,6 +211,7 @@
                 function option(text, value) {
                     const button = document.createElement('button'); button.type = 'button'; button.textContent = text;
                     button.style.cssText = 'display:block;width:100%;text-align:left;padding:10px;margin:0 0 4px;border:1px solid #e2e8f0;border-radius:6px;background:#f8fafc;color:#1e3a8a';
+                    button.addEventListener('mousedown', event => event.preventDefault());
                     button.addEventListener('click', () => { fields.category.value = value; fields.category.focus(); closeCategories(); });
                     categories.appendChild(button);
                 }
@@ -222,6 +223,7 @@
                 }
             }
             fields.category.addEventListener('focus', renderCategories);
+            fields.category.addEventListener('click', renderCategories);
             fields.category.addEventListener('input', renderCategories);
             fields.category.addEventListener('keydown', event => {
                 if (event.key === 'ArrowDown') { event.preventDefault(); if (categories.hidden) renderCategories(); categories.querySelector('button')?.focus(); }
@@ -235,9 +237,9 @@
                 }
                 if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); fields.category.focus(); closeCategories(); }
             });
-            editor.addEventListener('focusout', () => queueMicrotask(() => {
-                if (document.activeElement !== fields.category && !categories.contains(document.activeElement)) closeCategories();
-            }));
+            editor.addEventListener('focusout', event => {
+                if (event.relatedTarget !== fields.category && !categories.contains(event.relatedTarget)) closeCategories();
+            });
             fields.code.value = codeInput.value === @json(\App\Models\WorkshopOrder::NO_PRODUCT_CODE) ? '' : codeInput.value;
             const hint = document.createElement('p'); hint.textContent = 'Mã mới có tồn kho bằng 0. Điền size ở dòng đặt hàng bên ngoài.';
             const message = document.createElement('p'); message.setAttribute('role', 'alert');
