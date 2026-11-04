@@ -472,6 +472,7 @@
                             @endforeach
                         </div>
                         <button id="add_size_button" class="button secondary" type="button">Thêm size</button>
+                        @include('products.create-arrivals')
                         @error('variants') <div class="error">{{ $message }}</div> @enderror
                         @error('variants.*.size') <div class="error">{{ $message }}</div> @enderror
                         @error('variants.*.stock_quantity') <div class="error">{{ $message }}</div> @enderror
