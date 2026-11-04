@@ -1563,6 +1563,11 @@
             block.appliedPurchaseLines = purchaseApplied ? (savedPlan.applied_lines || []) : [];
             const box = document.createElement('div'); box.className = 'purchase-plan'; box.hidden = true;
             box.innerHTML = `<strong>Size cần mua thêm</strong><div data-purchase-lines></div><button type="button" class="button secondary" data-add-purchase>+ Thêm size cần mua</button><button type="button" class="button secondary" data-apply-purchase>Update vào đơn</button><span data-apply-purchase-state role="status"></span><label>Ngày dự kiến nhận<input data-purchase-date type="date"></label><small>Sửa size, số lượng rồi bấm Update vào đơn. Chỉ điều chỉnh phần chênh lệch so với lần cập nhật trước, không cộng trùng khi bấm lại. Lưu đơn để cập nhật Đặt hàng và dự kiến ở Kho. Hàng chỉ vào tồn thực tế khi bấm Đẩy lên kho hoặc nhập tay tại Kho.</small>`;
+            const purchaseHelp = box.querySelector('small');
+            box.querySelector('strong').title = purchaseHelp.textContent;
+            box.querySelector('[data-apply-purchase]').title = purchaseHelp.textContent;
+            box.querySelector('label').title = 'Ngày dự kiến nhận hàng để tính dự kiến ở Kho. Hàng chỉ vào tồn thực tế khi bấm Đẩy lên kho hoặc nhập tay tại Kho.';
+            purchaseHelp.remove();
             block.querySelector('.product-picker-cell').appendChild(box);
             const lines = box.querySelector('[data-purchase-lines]');
             const date = box.querySelector('[data-purchase-date]'); date.value = savedPlan?.expected_date || '';
@@ -1602,7 +1607,11 @@
                 }
                 box.querySelectorAll('input,select,button').forEach(input => input.disabled = !needed);
                 date.required = needed; date.max = pickupDateInput.value;
-                if (purchaseApplied) box.querySelector('[data-apply-purchase-state]').textContent = 'Đã cập nhật phần mua thêm. Có thể sửa rồi bấm Update; chỉ điều chỉnh phần chênh lệch.';
+                if (purchaseApplied) {
+                    const state = box.querySelector('[data-apply-purchase-state]');
+                    state.textContent = 'Đã cập nhật';
+                    state.title = 'Đã cập nhật phần mua thêm. Có thể sửa rồi bấm Update; chỉ điều chỉnh phần chênh lệch.';
+                }
                 savePlan();
             }
             box.addEventListener('input', savePlan); box.addEventListener('change', savePlan);
@@ -1618,7 +1627,9 @@
                 savePlan();
                 box.querySelector('[data-apply-purchase]').click();
                 block.dispatchEvent(new Event('change', {bubbles:true}));
-                box.querySelector('[data-apply-purchase-state]').textContent = 'Đã lấy size và số lượng từ od #' + item.id + '. Bấm Lưu đơn để lưu liên kết, không tạo od mới.';
+                const state = box.querySelector('[data-apply-purchase-state]');
+                state.textContent = 'Đã chọn od #' + item.id;
+                state.title = 'Đã lấy size và số lượng từ od #' + item.id + '. Liên kết được lưu cùng đơn, không tạo od mới.';
             };
             box.querySelector('[data-apply-purchase]').addEventListener('click', () => {
                 const state = box.querySelector('[data-apply-purchase-state]');
@@ -1690,8 +1701,9 @@
                 block.appliedPurchaseLines = result.applied;
                 purchaseApplied = true;
                 savePlan(); renumberRows(); refreshProductChoices();
-                state.textContent = result.additions.length || result.removals.length
-                    ? 'Đã điều chỉnh phần mua thêm vào đơn. Bấm Lưu đơn để lưu.'
+                state.textContent = result.additions.length || result.removals.length ? 'Đã cập nhật' : 'Không thay đổi';
+                state.title = result.additions.length || result.removals.length
+                    ? 'Đã điều chỉnh phần mua thêm vào đơn. Thay đổi được lưu cùng đơn.'
                     : 'Số lượng không thay đổi, không cộng trùng.';
             });
             block.querySelector('[data-supply-choice]').addEventListener('change', () => { refresh(); refreshProductChoices(); });
