@@ -468,21 +468,6 @@
                                         <label>&nbsp;</label>
                                         <button class="button danger" data-remove-size type="button">Xóa</button>
                                     </div>
-                                    <div class="expected-receipts" data-expected-receipts>
-                                        <div class="expected-receipts-head">
-                                            <label>Dự kiến hàng về</label>
-                                            <button class="button secondary icon" data-add-expected-receipt type="button">+</button>
-                                        </div>
-                                        <div class="expected-receipt-rows" data-expected-receipt-rows>
-                                            @foreach (($variant['expected_receipts'] ?? $defaultExpectedReceipts) as $receiptIndex => $receipt)
-                                                <div class="expected-receipt-row" data-expected-receipt-row>
-                                                    <input data-expected-date name="variants[{{ $index }}][expected_receipts][{{ $receiptIndex }}][expected_receive_date]" type="date" value="{{ $receipt['expected_receive_date'] ?? '' }}">
-                                                    <input data-expected-quantity name="variants[{{ $index }}][expected_receipts][{{ $receiptIndex }}][expected_receive_quantity]" type="number" min="0" step="1" value="{{ $receipt['expected_receive_quantity'] ?? 0 }}" placeholder="SL dự kiến">
-                                                    <button class="button danger icon" data-remove-expected-receipt type="button">-</button>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    </div>
                                 </div>
                             @endforeach
                         </div>
@@ -677,7 +662,7 @@
                     sizeInput.id = `variants_${index}_size`;
                     stockInput.name = `variants[${index}][stock_quantity]`;
                     stockInput.id = `variants_${index}_stock_quantity`;
-                    renumberExpectedReceipts(row.querySelector('[data-expected-receipts]'), index);
+
                 });
             }
 
@@ -712,23 +697,10 @@
                         <label>&nbsp;</label>
                         <button class="button danger" data-remove-size type="button">Xóa</button>
                     </div>
-                    <div class="expected-receipts" data-expected-receipts>
-                        <div class="expected-receipts-head">
-                            <label>Dự kiến hàng về</label>
-                            <button class="button secondary icon" data-add-expected-receipt type="button">+</button>
-                        </div>
-                        <div class="expected-receipt-rows" data-expected-receipt-rows>
-                            <div class="expected-receipt-row" data-expected-receipt-row>
-                                <input data-expected-date type="date">
-                                <input data-expected-quantity type="number" min="0" step="1" placeholder="SL dự kiến">
-                                <button class="button danger icon" data-remove-expected-receipt type="button">-</button>
-                            </div>
-                        </div>
-                    </div>
                 `;
 
                 bindRemoveSizeButton(row);
-                bindExpectedReceipts(row.querySelector('[data-expected-receipts]'));
+
                 sizeRows.appendChild(row);
                 renumberSizeRows();
                 row.querySelector('[data-size]').focus();

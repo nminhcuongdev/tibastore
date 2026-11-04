@@ -28,7 +28,7 @@ class ProductStockBreakdownTest extends TestCase
         $this->assertSame(3, $product->expectedReceipts->first()->expected_receive_quantity);
         \Illuminate\Support\Facades\Storage::disk('public')->assertExists($product->image_path);
         $this->get(route('products.show', $product))->assertOk()->assertSee(asset('storage/'.$product->image_path));
-        $this->get('/products/create')->assertOk()->assertSee('Ctrl+V')->assertSee('Dự kiến hàng về')->assertSee('product_image_preview');
+        $this->get('/products/create')->assertOk()->assertSee('Ctrl+V')->assertDontSee('Dự kiến hàng về')->assertSee('product_image_preview');
     }
 
     public function test_deleting_od_removes_its_schedule_and_pending_receipt(): void
