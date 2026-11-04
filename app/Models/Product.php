@@ -26,10 +26,12 @@ class Product extends Model
         'import_price',
         'rental_price',
         'rental_price_text',
+        'arrival_dates',
         'discontinued_at',
     ];
 
     protected $casts = [
+        'arrival_dates' => 'array',
         'stock_quantity' => 'integer',
         'expected_receive_date' => 'date',
         'expected_receive_quantity' => 'integer',
@@ -94,6 +96,7 @@ class Product extends Model
 
     public function formatChangeLogValue(string $field, $value): ?string
     {
+        if ($field === 'arrival_dates') return is_array($value) ? implode(', ', $value) : (string) $value;
         if ($value === null || $value === '') {
             return null;
         }

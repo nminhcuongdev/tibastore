@@ -1,5 +1,8 @@
         <section data-incoming-schedule style="padding:14px;border:1px solid #cbd9ec;border-radius:8px;background:#f6f9ff" aria-label="Dự kiến hàng về">
             <strong>Dự kiến hàng về</strong>
+            @foreach($variants->flatMap(fn ($variant) => $variant->arrival_dates ?? [])->unique()->sort() as $arrivalDate)
+                <div style="margin-top:8px">{{ \Illuminate\Support\Carbon::parse($arrivalDate)->format('d/m/Y') }} — Lịch dự kiến của mã sản phẩm</div>
+            @endforeach
             @php
                 $sizeNames = $variants->pluck('size', 'id');
             @endphp

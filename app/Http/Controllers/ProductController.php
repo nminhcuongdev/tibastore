@@ -420,6 +420,7 @@ class ProductController extends Controller
                     'size' => $variant['size'],
                     'rental_price' => $data['rental_price'] ?? 0,
                     'rental_price_text' => $data['rental_price_text'] ?? null,
+                    'arrival_dates' => array_values(array_unique(array_filter($data['arrival_dates'] ?? []))),
                 ]);
 
                 $this->replacePendingExpectedReceipts($product, $variant['expected_receipts']);
@@ -767,6 +768,8 @@ class ProductController extends Controller
             'category' => ['nullable', 'string', 'max:255'],
             'rental_price' => ['nullable', 'integer', 'min:0'],
             'variants' => ['required', 'array', 'min:1'],
+            'arrival_dates' => ['nullable', 'array', 'max:100'],
+            'arrival_dates.*' => ['nullable', 'date_format:Y-m-d'],
             'rental_price_text' => ['nullable', 'string', 'max:255'],
             'variants.*.size' => ['required', 'string', 'max:50'],
             'variants.*.stock_quantity' => ['nullable', 'integer', 'min:0'],

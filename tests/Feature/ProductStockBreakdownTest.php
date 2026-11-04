@@ -19,12 +19,13 @@ class ProductStockBreakdownTest extends TestCase
             'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
         $code = 'PICCREATE-'.bin2hex(random_bytes(4));
         $image = \Illuminate\Http\UploadedFile::fake()->createWithContent('clipboard.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII='));
-        $this->post('/products', ['code' => $code, 'name' => 'Ảnh mới', 'image' => $image,
+        $this->post('/products', ['code' => $code, 'name' => 'Ảnh mới', 'image' => $image, 'arrival_dates' => ['2032-02-01'],
             'variants' => [['size' => 'S', 'stock_quantity' => 0, 'expected_receipts' => [
                 ['expected_receive_date' => '2032-01-01', 'expected_receive_quantity' => 3]]]]])
             ->assertSessionHasNoErrors()->assertRedirect();
         $product = Product::where('code', $code)->firstOrFail();
         $this->assertSame(0, $product->stock_quantity);
+        $this->assertSame(['2032-02-01'], $product->arrival_dates);
         $this->assertSame(3, $product->expectedReceipts->first()->expected_receive_quantity);
         \Illuminate\Support\Facades\Storage::disk('public')->assertExists($product->image_path);
         $this->get(route('products.show', $product))->assertOk()->assertSee(asset('storage/'.$product->image_path));
