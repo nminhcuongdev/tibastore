@@ -566,6 +566,7 @@
                                                 Size {{ $size }}: {{ number_format($sizeItems->sum('quantity')) }}@if (! $loop->last), @endif
                                             @endforeach
                                         </div>
+                                        <div class="muted" style="margin-top: 4px; font-size: 12px;">Tổng số lượng: {{ number_format($items->sum('quantity')) }}</div>
                                         @php
                                             $itemNotes = $items->filter(fn ($it) => isset($it->note) && trim((string) $it->note) !== '');
                                         @endphp
