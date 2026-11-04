@@ -35,7 +35,15 @@ class OrderSupplyChoiceTest extends TestCase
         $this->assertSame($order->id, $od->fresh()->customer_order_id);
         $this->assertSame(WorkshopOrder::STATUS_ORDERED, $od->fresh()->status);
         $this->assertSame('workshop-orders/existing.jpg', $od->fresh()->image_path);
-        $this->put('/orders/'.$order->id, $data)->assertSessionHasNoErrors()->assertRedirect();
+        $pdo = \Illuminate\Support\Facades\DB::connection()->getPdo();
+        $previousStringify = $pdo->getAttribute(\PDO::ATTR_STRINGIFY_FETCHES);
+        try {
+            // Some production drivers return foreign keys as numeric strings.
+            $pdo->setAttribute(\PDO::ATTR_STRINGIFY_FETCHES, true);
+            $this->put('/orders/'.$order->id, $data)->assertSessionHasNoErrors()->assertRedirect();
+        } finally {
+            $pdo->setAttribute(\PDO::ATTR_STRINGIFY_FETCHES, $previousStringify);
+        }
         $this->assertSame(1, WorkshopOrder::where('product_code', $product->code)->count());
         $this->assertSame(5, $order->fresh()->items->sum('quantity'));
         $data['order_name'] .= '-other';

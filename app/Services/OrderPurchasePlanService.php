@@ -43,9 +43,14 @@ class OrderPurchasePlanService
             unset($plan['workshop_order_id']);
             if ($selectedId) {
                 $workshop = WorkshopOrder::whereKey($selectedId)->lockForUpdate()->firstOrFail();
-                if ($workshop->product_code !== $first->product->code || $workshop->supply_source !== $first->fulfillment_source
-                    || ($workshop->customer_order_id && $workshop->customer_order_id !== $order->id)) {
-                    throw ValidationException::withMessages(['items' => 'Dòng od đã chọn không khớp mã, nguồn hoặc đã thuộc đơn khách khác.']);
+                if ($workshop->product_code !== $first->product->code) {
+                    throw ValidationException::withMessages(['items' => 'Dòng od #'.$workshop->id.' thuộc mã '.$workshop->product_code.', không khớp mã '.$first->product->code.' đang chọn.']);
+                }
+                if ($workshop->supply_source !== $first->fulfillment_source) {
+                    throw ValidationException::withMessages(['items' => 'Nguồn của dòng od #'.$workshop->id.' là '.$workshop->supplySourceLabel().', không khớp nguồn đang chọn.']);
+                }
+                if ($workshop->customer_order_id && (int) $workshop->customer_order_id !== (int) $order->id) {
+                    throw ValidationException::withMessages(['items' => 'Dòng od #'.$workshop->id.' đã thuộc đơn khách #'.$workshop->customer_order_id.', không thể gắn vào đơn #'.$order->id.'.']);
                 }
                 $actual = collect($workshop->size_quantities ?? $workshop->purchase_plan['lines'] ?? [])
                     ->groupBy('product_id')->map(fn ($rows) => (int) $rows->sum('quantity'))->sortKeys()->all();

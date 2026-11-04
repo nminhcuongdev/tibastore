@@ -47,6 +47,7 @@ class WorkshopOrder extends Model
     ];
 
     protected $casts = [
+        'customer_order_id' => 'integer',
         'purchase_plan' => 'array',
         'size_quantities' => 'array',
         'stocked_at' => 'datetime',
