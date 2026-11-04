@@ -444,13 +444,22 @@ class WorkshopOrderController extends Controller
             'category' => ['nullable', 'string', 'max:255'],
             'rental_price' => ['nullable', 'integer', 'min:0', 'max:2147483647'],
             'rental_price_text' => ['nullable', 'string', 'max:255'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
         ], ['code.unique' => 'Mã hàng đã tồn tại trong kho.']);
         $data = Product::withRentalPriceText($data);
+        unset($data['image']);
         $data['rental_price'] = $data['rental_price'] ?? 0;
-        $product = Product::create($data + ['size' => '', 'stock_quantity' => 0, 'fabric' => '']);
+        if ($request->hasFile('image')) $data['image_path'] = $request->file('image')->store('products', 'public');
+        try {
+            $product = Product::create($data + ['size' => '', 'stock_quantity' => 0, 'fabric' => '']);
+        } catch (\Throwable $exception) {
+            if (isset($data['image_path'])) \Illuminate\Support\Facades\Storage::disk('public')->delete($data['image_path']);
+            throw $exception;
+        }
 
         return response()->json(['code' => $product->code, 'name' => $product->name,
-            'category' => $product->category ?: 'Chưa phân loại', 'sizes' => [['id' => $product->id, 'size' => $product->size]], 'image' => null], 201);
+            'category' => $product->category ?: 'Chưa phân loại', 'sizes' => [['id' => $product->id, 'size' => $product->size]],
+            'image' => $product->image_path ? asset('storage/'.$product->image_path) : null], 201);
     }
 
     public function suggestProductCode(Request $request): JsonResponse

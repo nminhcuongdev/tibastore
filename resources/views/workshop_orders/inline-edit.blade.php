@@ -246,6 +246,36 @@
             fields.code.value = codeInput.value === @json(\App\Models\WorkshopOrder::NO_PRODUCT_CODE) ? '' : codeInput.value;
             const hint = document.createElement('p'); hint.textContent = 'Mã mới có tồn kho bằng 0. Điền size ở dòng đặt hàng bên ngoài.';
             const message = document.createElement('p'); message.setAttribute('role', 'alert');
+            let productImage = null, productImageUrl = null;
+            const imagePicker = document.createElement('fieldset');
+            imagePicker.style.cssText = 'margin:14px 0;padding:12px;border:1px solid #cbd5e1;border-radius:8px';
+            const legend = document.createElement('legend'); legend.textContent = 'Ảnh sản phẩm';
+            const imageInput = document.createElement('input'); imageInput.type = 'file'; imageInput.accept = 'image/jpeg,image/png,image/gif,image/webp';
+            imageInput.setAttribute('aria-label', 'Chọn ảnh sản phẩm từ thiết bị');
+            const imagePreview = document.createElement('img'); imagePreview.alt = 'Ảnh sản phẩm sắp tạo'; imagePreview.hidden = true;
+            imagePreview.style.cssText = 'max-width:100%;max-height:160px;object-fit:contain;margin-top:8px';
+            const imageHint = document.createElement('p'); imageHint.textContent = 'Chọn ảnh từ thiết bị hoặc nhấn Ctrl+V để dán ảnh. JPG, PNG, GIF, WebP tối đa 5MB.';
+            const removeImage = document.createElement('button'); removeImage.type = 'button'; removeImage.textContent = 'Bỏ ảnh'; removeImage.hidden = true;
+            function selectProductImage(file) {
+                if (!file) return;
+                if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+                    message.textContent = 'Chọn ảnh JPG, PNG, GIF hoặc WebP tối đa 5MB.'; imageInput.value = ''; return;
+                }
+                if (productImageUrl) URL.revokeObjectURL(productImageUrl);
+                productImage = file; productImageUrl = URL.createObjectURL(file);
+                imagePreview.src = productImageUrl; imagePreview.hidden = false; removeImage.hidden = false; message.textContent = '';
+            }
+            imageInput.addEventListener('change', () => selectProductImage(imageInput.files[0]));
+            editor.addEventListener('paste', event => {
+                const image = Array.from(event.clipboardData?.items || []).find(item => item.type.startsWith('image/'));
+                if (image) { event.preventDefault(); selectProductImage(image.getAsFile()); }
+            });
+            removeImage.addEventListener('click', () => {
+                if (productImageUrl) URL.revokeObjectURL(productImageUrl);
+                productImage = null; productImageUrl = null; imageInput.value = '';
+                imagePreview.removeAttribute('src'); imagePreview.hidden = true; removeImage.hidden = true;
+            });
+            imagePicker.append(legend, imageInput, imageHint, imagePreview, removeImage); editor.appendChild(imagePicker);
             const submit = document.createElement('button'); submit.type = 'submit'; submit.textContent = 'Tạo mã và chọn';
             const suggest = document.createElement('button'); suggest.type = 'button'; suggest.textContent = 'Gợi ý mã chưa dùng';
             const codeStatus = document.createElement('p'); codeStatus.setAttribute('role', 'status');
@@ -277,13 +307,14 @@
             const cancel = document.createElement('button'); cancel.type = 'button'; cancel.textContent = 'Hủy';
             cancel.addEventListener('click', () => dialog.close());
             editor.append(hint, message, submit, cancel); dialog.appendChild(editor); document.body.appendChild(dialog);
-            dialog.addEventListener('close', () => dialog.remove()); dialog.showModal(); fields.code.focus();
+            dialog.addEventListener('close', () => { if (productImageUrl) URL.revokeObjectURL(productImageUrl); dialog.remove(); }); dialog.showModal(); fields.code.focus();
             checkCode(!fields.code.value.trim());
             editor.addEventListener('submit', async event => {
                 event.preventDefault(); submit.disabled = true; cancel.disabled = true;
                 try {
                     const body = new FormData(); body.append('_token', form.querySelector('[name=_token]').value);
                     Object.entries(fields).forEach(([name, input]) => body.append(name, input.value.trim()));
+                    if (productImage) body.append('image', productImage);
                     const response = await fetch(@json(route('workshop-orders.create-product')), {method:'POST', body, credentials:'same-origin', headers:{Accept:'application/json'}});
                     const product = await response.json();
                     if (!response.ok) throw new Error(product.errors ? Object.values(product.errors).flat().join(' ') : product.message);

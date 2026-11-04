@@ -14,6 +14,29 @@ class WorkshopInlineEditTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_quick_product_creation_stores_uploaded_or_pasted_image_and_rejects_invalid_files(): void
+    {
+        Storage::fake('public');
+        $this->actingAs(User::create(['code' => 'createpic-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $data = ['code' => 'CREATEPIC-'.bin2hex(random_bytes(4)), 'name' => 'Sản phẩm có ảnh'];
+        $image = UploadedFile::fake()->createWithContent('clipboard.png', base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII='
+        ));
+        $response = $this->post(route('workshop-orders.create-product'), $data + ['image' => $image], ['Accept' => 'application/json'])->assertCreated();
+        $product = Product::where('code', $data['code'])->firstOrFail();
+        Storage::disk('public')->assertExists($product->image_path);
+        $response->assertJsonPath('image', asset('storage/'.$product->image_path));
+        $this->get('/workshop-orders')->assertOk()->assertViewHas('productCodes', fn ($codes) => collect($codes)
+            ->contains(fn ($item) => $item['code'] === $product->code && $item['image'] === asset('storage/'.$product->image_path)));
+        $data['code'] .= '-BAD';
+        foreach ([UploadedFile::fake()->create('bad.txt', 1, 'text/plain'), UploadedFile::fake()->create('large.png', 5121, 'image/png')] as $invalid) {
+            $this->post(route('workshop-orders.create-product'), $data + ['image' => $invalid], ['Accept' => 'application/json'])
+                ->assertUnprocessable()->assertJsonValidationErrors('image');
+        }
+        $this->assertFalse(Product::where('code', $data['code'])->exists());
+    }
+
     public function test_free_text_rental_price_is_preserved_and_editable_in_stock(): void
     {
         $this->actingAs(User::create(['code' => 'text-'.bin2hex(random_bytes(4)), 'name' => 'Test',
