@@ -433,9 +433,13 @@
             margin-bottom: 16px;
         }
 
-        .category-group {
-            margin-bottom: 24px;
-        }
+        .category-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
+        .category-group { min-width: 0; margin-bottom: 0; }
+        .category-group:not(.is-collapsed) { grid-column: 1 / -1; }
+        .category-group.is-collapsed .category-head { margin-bottom: 0; height: 100%; }
+        .category-name { overflow-wrap: anywhere; }
+        @media (max-width: 1100px) { .category-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 700px) { .category-grid { grid-template-columns: minmax(0, 1fr); } }
 
         .category-head {
             align-items: center;
@@ -564,6 +568,7 @@
             @endif
         </div>
 
+        <div class="category-grid">
         @forelse ($productGroups as $category => $items)
             <section class="category-group is-collapsed" data-category-group>
                 <button type="button" class="category-head" data-category-toggle aria-expanded="false">
@@ -707,6 +712,7 @@
                 <div class="empty">Chưa có sản phẩm phù hợp.</div>
             </div>
         @endforelse
+        </div>
     </main>
     <div class="image-lightbox" data-image-lightbox aria-hidden="true">
         <img data-lightbox-image src="" alt="">
