@@ -13,7 +13,7 @@ class DraftInvoice extends Model
     public function getSubtotalAttribute(): float
     {
         return array_reduce($this->items ?? [], fn ($total, $item) =>
-            $total + round((float) $item['quantity'] * (int) $item['unit_price']), 0.0);
+            $total + round((float) $item['quantity'] * (int) $item['unit_price'] * (float) str_replace(',', '.', (string) ($item['days'] ?? 1))), 0.0);
     }
 
     public function getDiscountAmountAttribute(): float

@@ -12,6 +12,26 @@ class DraftInvoiceTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_fractional_days_are_saved_and_validated(): void
+    {
+        $this->actingAs(User::create(['code' => 'days-'.bin2hex(random_bytes(5)),
+            'name' => 'Test', 'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $data = ['invoice_date' => '2026-11-04', 'customer_name' => 'Fractional days',
+            'items' => [['name' => 'Set rồng', 'quantity' => 6, 'unit_price' => 90000, 'days' => '1,5']]];
+        $this->post('/draft-invoices', $data)->assertSessionHasNoErrors()->assertRedirect();
+        $invoice = DraftInvoice::latest('id')->firstOrFail();
+        $this->assertEquals(810000, $invoice->total);
+        $this->assertEquals(1.5, $invoice->items[0]['days']);
+        $data['items'][0]['days'] = '1.6';
+        $this->put('/draft-invoices/'.$invoice->id, $data)->assertSessionHasNoErrors();
+        $this->assertEquals(864000, $invoice->fresh()->total);
+        foreach (['0', '-1', 'abc', '1,234', '10001'] as $invalid) {
+            $data['items'][0]['days'] = $invalid;
+            $this->postJson('/draft-invoices', $data)->assertUnprocessable()->assertJsonValidationErrors('items.0.days');
+        }
+        $this->get('/draft-invoices/'.$invoice->id.'/edit')->assertOk()->assertSee('Số ngày');
+    }
+
     public function test_drafts_can_be_saved_edited_searched_and_deleted(): void
     {
         $this->actingAs(User::create(['code' => 'inv-'.bin2hex(random_bytes(5)),

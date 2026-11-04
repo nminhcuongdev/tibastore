@@ -68,6 +68,15 @@ class DraftInvoiceController extends Controller
 
     private function validated(Request $request): array
     {
+        if (is_array($request->input('items'))) {
+            $request->merge(['items' => array_map(function ($item) {
+                if (is_array($item)) {
+                    $item['days'] = is_string($item['days'] ?? null)
+                        ? str_replace(',', '.', trim($item['days'])) : ($item['days'] ?? 1);
+                }
+                return $item;
+            }, $request->input('items'))]);
+        }
         $data = $request->validate([
             'discount_type' => ['nullable', 'in:fixed,percent'],
             'discount_value' => ['nullable', 'numeric', 'min:0',
@@ -79,17 +88,19 @@ class DraftInvoiceController extends Controller
             'address' => ['nullable', 'string', 'max:2000'],
             'tax_code' => ['nullable', 'string', 'max:100'],
             'items' => ['required', 'array', 'min:1', 'max:100'],
-            'items.*' => ['required', 'array:code,name,unit,quantity,unit_price,note'],
+            'items.*' => ['required', 'array:code,name,unit,quantity,unit_price,days,note'],
             'items.*.code' => ['nullable', 'string', 'max:255'],
             'items.*.name' => ['required', 'string', 'max:255'],
             'items.*.unit' => ['nullable', 'string', 'max:30'],
             'items.*.quantity' => ['required', 'numeric', 'min:0.01', 'max:1000000'],
             'items.*.unit_price' => ['required', 'integer', 'min:0', 'max:1000000000'],
+            'items.*.days' => ['required', 'numeric', 'min:0.01', 'max:10000', 'regex:/^\d+(\.\d{1,2})?$/'],
             'items.*.note' => ['nullable', 'string', 'max:1000'],
         ], [], [
             'invoice_date' => 'ngày hóa đơn', 'customer_name' => 'tên khách hàng',
             'items' => 'dòng sản phẩm', 'items.*.name' => 'tên sản phẩm',
             'items.*.quantity' => 'số lượng', 'items.*.unit_price' => 'đơn giá',
+            'items.*.days' => 'số ngày',
             'discount_value' => 'chiết khấu', 'discount_type' => 'loại chiết khấu',
         ]);
         $data['discount_type'] = $data['discount_type'] ?? 'fixed';
