@@ -433,10 +433,9 @@ class WorkshopOrderController extends Controller
         $data = $request->validate([
             'code' => ['required', 'string', 'max:50', Rule::notIn([WorkshopOrder::NO_PRODUCT_CODE]), Rule::unique('products', 'code')],
             'name' => ['required', 'string', 'max:255'],
-            'size' => ['required', 'string', 'max:50'],
             'category' => ['nullable', 'string', 'max:255'],
         ], ['code.unique' => 'Mã hàng đã tồn tại trong kho.']);
-        $product = Product::create($data + ['stock_quantity' => 0, 'fabric' => '', 'rental_price' => 0]);
+        $product = Product::create($data + ['size' => '', 'stock_quantity' => 0, 'fabric' => '', 'rental_price' => 0]);
 
         return response()->json(['code' => $product->code, 'name' => $product->name,
             'category' => $product->category ?: 'Chưa phân loại', 'sizes' => [['id' => $product->id, 'size' => $product->size]], 'image' => null], 201);

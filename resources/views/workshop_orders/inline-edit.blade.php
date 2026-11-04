@@ -185,7 +185,7 @@
             const editor = document.createElement('form');
             const title = document.createElement('h3'); title.textContent = 'Tạo mã hàng mới'; editor.appendChild(title);
             const fields = {};
-            [['code', 'Mã hàng', 50], ['name', 'Tên sản phẩm', 255], ['category', 'Danh mục', 255], ['size', 'Size', 50]].forEach(([name, text, max]) => {
+            [['code', 'Mã hàng', 50], ['name', 'Tên sản phẩm', 255], ['category', 'Danh mục', 255]].forEach(([name, text, max]) => {
                 const label = document.createElement('label'); label.textContent = text;
                 const input = document.createElement('input'); input.required = name !== 'category'; input.maxLength = max;
                 input.style.cssText = 'display:block;width:100%;box-sizing:border-box;margin:6px 0 14px;padding:10px';
@@ -239,7 +239,7 @@
                 if (document.activeElement !== fields.category && !categories.contains(document.activeElement)) closeCategories();
             }));
             fields.code.value = codeInput.value === @json(\App\Models\WorkshopOrder::NO_PRODUCT_CODE) ? '' : codeInput.value;
-            const hint = document.createElement('p'); hint.textContent = 'Mã mới có tồn kho bằng 0. Bạn có thể thêm các size khác trong Kho.';
+            const hint = document.createElement('p'); hint.textContent = 'Mã mới có tồn kho bằng 0. Điền size ở dòng đặt hàng bên ngoài.';
             const message = document.createElement('p'); message.setAttribute('role', 'alert');
             const submit = document.createElement('button'); submit.type = 'submit'; submit.textContent = 'Tạo mã và chọn';
             const suggest = document.createElement('button'); suggest.type = 'button'; suggest.textContent = 'Gợi ý mã chưa dùng';
