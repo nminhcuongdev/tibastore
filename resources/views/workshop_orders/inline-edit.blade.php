@@ -191,14 +191,56 @@
                 input.style.cssText = 'display:block;width:100%;box-sizing:border-box;margin:6px 0 14px;padding:10px';
                 fields[name] = input; label.appendChild(input); editor.appendChild(label);
             });
-            const categories = document.createElement('datalist'); categories.id = 'workshop-create-categories';
-            [...new Set(catalog.map(product => product.category).filter(category => category && category !== 'Chưa phân loại'))]
-                .sort((a, b) => a.localeCompare(b, 'vi')).forEach(category => {
-                    const option = document.createElement('option'); option.value = category; categories.appendChild(option);
-                });
-            fields.category.setAttribute('list', categories.id);
+            const categoryNames = [...new Set(catalog.map(product => product.category).filter(category => category && category !== 'Chưa phân loại'))]
+                .sort((a, b) => a.localeCompare(b, 'vi'));
+            const categories = document.createElement('div'); categories.id = 'workshop-create-categories';
+            categories.hidden = true;
+            categories.style.cssText = 'max-height:180px;overflow-y:auto;border:1px solid #cbd5e1;border-radius:8px;margin:-8px 0 14px;padding:6px';
+            categories.setAttribute('role', 'group'); categories.setAttribute('aria-label', 'Danh mục gợi ý');
+            fields.category.setAttribute('aria-controls', categories.id);
+            fields.category.setAttribute('aria-expanded', 'false');
+            fields.category.autocomplete = 'off';
             fields.category.placeholder = 'Chọn danh mục có sẵn hoặc nhập danh mục mới';
-            editor.appendChild(categories);
+            fields.category.closest('label').after(categories);
+            const categoryHint = document.createElement('small');
+            categoryHint.textContent = 'Gõ để tìm danh mục. Chọn từ danh sách hoặc nhập tên danh mục mới.';
+            categories.after(categoryHint);
+            const normalizeCategory = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase().trim();
+            function closeCategories() { categories.hidden = true; fields.category.setAttribute('aria-expanded', 'false'); }
+            function renderCategories() {
+                categories.replaceChildren(); categories.hidden = false; fields.category.setAttribute('aria-expanded', 'true');
+                const term = fields.category.value.trim();
+                const matches = categoryNames.filter(name => normalizeCategory(name).includes(normalizeCategory(term)));
+                function option(text, value) {
+                    const button = document.createElement('button'); button.type = 'button'; button.textContent = text;
+                    button.style.cssText = 'display:block;width:100%;text-align:left;padding:10px;margin:0 0 4px;border:1px solid #e2e8f0;border-radius:6px;background:#f8fafc;color:#1e3a8a';
+                    button.addEventListener('click', () => { fields.category.value = value; fields.category.focus(); closeCategories(); });
+                    categories.appendChild(button);
+                }
+                matches.forEach(name => option(name, name));
+                if (term && !categoryNames.some(name => normalizeCategory(name) === normalizeCategory(term))) {
+                    option('+ Dùng danh mục mới: ' + term, term);
+                } else if (!matches.length) {
+                    categories.textContent = 'Chưa có danh mục. Nhập tên để tạo danh mục mới.';
+                }
+            }
+            fields.category.addEventListener('focus', renderCategories);
+            fields.category.addEventListener('input', renderCategories);
+            fields.category.addEventListener('keydown', event => {
+                if (event.key === 'ArrowDown') { event.preventDefault(); if (categories.hidden) renderCategories(); categories.querySelector('button')?.focus(); }
+                if (event.key === 'Escape' && !categories.hidden) { event.preventDefault(); event.stopPropagation(); closeCategories(); }
+            });
+            categories.addEventListener('keydown', event => {
+                const buttons = Array.from(categories.querySelectorAll('button'));
+                const index = buttons.indexOf(document.activeElement);
+                if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                    event.preventDefault(); buttons[(index + (event.key === 'ArrowDown' ? 1 : buttons.length - 1)) % buttons.length]?.focus();
+                }
+                if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); fields.category.focus(); closeCategories(); }
+            });
+            editor.addEventListener('focusout', () => queueMicrotask(() => {
+                if (document.activeElement !== fields.category && !categories.contains(document.activeElement)) closeCategories();
+            }));
             fields.code.value = codeInput.value === @json(\App\Models\WorkshopOrder::NO_PRODUCT_CODE) ? '' : codeInput.value;
             const hint = document.createElement('p'); hint.textContent = 'Mã mới có tồn kho bằng 0. Bạn có thể thêm các size khác trong Kho.';
             const message = document.createElement('p'); message.setAttribute('role', 'alert');
