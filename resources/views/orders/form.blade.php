@@ -1892,6 +1892,12 @@
 
             updateOdLink();
             block.dispatchEvent(new Event('product-updated'));
+            const pickerCell = block.querySelector('.product-picker-cell');
+            const codeLayout = document.createElement('div'); codeLayout.className = 'order-code-layout';
+            const codeMain = document.createElement('div'); codeMain.className = 'order-code-main';
+            const purchasePanel = pickerCell.querySelector('.purchase-plan');
+            Array.from(pickerCell.childNodes).filter(node => node !== purchasePanel).forEach(node => codeMain.appendChild(node));
+            codeLayout.append(codeMain, purchasePanel); pickerCell.appendChild(codeLayout);
             return block;
         }
 

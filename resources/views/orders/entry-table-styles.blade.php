@@ -10,6 +10,10 @@
     .order-entry-table .order-item + .order-item > td { border-top: 3px solid #bf510d; }
     .order-entry-table .order-item > .entry-number { background: #fff0de; color: #9a3c00; font-weight: 800; border-left: 4px solid #bf510d; }
     .order-entry-table .product-picker-cell [data-search] { background: #b84a00; color: #fff; border: 2px solid #963b00; font-weight: 800; box-shadow: 0 3px 8px #9a3c0026; }
+    .order-code-layout { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px; align-items: start; }
+    .order-code-layout > * { min-width: 0; }
+    .order-code-layout > .purchase-plan { margin-top: 0; }
+    .order-code-layout .button { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
     .order-entry-table .product-picker-cell [data-search]::placeholder { color: #ffead6; opacity: 1; }
     .order-entry-table .product-picker-cell [data-search]:focus { background: #a64000; border-color: #7e3000; outline: 3px solid #ffc58c; outline-offset: 2px; }
     .order-entry-table input, .order-entry-table select { width: 100%; min-width: 0; padding: 7px; font-size: 12px !important; border-radius: 5px; }
