@@ -610,6 +610,13 @@ class OrderController extends Controller
         return back()->with('status', 'Đã cập nhật trạng thái đơn hàng.');
     }
 
+    public function updateNote(Request $request, Order $order): JsonResponse
+    {
+        $data = $request->validate(['note' => ['present', 'nullable', 'string', 'max:2000']]);
+        $order->update(['note' => $data['note']]);
+        return response()->json(['note' => $order->note]);
+    }
+
     public function updatePaymentStatus(Request $request, Order $order): RedirectResponse
     {
         $data = $request->validate([

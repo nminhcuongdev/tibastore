@@ -13,7 +13,7 @@ class RecordPersonalEdit
         $name = $request->route()?->getName() ?? '';
         [$section, $operation] = array_pad(explode('.', $name, 2), 2, '');
         if (!$request->user() || !in_array($section, ['products', 'orders', 'draft-invoices'], true)
-            || !in_array($operation, ['store', 'update', 'destroy', 'status', 'payment-status', 'discontinued', 'inline-stock'], true)) {
+            || !in_array($operation, ['store', 'update', 'destroy', 'status', 'payment-status', 'discontinued', 'inline-stock', 'note'], true)) {
             return $next($request);
         }
         return app(PersonalEditService::class)->record($request->user()->id, $section, fn () => $next($request));

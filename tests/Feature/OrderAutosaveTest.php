@@ -38,6 +38,12 @@ class OrderAutosaveTest extends TestCase
         $this->assertSame(1, Order::where('order_name', $product->code)->count());
         $this->assertSame('Đã sửa sau tự lưu', Order::findOrFail($id)->note);
         $this->assertSame(20, $product->fresh()->stock_quantity);
+        $itemId = Order::findOrFail($id)->items->first()->id;
+        $this->patchJson(route('orders.note', $id), ['note' => 'Ghi chú tại bảng'])->assertOk()->assertJsonPath('note', 'Ghi chú tại bảng');
+        $this->assertSame($itemId, Order::findOrFail($id)->items->first()->id);
+        $this->assertSame(20, $product->fresh()->stock_quantity);
+        $this->patchJson(route('orders.note', $id), ['note' => ''])->assertOk()->assertJsonPath('note', null);
+        $this->patchJson(route('orders.note', $id), ['note' => str_repeat('a', 2001)])->assertUnprocessable();
     }
 
     public function test_incomplete_autosave_does_not_create_an_order(): void

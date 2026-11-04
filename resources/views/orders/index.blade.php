@@ -947,12 +947,8 @@
                                 </form>
                             </td>
                             <td>
-                                @if (trim((string) $order->note) === '')
-                                    <span class="muted">—</span>
-                                @else
-                                    {{-- Ghi chu dai cat con hai dong, re chuot vao xem day du. --}}
-                                    <div class="note-cell" title="{{ $order->note }}">{{ $order->note }}</div>
-                                @endif
+                                <textarea data-inline-order-note data-url="{{ route('orders.note', $order) }}" aria-label="Ghi chú đơn {{ $order->order_name }}" maxlength="2000" rows="2" placeholder="Nhập ghi chú…" style="width:100%;min-width:150px;box-sizing:border-box;border:1px solid #cbd9ec;border-radius:6px;padding:8px;font:inherit;background:transparent;resize:vertical">{{ $order->note }}</textarea>
+                                <small data-note-state role="status"></small>
                             </td>
                             <td>
                                 @if ($order->region)
@@ -1178,6 +1174,7 @@
     })();
 </script>
 @include('orders.list-position')
+@include('orders.inline-notes')
 </body>
 </html>
 
