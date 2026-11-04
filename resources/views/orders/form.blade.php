@@ -1222,7 +1222,7 @@
 
                 // Mã mới tạo hoặc hết tồn vẫn cần tìm được để chọn nguồn od.
                 return hasKeyword && hasCategory;
-            }).slice(0, 20);
+            });
 
             suggestions.innerHTML = '';
 
@@ -1248,7 +1248,7 @@
                 meta.className = 'product-meta';
                 const stockedSizes = group.items.filter(product => stockLimit(product) > 0).length;
                 meta.textContent = stockedSizes ? `${stockedSizes}/${group.items.length} size còn tồn`
-                    : 'Chưa có tồn khả dụng — chọn nguồn od hoặc nhập kho trước';
+                    : 'Hết hàng / chưa có tồn — vẫn chọn được mã để od';
                 info.append(code, name, meta);
                 button.append(buildSuggestionThumb(group), info);
                 button.addEventListener('click', () => selectProductCode(block, group.code));
