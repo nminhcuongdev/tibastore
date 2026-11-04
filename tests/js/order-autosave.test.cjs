@@ -9,7 +9,7 @@ const vm = require('node:vm');
     const form = {action:'/orders', appendChild(node){ if (node.name === '_method') method = node; },
         checkValidity:() => valid, querySelector:selector => selector === '[name=_method]' ? method : {textContent:''}, addEventListener(){}};
     const context = vm.createContext({
-        document:{createElement:() => ({...status})}, orderForm:form, currentOrderId:null,
+        document:{createElement:() => ({...status})}, orderForm:form, currentOrderId:null, orderDraftDiscarded:false,
         readFormDraft:() => ({...data}), restoredFromDraft:false, hasOldInput:false,
         renumberRows(){}, itemsContainer:{querySelectorAll:selector => selector === '.size-row'
             ? [{querySelector:() => ({value:'1'})}] : [{dispatchEvent(){}}]},
@@ -36,5 +36,25 @@ const vm = require('node:vm');
     valid = true; data.note = 'invalid server data';
     const failed = run(); resolveRequest({ok:false, json:async () => ({errors:{items:['Cannot save']}})}); await failed;
     assert.equal(context.currentOrderId, 42, 'Failed saves retain the existing order identity');
+    data.note = 'discard while saving';
+    const discarded = run(); context.orderDraftDiscarded = true;
+    const savedDraftCount = draftSaves;
+    resolveRequest(response); await discarded;
+    assert.equal(draftSaves, savedDraftCount, 'Discarded drafts must not be recreated after a pending response');
+    const requestsBeforeDiscard = calls; await run();
+    assert.equal(calls, requestsBeforeDiscard, 'Discard stops further autosaves');
+    const formSource = fs.readFileSync('resources/views/orders/form.blade.php', 'utf8');
+    const freshStart = formSource.indexOf('const createPageUrl =');
+    const freshEnd = formSource.indexOf('if (! hasOldInput)', freshStart);
+    let draftClears = 0;
+    const location = {href:'https://example.test/orders/create?fresh=1'};
+    const freshContext = vm.createContext({URL, window:{location}, isCreate:true,
+        clearDraft(){draftClears++;}, history:{replaceState(a,b,url){location.href = url;}}});
+    const freshCode = formSource.slice(freshStart, freshEnd);
+    vm.runInContext('{'+freshCode+'}', freshContext);
+    assert.equal(draftClears, 1, 'Create new must clear the previous create draft');
+    assert.ok(!location.href.includes('fresh='), 'Reloading the new form must still allow restoring its new draft');
+    vm.runInContext('{'+freshCode+'}', freshContext);
+    assert.equal(draftClears, 1, 'A normal reload must not discard the new draft');
     console.log('Order autosave: serial requests, pending edits, deduplication and draft checks passed');
 })().catch(error => { console.error(error); process.exitCode = 1; });

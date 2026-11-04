@@ -718,7 +718,7 @@
                     aria-haspopup="dialog" aria-controls="order-reminder-popup">
                     Nhắc đòi đồ ({{ number_format($returnReminderCount) }})
                 </button>
-                <a class="button" href="{{ route('orders.create') }}">+ Tạo đơn hàng</a>
+                <a class="button" href="{{ route('orders.create', ['fresh' => 1]) }}">+ Tạo đơn hàng</a>
             </div>
             <form class="search {{ $hasActiveFilters ? 'is-open' : '' }}" id="filter-panel" method="GET" action="{{ route('orders.index') }}">
                 <div class="filter-grid">

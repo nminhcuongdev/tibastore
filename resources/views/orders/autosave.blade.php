@@ -11,11 +11,12 @@
         let autosaveLastAttempt = '', autosaveBusy = false, autosaveFinish = false, autosaveTimer;
         autosaveState.textContent = currentOrderId ? 'Tự động lưu đã bật.' : 'Tự động lưu đã bật. Chưa đủ thông tin sẽ lưu nháp trên máy này.';
         function scheduleAutosave() {
+            if (orderDraftDiscarded) return;
             clearTimeout(autosaveTimer);
             autosaveTimer = setTimeout(() => saveOrderAutomatically(), 1200);
         }
         async function saveOrderAutomatically(force = false) {
-            if (autosaveBusy) return;
+            if (autosaveBusy || orderDraftDiscarded) return;
             renumberRows();
             const snapshot = autosaveSnapshot();
             if (!force && (snapshot === autosaveLastSaved || snapshot === autosaveLastAttempt)) return;
@@ -32,6 +33,7 @@
                 const response = await fetch(orderForm.action, {method:'POST', body:new FormData(orderForm), credentials:'same-origin',
                     headers:{Accept:'application/json', 'X-Requested-With':'XMLHttpRequest'}});
                 const data = await response.json();
+                if (orderDraftDiscarded) return;
                 if (!response.ok) throw new Error(data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Chưa lưu được.'));
                 const firstSave = !currentOrderId;
                 currentOrderId = data.id; orderForm.action = data.update_url;
@@ -52,19 +54,22 @@
                 autosaveState.textContent = data.warning ? 'Đã lưu đơn #' + data.id + ' · ' + data.warning : 'Đã tự lưu đơn #' + data.id;
                 if (autosaveFinish && unchanged) { window.location.assign(data.show_url); return; }
             } catch (error) {
+                if (orderDraftDiscarded) return;
                 saveDraftNow(); autosaveFinish = false;
                 autosaveState.textContent = 'Chưa lưu vào hệ thống: ' + (error.message || 'Kiểm tra kết nối rồi thử lại.') + ' Nháp vẫn được giữ trên máy này.';
             } finally {
                 autosaveBusy = false;
-                if (autosaveSnapshot() !== snapshot) scheduleAutosave();
+                if (!orderDraftDiscarded && autosaveSnapshot() !== snapshot) scheduleAutosave();
             }
         }
         orderForm.addEventListener('input', scheduleAutosave);
         orderForm.addEventListener('change', scheduleAutosave);
+        orderForm.addEventListener('order-draft-discarded', () => { clearTimeout(autosaveTimer); autosaveFinish = false; });
         window.addEventListener('online', () => { autosaveLastAttempt = ''; scheduleAutosave(); });
         // Also cover choosing products, applying OD, removing rows and undo/redo.
         setInterval(scheduleAutosaveIfChanged, 1800);
         function scheduleAutosaveIfChanged() {
+            if (orderDraftDiscarded) return;
             const snapshot = autosaveSnapshot();
             if (snapshot !== autosaveLastSaved && snapshot !== autosaveLastAttempt && !autosaveBusy) scheduleAutosave();
         }
@@ -74,6 +79,7 @@
             saveOrderAutomatically(true);
         });
         window.addEventListener('beforeunload', event => {
+            if (orderDraftDiscarded) return;
             const snapshot = autosaveSnapshot();
             if (snapshot !== autosaveLastSaved && (currentOrderId || restoredFromDraft || hasOldInput || snapshot !== autosaveInitialSnapshot)) {
                 saveDraftNow(); event.preventDefault(); event.returnValue = '';

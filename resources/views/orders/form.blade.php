@@ -2161,14 +2161,18 @@
         }
 
         let draftSaveTimer = null;
+        let orderDraftDiscarded = false;
         function saveDraft() {
+            if (orderDraftDiscarded) return;
             clearTimeout(draftSaveTimer);
             draftSaveTimer = setTimeout(saveDraftNow, 400);
         }
         function saveDraftNow() {
+            if (orderDraftDiscarded) return;
             try { localStorage.setItem(DRAFT_KEY, JSON.stringify(readFormDraft())); } catch (e) {}
         }
         function clearDraft() {
+            clearTimeout(draftSaveTimer);
             try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
         }
 
@@ -2205,6 +2209,12 @@
         // Dữ liệu để dựng: ưu tiên old() (khi submit lỗi), rồi tới nháp đã lưu, rồi mặc định.
         let itemsToBuild = initialItems;
         let restoredFromDraft = false;
+        const createPageUrl = new URL(window.location.href);
+        if (isCreate && createPageUrl.searchParams.get('fresh') === '1') {
+            clearDraft();
+            createPageUrl.searchParams.delete('fresh');
+            history.replaceState(null, '', createPageUrl.toString());
+        }
 
         if (! hasOldInput) {
             let draft = null;
@@ -2288,9 +2298,11 @@
         const clearBtn = document.getElementById('draft_clear');
         if (clearBtn) {
             clearBtn.addEventListener('click', () => {
+                orderDraftDiscarded = true;
+                orderForm.dispatchEvent(new Event('order-draft-discarded'));
                 clearDraft();
                 // Tạo mới: về form trống. Sửa đơn: nạp lại dữ liệu gốc từ server.
-                window.location = window.location.pathname;
+                window.location.assign(isCreate ? @json(route('orders.create', ['fresh' => 1])) : window.location.pathname);
             });
         }
 
