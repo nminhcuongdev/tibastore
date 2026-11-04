@@ -423,7 +423,8 @@
 
                 <div class="field">
                     <label for="rental_price">Giá thuê</label>
-                    <input id="rental_price" name="rental_price" type="number" min="0" step="1000" value="{{ old('rental_price', $product->rental_price ?? 0) }}">
+                    <input id="rental_price" name="rental_price_text" type="text" maxlength="255" value="{{ old('rental_price_text', $product->rental_price_text ?? $product->rental_price ?? 0) }}" placeholder="150000, 150k/ngày hoặc Liên hệ">
+                    @error('rental_price_text') <div class="error">{{ $message }}</div> @enderror
                     @error('rental_price') <div class="error">{{ $message }}</div> @enderror
                 </div>
 

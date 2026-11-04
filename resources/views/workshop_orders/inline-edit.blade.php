@@ -185,11 +185,11 @@
             const editor = document.createElement('form');
             const title = document.createElement('h3'); title.textContent = 'Tạo mã hàng mới'; editor.appendChild(title);
             const fields = {};
-            [['code', 'Mã hàng', 50], ['name', 'Tên sản phẩm', 255], ['category', 'Danh mục', 255], ['rental_price', 'Giá thuê (đồng)', 10]].forEach(([name, text, max]) => {
+            [['code', 'Mã hàng', 50], ['name', 'Tên sản phẩm', 255], ['category', 'Danh mục', 255], ['rental_price_text', 'Giá thuê', 255]].forEach(([name, text, max]) => {
                 const label = document.createElement('label'); label.textContent = text;
                 const input = document.createElement('input'); input.required = ['code', 'name'].includes(name); input.maxLength = max;
-                if (name === 'rental_price') {
-                    input.type = 'number'; input.min = '0'; input.max = '2147483647'; input.step = '1'; input.value = '0';
+                if (name === 'rental_price_text') {
+                    input.placeholder = 'Ví dụ: 150000, 150k/ngày hoặc Liên hệ';
                 }
                 input.style.cssText = 'display:block;width:100%;box-sizing:border-box;margin:6px 0 14px;padding:10px';
                 fields[name] = input; label.appendChild(input); editor.appendChild(label);

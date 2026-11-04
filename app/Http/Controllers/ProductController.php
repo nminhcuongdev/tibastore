@@ -58,6 +58,7 @@ class ProductController extends Controller
             ->selectRaw('MAX(fabric) as fabric')
             ->selectRaw('MAX(category) as category')
             ->selectRaw('MAX(rental_price) as rental_price')
+            ->selectRaw('MAX(rental_price_text) as rental_price_text')
             ->selectRaw('MAX(updated_at) as updated_at')
             ->selectRaw('MAX(discontinued_at) as discontinued_at')
             ->when($showDiscontinued, fn ($builder) => $builder->discontinued(), fn ($builder) => $builder->active())
@@ -135,6 +136,7 @@ class ProductController extends Controller
                     'fabric' => $source->fabric,
                     'category' => $source->category,
                     'rental_price' => $source->rental_price,
+                    'rental_price_text' => $source->rental_price_text,
                     'image_path' => $source->image_path,
                 ]);
                 $sourceProductId = $source->id;
@@ -354,6 +356,7 @@ class ProductController extends Controller
                     'category' => $data['category'] ?? null,
                     'size' => $variant['size'],
                     'rental_price' => $data['rental_price'] ?? 0,
+                    'rental_price_text' => $data['rental_price_text'] ?? null,
                 ]);
 
                 $this->replacePendingExpectedReceipts($product, $variant['expected_receipts']);
@@ -415,6 +418,7 @@ class ProductController extends Controller
             'name' => $data['name'],
             'category' => $data['category'] ?? null,
             'rental_price' => $data['rental_price'] ?? 0,
+            'rental_price_text' => $data['rental_price_text'] ?? null,
         ];
 
         if (array_key_exists('image_path', $data)) {
@@ -578,6 +582,7 @@ class ProductController extends Controller
             'category' => ['nullable', 'string', 'max:255'],
             'size' => ['required', 'string', 'max:50'],
             'rental_price' => ['nullable', 'integer', 'min:0'],
+            'rental_price_text' => ['nullable', 'string', 'max:255'],
         ], [
             'code.required' => 'Vui lòng nhập mã sản phẩm.',
             'code.unique' => 'Cặp mã sản phẩm và size đã tồn tại.',
@@ -596,6 +601,7 @@ class ProductController extends Controller
         ]);
 
         $data['stock_quantity'] = (int) ($data['stock_quantity'] ?? 0);
+        $data = Product::withRentalPriceText($data);
         $data['rental_price'] = (int) ($data['rental_price'] ?? 0);
         $data['expected_receipts'] = $this->normalizeExpectedReceipts($data['expected_receipts'] ?? [], 'expected_receipts');
 
@@ -697,6 +703,7 @@ class ProductController extends Controller
             'category' => ['nullable', 'string', 'max:255'],
             'rental_price' => ['nullable', 'integer', 'min:0'],
             'variants' => ['required', 'array', 'min:1'],
+            'rental_price_text' => ['nullable', 'string', 'max:255'],
             'variants.*.size' => ['required', 'string', 'max:50'],
             'variants.*.stock_quantity' => ['nullable', 'integer', 'min:0'],
             'variants.*.expected_receipts' => ['nullable', 'array'],
@@ -720,6 +727,7 @@ class ProductController extends Controller
             'variants.*.expected_receipts.*.expected_receive_quantity.min' => 'Số lượng nhận dự kiến không được âm.',
         ]);
 
+        $data = Product::withRentalPriceText($data);
         $sizes = collect($data['variants'])
             ->pluck('size')
             ->map(fn ($size) => trim((string) $size));

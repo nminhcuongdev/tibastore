@@ -25,6 +25,7 @@ class Product extends Model
         'size',
         'import_price',
         'rental_price',
+        'rental_price_text',
         'discontinued_at',
     ];
 
@@ -38,6 +39,16 @@ class Product extends Model
         'discontinued_at' => 'datetime',
     ];
 
+    public static function withRentalPriceText(array $data): array
+    {
+        if (array_key_exists('rental_price_text', $data)) {
+            $text = trim($data['rental_price_text'] ?? '');
+            $data['rental_price_text'] = $text !== '' ? $text : null;
+            $data['rental_price'] = ctype_digit($text) && strlen($text) <= 10 && (float) $text <= 2147483647 ? (int) $text : 0;
+        }
+        return $data;
+    }
+
     public function changeLogLabels(): array
     {
         return [
@@ -49,6 +60,7 @@ class Product extends Model
             'stock_quantity' => 'Số lượng tồn',
             'import_price' => 'Giá nhập',
             'rental_price' => 'Giá thuê',
+            'rental_price_text' => 'Nội dung giá thuê',
             'image_path' => 'Ảnh sản phẩm',
             'expected_receive_date' => 'Ngày nhập dự kiến',
             'expected_receive_quantity' => 'SL nhập dự kiến',

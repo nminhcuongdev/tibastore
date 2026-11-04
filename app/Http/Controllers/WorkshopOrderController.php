@@ -435,7 +435,9 @@ class WorkshopOrderController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'category' => ['nullable', 'string', 'max:255'],
             'rental_price' => ['nullable', 'integer', 'min:0', 'max:2147483647'],
+            'rental_price_text' => ['nullable', 'string', 'max:255'],
         ], ['code.unique' => 'Mã hàng đã tồn tại trong kho.']);
+        $data = Product::withRentalPriceText($data);
         $data['rental_price'] = $data['rental_price'] ?? 0;
         $product = Product::create($data + ['size' => '', 'stock_quantity' => 0, 'fabric' => '']);
 

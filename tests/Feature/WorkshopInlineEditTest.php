@@ -14,6 +14,26 @@ class WorkshopInlineEditTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_free_text_rental_price_is_preserved_and_editable_in_stock(): void
+    {
+        $this->actingAs(User::create(['code' => 'text-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $code = 'TEXT-'.bin2hex(random_bytes(4));
+        $this->postJson(route('workshop-orders.create-product'), ['code' => $code, 'name' => 'Áo thử',
+            'rental_price_text' => '150k/ngày hoặc liên hệ'])->assertCreated();
+        $product = Product::where('code', $code)->firstOrFail();
+        $this->assertSame('150k/ngày hoặc liên hệ', $product->rental_price_text);
+        $this->assertSame(0, $product->rental_price);
+        $this->get(route('products.index', ['q' => $code]))->assertOk()->assertSee('150k/ngày hoặc liên hệ');
+        $this->get(route('products.edit', $product))->assertOk()->assertSee('150k/ngày hoặc liên hệ');
+        foreach (['Liên hệ', '250000'] as $price) {
+            $this->put(route('products.update', $product), ['code' => $code, 'name' => 'Áo thử', 'size' => 'M',
+                'rental_price_text' => $price])->assertRedirect();
+            $this->assertSame($price, $product->fresh()->rental_price_text);
+        }
+        $this->assertSame(250000, $product->fresh()->rental_price);
+    }
+
     public function test_code_suggestion_skips_existing_and_discontinued_codes(): void
     {
         $this->actingAs(User::create(['code' => 'suggest-'.bin2hex(random_bytes(4)), 'name' => 'Test',
