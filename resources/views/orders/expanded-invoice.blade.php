@@ -6,6 +6,7 @@
         'price' => $item->rental_price ?? 0, 'days' => (float) ($item->rental_days ?? 1),
         'amount' => round(($item->rental_price ?? 0) * $item->quantity * (float) ($item->rental_days ?? 1)),
         'note' => $item->note,
+        'dispatched' => $item->dispatched_at !== null,
     ]);
     if ($invoiceLines->isEmpty()) {
         $invoiceLines = $codeSummary->map(fn ($code) => array_merge($code, [
@@ -23,6 +24,7 @@
         $line['prices'] = $lines->pluck('price')->unique()->values();
         $line['day_values'] = $lines->pluck('days')->unique()->values();
         $line['note'] = $lines->pluck('note')->filter()->unique()->implode('; ');
+        $line['dispatched'] = $lines->every(fn ($item) => $item['dispatched'] ?? false);
         return $line;
     })->values();
 @endphp
@@ -36,6 +38,21 @@
                 @if($line['image'])
                     <button type="button" class="code-thumb has-image" data-zoom-src="{{ $line['image'] }}" data-zoom-alt="{{ $line['code'] }} - {{ $line['name'] }}" aria-label="Phóng to ảnh {{ $line['code'] }}"><img src="{{ $line['image'] }}" alt="{{ $line['code'] }}" loading="lazy"></button>
                 @else <span class="order-invoice-no-image">Chưa có ảnh</span> @endif
+                @if($order->exists && $order->allowsCodeDispatch() && $order->items->isNotEmpty() && $line['code'] !== 'N/A')
+                    <form method="POST" action="{{ route('orders.code-dispatch', $order) }}" style="margin-top:8px">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="code" value="{{ $line['code'] }}">
+                        <select name="dispatched" aria-label="Trạng thái giao mã {{ $line['code'] }}" onchange="this.form.requestSubmit()">
+                            <option value="0" @selected(!$line['dispatched'])>Chưa giao</option>
+                            <option value="1" @selected($line['dispatched'])>Đã giao</option>
+                        </select>
+                    </form>
+                @elseif($order->requiresStockOut())
+                    <div>Đã giao</div>
+                @elseif(in_array($order->status, [\App\Models\Order::RETURNED_STATUS, \App\Models\Order::CHECKED_STATUS], true))
+                    <div>Đã về kho</div>
+                @endif
             </td><td>{{ $line['name'] }}</td><td>@foreach($line['sizes'] as $size)<div class="order-invoice-size">{{ $size['size'] }}: {{ number_format($size['quantity']) }}</div>@endforeach</td><td class="order-invoice-number">{{ number_format($line['quantity']) }}</td><td class="order-invoice-number">@foreach($line['day_values'] as $days)<div>{{ rtrim(rtrim(number_format($days, 2, '.', ''), '0'), '.') }}</div>@endforeach</td><td class="order-invoice-money">@foreach($line['prices'] as $price)<div>{{ $price === null ? '—' : number_format($price, 0, ',', '.') }}</div>@endforeach</td><td class="order-invoice-money"><strong>{{ number_format($line['amount'], 0, ',', '.') }}</strong></td><td>{{ $line['note'] ?: '—' }}</td></tr>
         @endforeach
         </tbody>

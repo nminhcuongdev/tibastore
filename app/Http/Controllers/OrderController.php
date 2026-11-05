@@ -147,7 +147,7 @@ class OrderController extends Controller
             // Danh sach ma hang duoc so ngay tren bang nen can ca san pham cua
             // tung dong; hai truy van eager-load van re hon moi dong mot request.
             ->with([
-                'items:id,order_id,product_id,quantity,returned_quantity,size_pending,rental_price,rental_days,note',
+                'items:id,order_id,product_id,quantity,returned_quantity,size_pending,rental_price,rental_days,note,dispatched_at',
                 'items.product:id,code,name,size,image_path',
             ])
             ->join('products', 'products.id', '=', 'orders.product_id')
@@ -473,6 +473,17 @@ class OrderController extends Controller
                 ->lockForUpdate()
                 ->firstOrFail();
 
+            $lockedOrder->load('items.product');
+            $dispatchDates = $lockedOrder->items->filter(fn ($item) => $item->dispatched_at)
+                ->keyBy(fn ($item) => $item->displayCode())->map->dispatched_at;
+            if ($lockedOrder->requiresStockOut() && $orderData['status'] !== $lockedOrder->status) {
+                $dispatchDates = collect();
+            }
+            $codes = Product::whereIn('id', array_column($items, 'product_id'))->pluck('code', 'id');
+            foreach ($items as &$item) {
+                $item['dispatched_at'] = $dispatchDates->get($codes[$item['product_id']] ?? '');
+            }
+            unset($item);
             $this->inventory->resetAdjustment($lockedOrder);
 
             // Dòng hàng bị xóa rồi tạo lại nên sự kiện model không bắt được;
@@ -526,6 +537,29 @@ class OrderController extends Controller
             .'#workshop-row-'.$warning['focus'])->with('status', $message)->with('workshop_duplicate_warning', $warning);
     }
 
+    public function updateCodeDispatch(Request $request, Order $order): RedirectResponse
+    {
+        $data = $request->validate(['code' => ['required', 'string', 'max:50'], 'dispatched' => ['required', 'boolean']]);
+
+        DB::transaction(function () use ($order, $data) {
+            $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+            $locked->load('items.product');
+            $items = $locked->items->filter(fn ($item) => $item->product?->code === $data['code']);
+            if (!$locked->allowsCodeDispatch() || $items->isEmpty()) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['dispatch' => 'Không thể đổi trạng thái giao của mã này.']);
+            }
+            if ($data['dispatched'] && $items->contains('size_pending', true)) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['dispatch' => 'Hãy chốt đủ size trước khi đánh dấu mã đã giao.']);
+            }
+            foreach ($items as $item) {
+                $item->update(['dispatched_at' => $data['dispatched'] ? ($item->dispatched_at ?? now('Asia/Ho_Chi_Minh')) : null]);
+            }
+            $this->inventory->applyStatusAdjustment($locked);
+        });
+
+        return back()->with('status', $data['dispatched'] ? 'Đã đánh dấu mã đã giao và cập nhật kho.' : 'Đã đánh dấu mã chưa giao và trả số lượng về kho.');
+    }
+
     public function updateStatus(Request $request, Order $order): RedirectResponse|JsonResponse
     {
         $isChecking = $request->input('status') === Order::CHECKED_STATUS;
@@ -577,6 +611,10 @@ class OrderController extends Controller
                 $lockedOrder->load('items');
             }
 
+            if ($lockedOrder->requiresStockOut() && $data['status'] !== $lockedOrder->status) {
+                $lockedOrder->items()->update(['dispatched_at' => null]);
+                $lockedOrder->load('items');
+            }
             $lockedOrder->update(['status' => $data['status']]);
             if ($data['status'] === 'huy_don') {
                 app(\App\Services\OrderPurchasePlanService::class)->sync($lockedOrder);

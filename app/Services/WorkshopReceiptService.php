@@ -51,7 +51,7 @@ class WorkshopReceiptService
                     if ($target) $target->update(['quantity' => $target->quantity + $delta]);
                     else $order->items()->create(['product_id' => $id, 'quantity' => $delta, 'size_pending' => false,
                         'rental_price' => $template->rental_price, 'rental_days' => $template->rental_days,
-                        'fulfillment_source' => $workshop->supply_source]);
+                        'fulfillment_source' => $workshop->supply_source, 'dispatched_at' => $template->dispatched_at]);
                 } elseif ($delta < 0) {
                     $remaining = -$delta;
                     foreach ($matching->reverse() as $target) {

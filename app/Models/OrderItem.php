@@ -21,6 +21,7 @@ class OrderItem extends Model
         'note',
         'returned_quantity',
         'stock_held',
+        'dispatched_at',
     ];
 
     protected $casts = [
@@ -31,6 +32,7 @@ class OrderItem extends Model
         'returned_quantity' => 'integer',
         'stock_held' => 'integer',
         'size_pending' => 'boolean',
+        'dispatched_at' => 'datetime',
     ];
 
     /**

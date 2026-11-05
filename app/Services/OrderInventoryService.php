@@ -59,7 +59,10 @@ class OrderInventoryService
         }
 
         foreach ($order->items as $item) {
-            $this->setHeldQuantity($item, $this->targetHeldQuantity($item, $isOut));
+            if (!$isOut && !$order->allowsCodeDispatch() && $item->dispatched_at) {
+                $item->update(['dispatched_at' => null]);
+            }
+            $this->setHeldQuantity($item, $this->targetHeldQuantity($item, $isOut || $item->dispatched_at !== null));
         }
 
         if ($isOut) {
@@ -313,11 +316,13 @@ class OrderInventoryService
             ->whereNotIn('orders.status', ['huy_don', Order::RETURNED_STATUS, Order::CHECKED_STATUS])
             ->whereIn('order_items.product_id', $productIds)
             ->where('order_items.size_pending', false)
-            ->whereDate('orders.pickup_date', '<=', $to->toDateString())
+            ->where(fn ($query) => $query->whereDate('orders.pickup_date', '<=', $to->toDateString())
+                ->orWhereDate('order_items.dispatched_at', '<=', $to->toDateString()))
             ->whereDate('orders.return_date', '>=', $from->copy()->subDay()->toDateString())
             ->get([
                 'order_items.product_id',
                 'order_items.quantity',
+                'order_items.dispatched_at',
                 'orders.pickup_date',
                 'orders.return_date',
                 'orders.return_period',
@@ -327,6 +332,7 @@ class OrderInventoryService
             $productId = (int) $booking->product_id;
             $quantity = (int) $booking->quantity;
             $start = $this->date($booking->pickup_date);
+            if ($booking->dispatched_at) $start = $start->min($this->date($booking->dispatched_at));
             $end = $this->date($booking->return_date);
             if ($booking->return_period === 'toi') {
                 $end->addDay();
@@ -412,7 +418,7 @@ class OrderInventoryService
         return OrderItem::query()
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->whereIn('order_items.product_id', $productIds)
-            ->whereIn('orders.status', Order::STOCK_OUT_STATUSES)
+            ->where(fn ($query) => $query->whereIn('orders.status', Order::STOCK_OUT_STATUSES)->orWhereNotNull('order_items.dispatched_at'))
             ->selectRaw('order_items.product_id, SUM(order_items.stock_held) as open_quantity')
             ->groupBy('order_items.product_id')
             ->pluck('open_quantity', 'order_items.product_id')
@@ -475,7 +481,7 @@ class OrderInventoryService
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->whereIn('order_items.product_id', $productIds)
             ->where('order_items.size_pending', false)
-            ->whereIn('orders.status', Order::STOCK_OUT_STATUSES)
+            ->where(fn ($query) => $query->whereIn('orders.status', Order::STOCK_OUT_STATUSES)->orWhereNotNull('order_items.dispatched_at'))
             ->selectRaw('order_items.product_id, SUM(order_items.stock_held) as rented_quantity')
             ->groupBy('order_items.product_id')->pluck('rented_quantity', 'order_items.product_id')
             ->map(fn ($quantity) => (int) $quantity)->all();
@@ -486,7 +492,7 @@ class OrderInventoryService
         return OrderItem::query()
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->join('products', 'products.id', '=', 'order_items.product_id')
-            ->whereIn('orders.status', Order::STOCK_OUT_STATUSES)
+            ->where(fn ($query) => $query->whereIn('orders.status', Order::STOCK_OUT_STATUSES)->orWhereNotNull('order_items.dispatched_at'))
             ->selectRaw('products.code, SUM(order_items.stock_held) as rented_quantity')
             ->groupBy('products.code')
             ->pluck('rented_quantity', 'products.code')
@@ -507,11 +513,13 @@ class OrderInventoryService
             ->whereIn('order_items.product_id', $productIds)
             ->where('order_items.size_pending', false)
             ->when($excludeOrderId !== null, fn ($query) => $query->where('orders.id', '!=', $excludeOrderId))
-            ->whereDate('orders.pickup_date', '<', $endExclusive)
+            ->where(fn ($query) => $query->whereDate('orders.pickup_date', '<', $endExclusive)
+                ->orWhereDate('order_items.dispatched_at', '<', $endExclusive))
             ->whereDate('orders.return_date', '>=', $start->copy()->subDay())
             ->get([
                 'order_items.product_id',
                 'order_items.quantity',
+                'order_items.dispatched_at',
                 'orders.pickup_date',
                 'orders.return_date',
                 'orders.return_period',
@@ -524,6 +532,7 @@ class OrderInventoryService
             $productId = (int) $row->product_id;
             $quantity = (int) $row->quantity;
             $bookingStart = $this->date($row->pickup_date);
+            if ($row->dispatched_at) $bookingStart = $bookingStart->min($this->date($row->dispatched_at));
             $bookingEndExclusive = $this->date($row->return_date)->addDay();
             if ($allowSameDayTurnaround && $this->date($row->return_date)->gt($bookingStart)) {
                 $bookingEndExclusive = $this->date($row->return_date);

@@ -368,4 +368,10 @@ class Order extends Model
     {
         return in_array($this->status, self::STOCK_OUT_STATUSES, true);
     }
+
+    public function allowsCodeDispatch(): bool
+    {
+        return !$this->requiresStockOut()
+            && !in_array($this->status, ['huy_don', self::RETURNED_STATUS, self::CHECKED_STATUS], true);
+    }
 }
