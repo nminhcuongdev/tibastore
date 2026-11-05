@@ -142,7 +142,8 @@ class OrderInventoryService
         string $pickupDate,
         string $returnDate,
         ?int $excludeOrderId = null,
-        ?string $returnPeriod = null
+        ?string $returnPeriod = null,
+        array $dedicatedQuantities = []
     ): void {
         // Item "chưa chốt size" không giữ kho theo size cụ thể nên bỏ qua khi kiểm tồn.
         $checkableItems = collect($items)->reject(fn ($item) => ! empty($item['size_pending']));
@@ -192,7 +193,8 @@ class OrderInventoryService
         $messages = [];
 
         foreach ($totalByProduct as $productId => $totalQuantity) {
-            $availableQuantity = (int) ($availability[$productId] ?? 0);
+            $dedicated = $dedicatedQuantities[$productId] ?? 0;
+            $availableQuantity = max($dedicated, (int) ($availability[$productId] ?? 0));
 
             if ($totalQuantity > $availableQuantity) {
                 $index = $firstIndexByProduct[$productId];

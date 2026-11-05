@@ -234,9 +234,14 @@ class OrderPurchasePlanTest extends TestCase
             'items' => [['product_id' => $p->id, 'quantity' => 2, 'fulfillment_source' => 'xuong_may', 'purchase_plan' => $plan]]];
         $this->postJson('/orders', $data)->assertUnprocessable();
         $this->assertSame(0, WorkshopOrder::where('product_code', $p->code)->count());
+        $overlap = Order::create(['product_id' => $p->id, 'quantity' => 1, 'order_name' => 'Other booking',
+            'closer_name' => 'Test', 'status' => Order::DEFAULT_STATUS, 'pickup_date' => '2034-06-02',
+            'event_date' => '2034-06-03', 'return_date' => '2034-06-04']);
+        $overlap->items()->create(['product_id' => $p->id, 'quantity' => 1]);
+        $this->postJson('/orders', $data)->assertUnprocessable();
         $data['items'][0]['purchase_plan']['lines'][0]['quantity'] = 2;
         $this->post('/orders', $data)->assertSessionHasNoErrors()->assertRedirect();
-        $order = Order::where('product_id', $p->id)->firstOrFail();
+        $order = Order::where('order_name', $p->code)->firstOrFail();
         $od = WorkshopOrder::where('customer_order_id', $order->id)->firstOrFail();
         $manual = ProductExpectedReceipt::create(['product_id' => $p->id, 'expected_receive_date' => '2034-06-01', 'expected_receive_quantity' => 1]);
         $p->update(['stock_quantity' => 2]);
