@@ -239,13 +239,7 @@ class OrderInventoryService
             $end = $start->copy();
         }
 
-        $endExclusive = $end->copy()->addDay();
-        if ($allowSameDayTurnaround && $end->gt($start)) {
-            $endExclusive = $end->copy();
-        }
-        if ($returnPeriod !== null) {
-            $endExclusive = $end->copy()->addDays($returnPeriod === 'toi' ? 2 : 1);
-        }
+        $endExclusive = $this->bookingEndExclusive($start, $end, $returnPeriod, $allowSameDayTurnaround);
         $products = Product::whereIn('id', $productIds->all())
             ->get(['id', 'stock_quantity'])
             ->keyBy('id');
@@ -536,6 +530,15 @@ class OrderInventoryService
             ->all();
     }
 
+    private function bookingEndExclusive(Carbon $start, Carbon $return, ?string $period, bool $allowSameDayTurnaround): Carbon
+    {
+        if ($allowSameDayTurnaround && ($period === null || $period === 'sang') && $return->gt($start)) {
+            return $return->copy();
+        }
+
+        return $return->copy()->addDays($period === 'toi' ? 2 : 1);
+    }
+
     private function maxReservedQuantities(
         array $productIds,
         Carbon $start,
@@ -569,13 +572,9 @@ class OrderInventoryService
             $quantity = (int) $row->quantity;
             $bookingStart = $this->date($row->pickup_date);
             if ($row->dispatched_at) $bookingStart = $bookingStart->min($this->date($row->dispatched_at));
-            $bookingEndExclusive = $this->date($row->return_date)->addDay();
-            if ($allowSameDayTurnaround && $this->date($row->return_date)->gt($bookingStart)) {
-                $bookingEndExclusive = $this->date($row->return_date);
-            }
-            if ($row->return_period !== null) {
-                $bookingEndExclusive = $this->date($row->return_date)->addDays($row->return_period === 'toi' ? 2 : 1);
-            }
+            $bookingEndExclusive = $this->bookingEndExclusive(
+                $bookingStart, $this->date($row->return_date), $row->return_period, $allowSameDayTurnaround
+            );
 
             if ($bookingStart->lt($start) && $bookingEndExclusive->gt($start)) {
                 $initialReserved[$productId] += $quantity;

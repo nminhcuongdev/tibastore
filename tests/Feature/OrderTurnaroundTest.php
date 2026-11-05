@@ -247,6 +247,12 @@ class OrderTurnaroundTest extends TestCase
             $product = $this->product();
             $incoming = $this->booking($product, '2030-10-21', '2030-10-23');
             $incoming->update(['return_period' => $period]);
+            $this->assertSame($period === 'sang' ? 2 : 0, $inventory->projectedAvailableQuantities(
+                [$product->id], '2030-10-23', '2030-10-25', null, true, 'sang'
+            )[$product->id]);
+            $this->assertSame(0, $inventory->projectedAvailableQuantities(
+                [$product->id], '2030-10-23', '2030-10-25', null, false, 'sang'
+            )[$product->id]);
             $this->assertSame($available, $inventory->projectedAvailableQuantities(
                 [$product->id], '2030-10-24', '2030-10-25'
             )[$product->id]);
