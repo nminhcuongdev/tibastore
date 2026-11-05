@@ -479,6 +479,7 @@
 
         <form id="order_form" class="form-shell" method="POST" action="{{ $mode === 'create' ? route('orders.store') : route('orders.update', $order) }}">
             <div class="order-editor-section"><span>01</span><div><h2>Thông tin khách hàng</h2><p>Người đặt, liên hệ và ghi chú cho đơn hàng</p></div></div>
+            @include('orders.paste-rental-details')
             @csrf
             <input type="hidden" name="_autosave_token" value="{{ old('_autosave_token', (string) \Illuminate\Support\Str::uuid()) }}">
             @if ($mode === 'edit')
