@@ -520,8 +520,8 @@
             </div>
 
             <div class="field">
-                <label for="region">Miền</label>
-                <select id="region" name="region">
+                <label for="region">Miền{{ $mode === 'create' ? ' *' : '' }}</label>
+                <select id="region" name="region" @if($mode === 'create') required @endif>
                     <option value="">Chưa xác định</option>
                     @foreach (\App\Models\Order::regions() as $value => $label)
                         <option value="{{ $value }}" @selected(old('region', $order->region) === $value)>{{ $label }}</option>
@@ -574,10 +574,11 @@
 
             <div class="order-editor-section section-payment"><span>03</span><div><h2>Thanh toán & chiết khấu</h2><p>Theo dõi tiền hàng, vận chuyển và các lần thanh toán</p></div></div>
             <div class="field">
-                <label for="source">Nguồn hàng</label>
+                <label for="source">Nguồn hàng *</label>
                 <select id="source" name="source" required>
+                    <option value="">Chọn nguồn hàng</option>
                     @foreach ($sources as $value => $label)
-                        <option value="{{ $value }}" @selected(old('source', $order->source ?? \App\Models\Order::DEFAULT_SOURCE) === $value)>{{ $label }}</option>
+                        <option value="{{ $value }}" @selected(old('source', $order->source) === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
                 @error('source') <div class="error">{{ $message }}</div> @enderror

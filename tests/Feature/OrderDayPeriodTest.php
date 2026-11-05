@@ -21,7 +21,7 @@ class OrderDayPeriodTest extends TestCase
         $data = ['closer_name' => 'Test', 'order_name' => 'Buổi diễn thử',
             'pickup_date' => '2031-10-23', 'event_date' => '2031-10-24', 'return_date' => '2031-10-25',
             'return_period' => 'sang', 'discount_amount' => 10000,
-            'source' => Order::DEFAULT_SOURCE, 'status' => Order::DEFAULT_STATUS,
+            'source' => Order::DEFAULT_SOURCE, 'region' => 'tinh_mb', 'status' => Order::DEFAULT_STATUS,
             'items' => [['product_id' => $product->id, 'quantity' => 1, 'rental_price' => 100000]]];
         $this->post('/orders', $data)->assertSessionHasNoErrors()->assertRedirect();
         $order = Order::where('product_id', $product->id)->firstOrFail();

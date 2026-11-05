@@ -50,7 +50,7 @@ class WorkshopDuplicateTest extends TestCase
         $plan = ['expected_date' => '2039-01-01', 'lines' => [['product_id' => $product->id, 'quantity' => 1]]];
         $data = ['closer_name' => 'Test', 'order_name' => $manual->order_name,
             'pickup_date' => '2039-01-02', 'event_date' => '2039-01-03', 'return_date' => '2039-01-04',
-            'source' => Order::DEFAULT_SOURCE, 'status' => Order::DEFAULT_STATUS,
+            'source' => Order::DEFAULT_SOURCE, 'region' => 'tinh_mb', 'status' => Order::DEFAULT_STATUS,
             'items' => [['product_id' => $product->id, 'quantity' => 1, 'rental_price' => 100,
                 'fulfillment_source' => 'mua_ngoai', 'purchase_plan' => $plan]]];
         $response = $this->post('/orders', $data);

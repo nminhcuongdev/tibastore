@@ -26,7 +26,7 @@ class OrderPurchasePlanTest extends TestCase
             'applied_lines' => [['product_id' => $product->id, 'quantity' => 3]], 'updated_once' => true];
         $this->post('/orders', ['closer_name' => 'Test', 'order_name' => $code, 'pickup_date' => '2039-01-02',
             'event_date' => '2039-01-03', 'return_date' => '2039-01-04', 'status' => Order::DEFAULT_STATUS,
-            'source' => Order::DEFAULT_SOURCE, 'items' => [['product_id' => $product->id, 'quantity' => 13,
+            'source' => Order::DEFAULT_SOURCE, 'region' => 'tinh_mb', 'items' => [['product_id' => $product->id, 'quantity' => 13,
                 'rental_price' => 10000, 'note' => 'Giữ ghi chú', 'fulfillment_source' => 'mua_ngoai', 'purchase_plan' => $plan]]])
             ->assertSessionHasNoErrors();
         $order = Order::where('order_name', $code)->firstOrFail();
@@ -69,7 +69,7 @@ class OrderPurchasePlanTest extends TestCase
             'applied_lines' => [['product_id' => $medium->id, 'quantity' => 1]]];
         $data = ['closer_name' => 'Test', 'order_name' => $code, 'pickup_date' => '2038-01-02',
             'event_date' => '2038-01-03', 'return_date' => '2038-01-04', 'status' => Order::DEFAULT_STATUS,
-            'source' => Order::DEFAULT_SOURCE, 'items' => [
+            'source' => Order::DEFAULT_SOURCE, 'region' => 'tinh_mb', 'items' => [
                 ['product_id' => $large->id, 'quantity' => 1, 'rental_price' => 90000, 'note' => 'Giữ ghi chú L', 'fulfillment_source' => 'mua_ngoai', 'purchase_plan' => $plan],
                 ['product_id' => $medium->id, 'quantity' => 1, 'rental_price' => 90000, 'note' => '1 M mua thêm', 'fulfillment_source' => 'mua_ngoai', 'purchase_plan' => $plan],
             ]];
@@ -101,7 +101,7 @@ class OrderPurchasePlanTest extends TestCase
             'fulfillment_source' => 'mua_ngoai', 'purchase_plan' => $plan], $lines);
         $this->post('/orders', ['closer_name' => 'Test', 'order_name' => $code, 'pickup_date' => '2035-04-02',
             'event_date' => '2035-04-03', 'return_date' => '2035-04-04', 'status' => Order::DEFAULT_STATUS,
-            'source' => Order::DEFAULT_SOURCE, 'items' => $items])->assertSessionHasNoErrors()->assertRedirect();
+            'source' => Order::DEFAULT_SOURCE, 'region' => 'tinh_mb', 'items' => $items])->assertSessionHasNoErrors()->assertRedirect();
         $order = Order::where('order_name', $code)->firstOrFail();
         $this->assertSame(4, $order->items()->count());
         $this->assertSame(18, (int) $order->items()->sum('quantity'));
@@ -144,7 +144,7 @@ class OrderPurchasePlanTest extends TestCase
         $plan = ['expected_date' => '2033-04-10', 'lines' => [['product_id' => $m->id, 'quantity' => 4], ['product_id' => $l->id, 'quantity' => 5]]];
         $data = ['closer_name' => 'Test', 'order_name' => $code,
             'pickup_date' => '2033-04-11', 'event_date' => '2033-04-12', 'return_date' => '2033-04-13',
-            'source' => Order::DEFAULT_SOURCE, 'status' => Order::DEFAULT_STATUS,
+            'source' => Order::DEFAULT_SOURCE, 'region' => 'tinh_mb', 'status' => Order::DEFAULT_STATUS,
             'items' => [['product_id' => $m->id, 'size_pending' => true, 'quantity' => 9, 'rental_price' => 10000,
                 'fulfillment_source' => 'mua_ngoai', 'purchase_plan' => json_encode($plan)]]];
         $this->post('/orders', $data)->assertSessionHasNoErrors()->assertRedirect();
@@ -195,7 +195,7 @@ class OrderPurchasePlanTest extends TestCase
         $p = Product::create(['code' => 'BUY-'.bin2hex(random_bytes(4)), 'name' => 'Test', 'fabric' => '', 'size' => 'M', 'stock_quantity' => 0]);
         $plan = ['expected_date' => '2034-06-01', 'lines' => [['product_id' => $p->id, 'quantity' => 1]]];
         $data = ['closer_name' => 'Test', 'order_name' => $p->code, 'pickup_date' => '2034-06-02', 'event_date' => '2034-06-03',
-            'return_date' => '2034-06-04', 'source' => Order::DEFAULT_SOURCE, 'status' => Order::DEFAULT_STATUS,
+            'return_date' => '2034-06-04', 'source' => Order::DEFAULT_SOURCE, 'region' => 'tinh_mb', 'status' => Order::DEFAULT_STATUS,
             'items' => [['product_id' => $p->id, 'quantity' => 2, 'fulfillment_source' => 'xuong_may', 'purchase_plan' => $plan]]];
         $this->postJson('/orders', $data)->assertUnprocessable();
         $this->assertSame(0, WorkshopOrder::where('product_code', $p->code)->count());

@@ -26,7 +26,7 @@ class OrderSupplyChoiceTest extends TestCase
             'image_path' => 'workshop-orders/existing.jpg']);
         $data = ['closer_name' => 'Test', 'order_name' => $product->code,
             'pickup_date' => '2032-03-03', 'event_date' => '2032-03-04', 'return_date' => '2032-03-05',
-            'source' => Order::DEFAULT_SOURCE, 'status' => Order::DEFAULT_STATUS,
+            'source' => Order::DEFAULT_SOURCE, 'region' => 'tinh_mb', 'status' => Order::DEFAULT_STATUS,
             'items' => [['product_id' => $product->id, 'quantity' => 5, 'fulfillment_source' => 'mua_ngoai',
                 'purchase_plan' => ['workshop_order_id' => $od->id, 'expected_date' => '2032-03-02',
                     'lines' => [['product_id' => $product->id, 'quantity' => 5]]]]]];
@@ -78,7 +78,7 @@ class OrderSupplyChoiceTest extends TestCase
             'fabric' => '', 'size' => 'M', 'stock_quantity' => 50]);
         $data = ['closer_name' => 'Test', 'order_name' => $product->code,
             'pickup_date' => '2032-03-03', 'event_date' => '2032-03-04', 'return_date' => '2032-03-05',
-            'source' => Order::DEFAULT_SOURCE, 'status' => Order::DEFAULT_STATUS,
+            'source' => Order::DEFAULT_SOURCE, 'region' => 'tinh_mb', 'status' => Order::DEFAULT_STATUS,
             'items' => [['product_id' => $product->id, 'quantity' => 2, 'rental_price' => 10000]]];
         $this->post('/orders', $data)->assertSessionHasNoErrors()->assertRedirect();
         $order = Order::where('product_id', $product->id)->latest('id')->firstOrFail();

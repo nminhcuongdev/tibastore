@@ -331,7 +331,7 @@ class OrderController extends Controller
         $products = Product::with('expectedReceipts')->active()->orderBy('code')->orderBy('size')->get();
 
         return view('orders.form', [
-            'order' => new Order(['status' => Order::DEFAULT_STATUS, 'source' => Order::DEFAULT_SOURCE]),
+            'order' => new Order(['status' => Order::DEFAULT_STATUS]),
             'orderItems' => collect(),
             'products' => $products,
             'productOptions' => $this->productOptions($products),
@@ -671,7 +671,7 @@ class OrderController extends Controller
             'closer_name' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
             'address' => ['nullable', 'string', 'max:500'],
-            'region' => ['nullable', Rule::in(array_keys(Order::regions()))],
+            'region' => [$order ? 'nullable' : 'required', Rule::in(array_keys(Order::regions()))],
             'carrier' => ['nullable', 'string', 'max:255'],
             'pickup_date' => ['required', 'date'],
             'event_date' => ['required', 'date', 'after_or_equal:pickup_date'],
@@ -718,6 +718,7 @@ class OrderController extends Controller
             'source.required' => 'Vui lòng chọn nguồn hàng.',
             'source.in' => 'Nguồn hàng không hợp lệ.',
             'region.in' => 'Miền không hợp lệ.',
+            'region.required' => 'Vui lòng chọn miền.',
             'status.required' => 'Vui lòng chọn trạng thái.',
             'status.in' => 'Trạng thái không hợp lệ.',
             'shipping_fee.integer' => 'Tiền ship phải là số.',

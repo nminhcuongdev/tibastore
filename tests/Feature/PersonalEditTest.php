@@ -99,7 +99,7 @@ class PersonalEditTest extends TestCase
         $this->actingAs($this->account());
         $product = Product::create(['code' => 'ORDER-'.bin2hex(random_bytes(4)), 'name' => 'Product', 'size' => 'M', 'fabric' => '', 'stock_quantity' => 10]);
         $this->post('/orders', ['closer_name' => 'Test', 'order_name' => 'History order', 'pickup_date' => '2032-03-03',
-            'event_date' => '2032-03-04', 'return_date' => '2032-03-05', 'source' => Order::DEFAULT_SOURCE,
+            'event_date' => '2032-03-04', 'return_date' => '2032-03-05', 'source' => Order::DEFAULT_SOURCE, 'region' => 'tinh_mb',
             'status' => Order::DEFAULT_STATUS, 'items' => [['product_id' => $product->id, 'quantity' => 2, 'rental_price' => 10000]]])->assertSessionHasNoErrors();
         $order = Order::latest('id')->firstOrFail();
         $this->patchJson('/orders/'.$order->id.'/status', ['status' => 'da_gui'])->assertOk();

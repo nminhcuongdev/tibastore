@@ -135,7 +135,7 @@ class OrderTurnaroundTest extends TestCase
         $this->post('/orders', [
             'closer_name' => 'Test', 'order_name' => 'Đơn nối ngày', 'pickup_date' => '2030-10-23',
             'event_date' => '2030-10-24', 'return_date' => '2030-10-25',
-            'source' => Order::DEFAULT_SOURCE, 'status' => Order::DEFAULT_STATUS,
+            'source' => Order::DEFAULT_SOURCE, 'region' => 'tinh_mb', 'status' => Order::DEFAULT_STATUS,
             'items' => [['product_id' => $product->id, 'quantity' => 2, 'rental_price' => 100000]],
         ])->assertSessionHasNoErrors()->assertRedirect();
         try {

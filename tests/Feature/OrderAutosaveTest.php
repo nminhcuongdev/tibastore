@@ -21,8 +21,10 @@ class OrderAutosaveTest extends TestCase
             'fabric' => '', 'size' => 'M', 'stock_quantity' => 20]);
         $data = ['_autosave_token' => (string) Str::uuid(), 'closer_name' => 'Test', 'order_name' => $product->code,
             'pickup_date' => '2032-03-03', 'event_date' => '2032-03-04', 'return_date' => '2032-03-05',
-            'source' => Order::DEFAULT_SOURCE, 'status' => Order::DEFAULT_STATUS,
+            'source' => Order::DEFAULT_SOURCE, 'region' => 'tinh_mb', 'status' => Order::DEFAULT_STATUS,
             'items' => [['product_id' => $product->id, 'quantity' => 2, 'rental_price' => 10000]]];
+        $this->postJson('/orders', array_replace($data, ['region' => '', 'source' => '']))
+            ->assertUnprocessable()->assertJsonValidationErrors(['region', 'source']);
         $id = $this->postJson('/orders', $data)->assertCreated()->assertJsonStructure(['id', 'update_url', 'edit_url', 'show_url'])->json('id');
         $data['items'][0]['quantity'] = 3;
         $this->postJson('/orders', $data)->assertOk()->assertJsonPath('id', $id);
