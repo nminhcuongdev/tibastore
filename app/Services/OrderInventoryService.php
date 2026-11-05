@@ -401,7 +401,7 @@ class OrderInventoryService
             ->whereIn('status', [WorkshopOrder::STATUS_ORDERED, WorkshopOrder::STATUS_ARRIVED])
             ->whereNull('stocked_at')->whereDate('returned_date', '<=', $through)->get();
         foreach ($orders as $order) {
-            $lines = collect($order->size_quantities ?? $order->purchase_plan['lines'] ?? [])->groupBy('product_id');
+            $lines = collect($order->plannedSizeLines())->groupBy('product_id');
             foreach ($lines as $id => $sizes) {
                 if ($codes->get($id) !== $order->product_code || $registered->has($order->id.':'.$id)) continue;
                 $rows->push(['product_id' => (int) $id, 'date' => $order->returned_date->toDateString(),

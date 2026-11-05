@@ -113,6 +113,30 @@ class WorkshopOrder extends Model
         return self::statuses()[$this->status] ?? $this->status;
     }
 
+    public function plannedSizeLines(): array
+    {
+        $lines = $this->size_quantities ?? $this->purchase_plan['lines'] ?? [];
+        if ($lines || !filled($this->size_note)) return $lines;
+
+        $sizes = Product::where('code', $this->product_code)->get(['id', 'size'])
+            ->groupBy(fn ($product) => mb_strtolower(trim($product->size)));
+        $quantities = [];
+        foreach (preg_split('/[,;\r\n]+/u', trim($this->size_note)) as $entry) {
+            if (!preg_match('/^\s*([^:]+):\s*([1-9][0-9]{0,8})\s*$/u', $entry, $match)) return [];
+            $products = $sizes->get(mb_strtolower(trim($match[1])));
+            if (!$products || $products->count() !== 1) return [];
+            $id = $products->first()->id;
+            $quantities[$id] = ($quantities[$id] ?? 0) + (int) $match[2];
+        }
+        if (array_sum($quantities) !== (int) $this->quantity) return [];
+
+        $lines = [];
+        foreach ($quantities as $id => $quantity) {
+            $lines[] = ['product_id' => $id, 'quantity' => $quantity];
+        }
+        return $lines;
+    }
+
     public function hasArrived(): bool
     {
         return $this->status === self::STATUS_ARRIVED;

@@ -267,7 +267,7 @@ class WorkshopOrderController extends Controller
                 }
             }
             if ($item->stocked_at) return $item->image_path ? 'Đã cập nhật ảnh vào kho. Số lượng không cộng thêm.' : 'Dòng này đã được đẩy lên kho trước đó, không cộng thêm.';
-            $lines = $item->size_quantities ?? ($item->purchase_plan['lines'] ?? null);
+            $lines = $item->plannedSizeLines();
             if (!$lines || $item->product_code === WorkshopOrder::NO_PRODUCT_CODE) {
                 throw \Illuminate\Validation\ValidationException::withMessages(['size_quantities' => 'Hãy chọn mã hàng, nhập size và số lượng từng size rồi lưu dòng trước khi đẩy lên kho.']);
             }
@@ -491,7 +491,7 @@ class WorkshopOrderController extends Controller
         return response()->json($rows->map(fn ($item) => [
             'id' => $item->id, 'order_name' => $item->order_name, 'customer_order_id' => $item->customer_order_id,
             'quantity' => $item->quantity, 'size_note' => $item->size_note, 'supplier' => $item->source,
-            'lines' => $item->size_quantities ?? $item->purchase_plan['lines'] ?? [],
+            'lines' => $item->plannedSizeLines(),
             'expected_date' => $item->returned_date?->toDateString(),
             'ordered_date' => $item->ordered_date?->format('d/m/Y'), 'status' => $item->statusLabel(),
             'stocked' => (bool) $item->stocked_at,

@@ -22,7 +22,7 @@ class OrderPurchasePlanTest extends TestCase
             'fabric' => '', 'size' => 'M', 'stock_quantity' => 0]);
         $od = WorkshopOrder::create(['product_code' => $product->code, 'supply_source' => 'mua_ngoai',
             'status' => WorkshopOrder::STATUS_ORDERED, 'returned_date' => '2032-11-07', 'quantity' => 5,
-            'size_quantities' => [['product_id' => $product->id, 'quantity' => 5]]]);
+            'size_note' => 'M: 5']);
         $first = Order::create(['product_id' => $product->id, 'quantity' => 5, 'order_name' => 'First',
             'closer_name' => 'Test', 'status' => Order::DEFAULT_STATUS, 'pickup_date' => '2032-11-07',
             'event_date' => '2032-11-08', 'return_date' => '2032-11-09']);

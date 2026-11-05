@@ -1652,7 +1652,7 @@
                 date.required = needed; date.max = pickupDateInput.value;
                 if (purchaseApplied) {
                     const state = box.querySelector('[data-apply-purchase-state]');
-                    state.textContent = 'Đã cập nhật';
+                    state.textContent = 'Đã đưa số mua thêm vào đơn';
                     state.title = 'Đã cập nhật phần mua thêm. Có thể sửa rồi bấm Update; chỉ điều chỉnh phần chênh lệch.';
                 }
                 savePlan();
@@ -1744,7 +1744,7 @@
                 block.appliedPurchaseLines = result.applied;
                 purchaseApplied = true;
                 savePlan(); renumberRows(); refreshProductChoices();
-                state.textContent = result.additions.length || result.removals.length ? 'Đã cập nhật' : 'Không thay đổi';
+                state.textContent = result.additions.length || result.removals.length ? 'Đã đưa số mua thêm vào đơn' : 'Không thay đổi';
                 state.title = result.additions.length || result.removals.length
                     ? 'Đã điều chỉnh phần mua thêm vào đơn. Thay đổi được lưu cùng đơn.'
                     : 'Số lượng không thay đổi, không cộng trùng.';
@@ -1817,8 +1817,9 @@
                         link.textContent = 'Xem dòng đặt hàng ↗';
                         const apply = document.createElement('button'); apply.type = 'button'; apply.className = 'button secondary';
                         const otherOrder = item.customer_order_id && Number(item.customer_order_id) !== Number(currentOrderId);
-                        apply.textContent = otherOrder ? 'Đã thuộc đơn khách khác' : 'Chọn od này — Update vào đơn';
-                        apply.disabled = !!otherOrder;
+                        apply.textContent = otherOrder ? 'Đã thuộc đơn khách khác'
+                            : (!item.lines.length ? 'Chưa rõ số lượng từng size' : 'Chọn od này — Update vào đơn');
+                        apply.disabled = !!otherOrder || !item.lines.length;
                         apply.addEventListener('click', () => block.applyExistingOd(item));
                         details.append(summary, info, link); relatedOd.append(details, apply);
                     });

@@ -52,7 +52,7 @@ class OrderPurchasePlanService
                 if ($workshop->customer_order_id && (int) $workshop->customer_order_id !== (int) $order->id) {
                     throw ValidationException::withMessages(['items' => 'Dòng od #'.$workshop->id.' đã thuộc đơn khách #'.$workshop->customer_order_id.', không thể gắn vào đơn #'.$order->id.'.']);
                 }
-                $actual = collect($workshop->size_quantities ?? $workshop->purchase_plan['lines'] ?? [])
+                $actual = collect($workshop->plannedSizeLines())
                     ->groupBy('product_id')->map(fn ($rows) => (int) $rows->sum('quantity'))->sortKeys()->all();
                 $requested = collect($quantities)->sortKeys()->all();
                 if ($actual !== $requested) {
