@@ -319,6 +319,7 @@ class OrderController extends Controller
         return response()->json([
             'availability' => $availability,
             'strict_availability' => $strictAvailability,
+            'incoming' => $this->inventory->incomingByProduct($productIds->all(), $data['pickup_date']),
             'same_day_returns' => $returns,
         ]);
     }

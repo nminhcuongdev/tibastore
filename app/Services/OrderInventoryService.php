@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductExpectedReceipt;
+use App\Models\WorkshopOrder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -248,7 +249,8 @@ class OrderInventoryService
         $products = Product::whereIn('id', $productIds->all())
             ->get(['id', 'stock_quantity'])
             ->keyBy('id');
-        $expectedReceiptQuantities = $this->pendingExpectedReceiptQuantities($productIds->all());
+        $expectedReceiptQuantities = $this->incomingByProduct($productIds->all(), $start->toDateString())
+            ->map(fn ($rows) => $rows->sum('quantity'))->all();
         $openQuantities = $this->openStockQuantities($productIds->all());
         $reservedQuantities = $this->maxReservedQuantities(
             $productIds->all(),
@@ -353,18 +355,7 @@ class OrderInventoryService
         }
 
         // Hàng nhập dự kiến (chưa nhận) theo từng sản phẩm.
-        $receiptsByProduct = [];
-        ProductExpectedReceipt::query()
-            ->whereIn('product_id', $productIds)
-            ->whereNull('received_at')
-            ->where('expected_receive_quantity', '>', 0)
-            ->get(['product_id', 'expected_receive_date', 'expected_receive_quantity'])
-            ->each(function ($receipt) use (&$receiptsByProduct) {
-                $receiptsByProduct[(int) $receipt->product_id][] = [
-                    'date' => $this->date($receipt->expected_receive_date)->toDateString(),
-                    'quantity' => (int) $receipt->expected_receive_quantity,
-                ];
-            });
+        $receiptsByProduct = $this->incomingByProduct($productIds, $to->toDateString());
 
         $result = [];
 
@@ -388,22 +379,34 @@ class OrderInventoryService
         return $result;
     }
 
-    /**
-     * Tổng số lượng hàng nhập dự kiến (chưa nhận) theo từng sản phẩm.
-     * Tính toàn bộ phiếu nhập dự kiến, không phụ thuộc ngày — cho phép lên đơn
-     * trong khoảng hàng nhập dự kiến sẽ về.
-     */
-    private function pendingExpectedReceiptQuantities(array $productIds): array
+    public function incomingByProduct(array $productIds, string $through): \Illuminate\Support\Collection
     {
-        return ProductExpectedReceipt::query()
+        $receipts = ProductExpectedReceipt::query()
             ->whereIn('product_id', $productIds)
             ->where('expected_receive_quantity', '>', 0)
-            ->whereNull('received_at')
-            ->selectRaw('product_id, SUM(expected_receive_quantity) as expected_quantity')
-            ->groupBy('product_id')
-            ->pluck('expected_quantity', 'product_id')
-            ->map(fn ($quantity) => (int) $quantity)
-            ->all();
+            ->where(fn ($query) => $query->whereNull('received_at')->orWhereNotNull('workshop_order_id'))
+            ->get();
+        $rows = $receipts->whereNull('received_at')->map(fn ($receipt) => [
+            'product_id' => (int) $receipt->product_id,
+            'date' => $receipt->expected_receive_date->toDateString(),
+            'quantity' => (int) $receipt->expected_receive_quantity,
+            'workshop_id' => $receipt->workshop_order_id,
+        ]);
+        $registered = $receipts->filter(fn ($receipt) => $receipt->workshop_order_id)
+            ->keyBy(fn ($receipt) => $receipt->workshop_order_id.':'.$receipt->product_id);
+        $codes = Product::whereIn('id', $productIds)->pluck('code', 'id');
+        $orders = WorkshopOrder::whereIn('product_code', $codes->unique()->values())
+            ->whereIn('status', [WorkshopOrder::STATUS_ORDERED, WorkshopOrder::STATUS_ARRIVED])
+            ->whereNull('stocked_at')->whereDate('returned_date', '<=', $through)->get();
+        foreach ($orders as $order) {
+            $lines = collect($order->size_quantities ?? $order->purchase_plan['lines'] ?? [])->groupBy('product_id');
+            foreach ($lines as $id => $sizes) {
+                if ($codes->get($id) !== $order->product_code || $registered->has($order->id.':'.$id)) continue;
+                $rows->push(['product_id' => (int) $id, 'date' => $order->returned_date->toDateString(),
+                    'quantity' => (int) $sizes->sum('quantity'), 'workshop_id' => $order->id]);
+            }
+        }
+        return $rows->filter(fn ($row) => $row['date'] <= $through)->groupBy('product_id')->map->values();
     }
 
     /**

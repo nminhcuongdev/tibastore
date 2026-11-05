@@ -659,6 +659,7 @@
         const csrfToken = orderForm.querySelector('input[name="_token"]').value;
         const productAvailability = new Map();
         const strictAvailability = new Map();
+        let incomingBySize = {};
         let sameDayReturns = {};
         let availabilityRequestId = 0;
         let itemIndex = 0;
@@ -861,6 +862,7 @@
 
             if (! datesReadyForAvailability()) {
                 strictAvailability.clear();
+                incomingBySize = {};
                 sameDayReturns = {};
                 updateTurnaroundWarning();
                 resetAvailabilityToCurrentStock();
@@ -900,6 +902,7 @@
                 strictAvailability.clear();
                 Object.entries(data.strict_availability || {}).forEach(([id, quantity]) => strictAvailability.set(Number(id), Number(quantity)));
                 sameDayReturns = data.same_day_returns || {};
+                incomingBySize = data.incoming || {};
                 Object.entries(data.availability || {}).forEach(([productId, quantity]) => {
                     productAvailability.set(Number(productId), Number(quantity || 0));
                 });
@@ -948,6 +951,7 @@
                 }
 
                 strictAvailability.clear();
+                incomingBySize = {};
                 sameDayReturns = {};
                 updateTurnaroundWarning();
                 resetAvailabilityToCurrentStock();
@@ -1373,6 +1377,32 @@
             const selectedInfo = block.querySelector('[data-selected-info]');
             const group = productOptions.find(item => item.code === block.dataset.productCode);
             selectedInfo.textContent = group ? group.name : 'Chưa chọn sản phẩm';
+            if (group) {
+                const incoming = group.items.flatMap(product => (incomingBySize[product.id] || []).map(row => ({
+                    ...row, size: product.size, available: stockLimit(product),
+                })));
+                incoming.forEach(row => {
+                    const note = document.createElement('div');
+                    const date = row.date.split('-').reverse().join('/');
+                    if (row.workshop_id) {
+                        const link = document.createElement('a');
+                        const url = new URL(@json(route('workshop-orders.index')));
+                        url.searchParams.set('focus', row.workshop_id);
+                        url.hash = 'workshop-row-' + row.workshop_id;
+                        link.href = url; link.target = '_blank'; link.rel = 'noopener';
+                        link.textContent = 'Đặt hàng #' + row.workshop_id;
+                        note.appendChild(link);
+                    } else note.append('Dự kiến nhập kho');
+                    note.append(' · ' + date + ' · ' + row.size + ': ' + row.quantity
+                        + ' · Còn dùng được theo lịch: ' + row.available);
+                    selectedInfo.appendChild(note);
+                });
+                if (incoming.some(row => row.available > 0)) {
+                    const hint = document.createElement('div');
+                    hint.textContent = 'Chọn Sẵn kho để dùng phần còn theo lịch. Chỉ od thêm phần thiếu.';
+                    selectedInfo.appendChild(hint);
+                }
+            }
             if (group && !group.items.some(product => stockLimit(product) > 0)) {
                 selectedInfo.textContent += ' — Chưa có tồn khả dụng. Chọn nguồn Cần od – Xưởng / Mua ngoài, hoặc nhập kho trước khi dùng Sẵn kho.';
             }

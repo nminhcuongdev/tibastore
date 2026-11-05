@@ -16,6 +16,28 @@ class OrderPurchasePlanTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_confirmed_workshop_sizes_are_available_after_the_first_booking_returns(): void
+    {
+        $product = Product::create(['code' => 'FORECAST-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'fabric' => '', 'size' => 'M', 'stock_quantity' => 0]);
+        $od = WorkshopOrder::create(['product_code' => $product->code, 'supply_source' => 'mua_ngoai',
+            'status' => WorkshopOrder::STATUS_ORDERED, 'returned_date' => '2032-11-07', 'quantity' => 5,
+            'size_quantities' => [['product_id' => $product->id, 'quantity' => 5]]]);
+        $first = Order::create(['product_id' => $product->id, 'quantity' => 5, 'order_name' => 'First',
+            'closer_name' => 'Test', 'status' => Order::DEFAULT_STATUS, 'pickup_date' => '2032-11-07',
+            'event_date' => '2032-11-08', 'return_date' => '2032-11-09']);
+        $first->items()->create(['product_id' => $product->id, 'quantity' => 5]);
+        $inventory = app(OrderInventoryService::class);
+        $ids = [$product->id];
+        $this->assertSame(0, $inventory->projectedAvailableQuantities($ids, '2032-11-06', '2032-11-06')[$product->id]);
+        $this->assertSame(0, $inventory->projectedAvailableQuantities($ids, '2032-11-08', '2032-11-08')[$product->id]);
+        $this->assertSame(5, $inventory->projectedAvailableQuantities($ids, '2032-11-15', '2032-11-22')[$product->id]);
+        ProductExpectedReceipt::create(['workshop_order_id' => $od->id, 'product_id' => $product->id,
+            'expected_receive_date' => '2032-11-07', 'expected_receive_quantity' => 5]);
+        $this->assertSame(5, $inventory->projectedAvailableQuantities($ids, '2032-11-15', '2032-11-22')[$product->id]);
+        $this->assertSame(0, $product->fresh()->stock_quantity);
+    }
+
     public function test_workshop_actual_receipt_edits_only_update_customer_order_when_requested(): void
     {
         $this->actingAs(User::create(['code' => 'actual-'.bin2hex(random_bytes(4)), 'name' => 'Test',
