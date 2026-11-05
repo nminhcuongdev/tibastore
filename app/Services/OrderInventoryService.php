@@ -385,10 +385,12 @@ class OrderInventoryService
             ->whereIn('product_id', $productIds)
             ->where('expected_receive_quantity', '>', 0)
             ->where(fn ($query) => $query->whereNull('received_at')->orWhereNotNull('workshop_order_id'))
-            ->get();
-        $rows = $receipts->whereNull('received_at')->map(fn ($receipt) => [
+            ->with('workshopOrder')->get();
+        $rows = $receipts->whereNull('received_at')
+            ->filter(fn ($receipt) => !$receipt->workshop_order_id || ($receipt->workshopOrder && !$receipt->workshopOrder->stocked_at))
+            ->map(fn ($receipt) => [
             'product_id' => (int) $receipt->product_id,
-            'date' => $receipt->expected_receive_date->toDateString(),
+            'date' => ($receipt->workshopOrder?->returned_date ?? $receipt->expected_receive_date)->toDateString(),
             'quantity' => (int) $receipt->expected_receive_quantity,
             'workshop_id' => $receipt->workshop_order_id,
         ]);
@@ -407,6 +409,37 @@ class OrderInventoryService
             }
         }
         return $rows->filter(fn ($row) => $row['date'] <= $through)->groupBy('product_id')->map->values();
+    }
+
+    public function bookingShortages(string $code): \Illuminate\Support\Collection
+    {
+        $products = Product::where('code', $code)->pluck('size', 'id');
+        $orders = Order::whereDate('pickup_date', '>=', now('Asia/Ho_Chi_Minh')->toDateString())
+            ->whereNotIn('status', ['huy_don', 'da_gui', Order::RETURNED_STATUS, Order::CHECKED_STATUS])
+            ->withWhereHas('items', fn ($query) => $query->whereIn('product_id', $products->keys())->where('size_pending', false))
+            ->orderBy('pickup_date')->orderBy('id')->get();
+
+        return $orders->flatMap(fn ($order) => $this->shortagesForOrder($order))->values();
+    }
+
+    public function shortagesForOrder(Order $order): \Illuminate\Support\Collection
+    {
+        if (!$order->exists || in_array($order->status, ['huy_don', 'da_gui', Order::RETURNED_STATUS, Order::CHECKED_STATUS], true)
+            || $order->pickup_date->toDateString() < now('Asia/Ho_Chi_Minh')->toDateString()) return collect();
+
+        $order->loadMissing('items.product');
+        $items = $order->items->reject('size_pending')->groupBy('product_id');
+        $pickup = $order->pickup_date->toDateString();
+        $available = $this->projectedAvailableQuantities($items->keys()->all(), $pickup,
+            $order->return_date->toDateString(), $order->id, true, $order->return_period);
+
+        return $items->map(function ($lines, $id) use ($order, $available, $pickup) {
+            $shortage = $lines->sum('quantity') - ($available[$id] ?? 0);
+            if ($shortage <= 0) return null;
+            $product = $lines->first()->product;
+            return ['order_name' => $order->order_name, 'pickup' => $pickup, 'size' => $product?->size,
+                'code' => $product?->code, 'shortage' => $shortage, 'url' => route('orders.edit', $order)];
+        })->filter()->values();
     }
 
     /**

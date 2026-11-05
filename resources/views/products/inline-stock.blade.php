@@ -38,7 +38,11 @@
         @include('products.incoming-schedule')
     </div>
     <span class="stock-save-state" role="status" data-stock-state>Sửa trực tiếp, thay đổi được tự động lưu. Số lượng nhập là hàng còn trong kho.</span>
+    <div data-booking-shortages style="grid-column:1/-1">
+        @include('partials.booking-shortages', ['shortages' => app(\App\Services\OrderInventoryService::class)->bookingShortages($product->code)])
+    </div>
 </form>
+@include('partials.booking-shortage-list')
 <script>
 (() => {
     const form = document.querySelector('[data-stock-editor]'), lines = form.querySelector('[data-stock-lines]'), state = form.querySelector('[data-stock-state]');
@@ -104,6 +108,7 @@
             const totalMetric = document.querySelector('[data-stock-metric-total]');
             totalMetric.textContent = (total + Number(totalMetric.dataset.rented)).toLocaleString('vi-VN');
             if (sent === revision) { dirty = false; state.textContent = 'Đã lưu kho'; }
+            showBookingShortages(form, data.booking_shortages);
         } catch(error) { state.textContent = 'Chưa lưu: ' + error.message; }
         finally { saving = false; if (sent !== revision) { clearTimeout(timer); timer = setTimeout(save, 800); } }
     }

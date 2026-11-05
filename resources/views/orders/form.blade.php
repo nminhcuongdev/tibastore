@@ -480,6 +480,17 @@
         <form id="order_form" class="form-shell" method="POST" action="{{ $mode === 'create' ? route('orders.store') : route('orders.update', $order) }}">
             <div class="order-editor-section"><span>01</span><div><h2>Thông tin khách hàng</h2><p>Người đặt, liên hệ và ghi chú cho đơn hàng</p></div></div>
             @include('orders.paste-rental-details')
+            @php
+                $savedStockShortages = app(\App\Services\OrderInventoryService::class)->shortagesForOrder($order);
+            @endphp
+            @if($savedStockShortages->isNotEmpty())
+                <div role="alert" style="grid-column:1/-1;background:#fff1ed;color:#9b261b;padding:12px;border-radius:6px">
+                    <strong>Đơn đã chốt cần kiểm tra lại theo lịch hàng hiện tại</strong>
+                    @foreach($savedStockShortages as $shortage)
+                        <div>{{ $shortage['code'] }} · Size {{ $shortage['size'] }} thiếu {{ $shortage['shortage'] }}</div>
+                    @endforeach
+                </div>
+            @endif
             @csrf
             <input type="hidden" name="_autosave_token" value="{{ old('_autosave_token', (string) \Illuminate\Support\Str::uuid()) }}">
             @if ($mode === 'edit')

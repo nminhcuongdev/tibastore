@@ -248,6 +248,9 @@
     @if (session('status'))
         <div class="status-flash">{{ session('status') }}</div>
     @endif
+    @include('partials.booking-shortages', ['shortages' => $focusedOrder
+        ? app(\App\Services\OrderInventoryService::class)->bookingShortages($focusedOrder->product_code)
+        : session('booking_shortages', [])])
     @if ($errors->any())
         <div class="status-flash is-error">{{ $errors->first() }}</div>
     @endif

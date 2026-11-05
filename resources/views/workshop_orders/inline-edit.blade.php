@@ -1,3 +1,4 @@
+@include('partials.booking-shortage-list')
 <script>
 (function () {
     const catalog = @json($productCodes);
@@ -435,6 +436,7 @@
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.errors ? Object.values(data.errors).flat().join(' ') : data.message);
                 row.dataset.stocked = '1'; row.querySelector('[name=status]').value = 'da_ve'; colorRow(); state.textContent = data.message;
+                showBookingShortages(state.parentElement, data.booking_shortages);
                 refreshQuantityEditing();
                 addSize.hidden = true; sizeList.querySelectorAll('input,select,button').forEach(input => input.disabled = true);
             } catch (error) { state.textContent = error.message; state.style.color = '#b42318'; }
@@ -510,6 +512,7 @@
                 refreshCodeLink(); refreshNameLink();
                 refreshWarehouseSizeLink();
                 applyDuplicateWarnings(data.duplicate_rows || {});
+                showBookingShortages(state.parentElement, data.booking_shortages);
                 if (revision === sentRevision) {
                     row.classList.remove('has-changes');
                     state.textContent = row.classList.contains('is-duplicate') ? 'Đã lưu · ⚠ Cảnh báo trùng đặt hàng' : 'Đã lưu';

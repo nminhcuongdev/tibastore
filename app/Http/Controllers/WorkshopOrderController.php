@@ -191,6 +191,7 @@ class WorkshopOrderController extends Controller
             $workshopOrder->refresh()->load('product');
             return response()->json([
                 'message' => 'Đã lưu dòng đặt hàng.',
+                'booking_shortages' => app(\App\Services\OrderInventoryService::class)->bookingShortages($workshopOrder->product_code),
                 'id' => $workshopOrder->id,
                 'order_url' => $workshopOrder->customer_order_url,
                 'product_url' => $workshopOrder->product ? route('products.show', $workshopOrder->product) : null,
@@ -299,7 +300,10 @@ class WorkshopOrderController extends Controller
             $item->update(['stocked_at' => $transferredAt, 'status' => WorkshopOrder::STATUS_ARRIVED]);
             return $item->image_path ? 'Đã cộng số lượng từng size và cập nhật ảnh vào kho.' : 'Đã cộng số lượng từng size vào kho.';
         });
-        return $request->wantsJson() ? response()->json(['message' => $message]) : back()->with('status', $message);
+        $shortages = app(\App\Services\OrderInventoryService::class)->bookingShortages($workshopOrder->product_code);
+        return $request->wantsJson()
+            ? response()->json(['message' => $message, 'booking_shortages' => $shortages])
+            : back()->with('status', $message)->with('booking_shortages', $shortages);
     }
 
     public function undoStockTransfer(Request $request, \App\Models\WorkshopStockTransfer $transfer): RedirectResponse|JsonResponse

@@ -36,6 +36,19 @@ class OrderPurchasePlanTest extends TestCase
             'expected_receive_date' => '2032-11-07', 'expected_receive_quantity' => 5]);
         $this->assertSame(5, $inventory->projectedAvailableQuantities($ids, '2032-11-15', '2032-11-22')[$product->id]);
         $this->assertSame(0, $product->fresh()->stock_quantity);
+        $next = Order::create(['product_id' => $product->id, 'quantity' => 5, 'order_name' => 'Next booking',
+            'closer_name' => 'Test', 'status' => Order::DEFAULT_STATUS, 'pickup_date' => '2032-11-15',
+            'event_date' => '2032-11-16', 'return_date' => '2032-11-22']);
+        $next->items()->create(['product_id' => $product->id, 'quantity' => 5]);
+        $this->assertTrue($inventory->shortagesForOrder($next)->isEmpty());
+        $od->update(['returned_date' => '2032-11-17']);
+        $this->assertSame(5, $inventory->shortagesForOrder($next->fresh())->first()['shortage']);
+        $od->update(['returned_date' => '2032-11-07', 'stocked_at' => now()]);
+        $product->update(['stock_quantity' => 3]);
+        $warnings = $inventory->bookingShortages($product->code);
+        $warning = $warnings->firstWhere('order_name', 'Next booking');
+        $this->assertSame(2, $warning['shortage']);
+        $this->assertSame(route('orders.edit', $next), $warning['url']);
     }
 
     public function test_workshop_actual_receipt_edits_only_update_customer_order_when_requested(): void

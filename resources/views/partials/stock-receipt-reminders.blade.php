@@ -13,7 +13,7 @@
 </style>
 <dialog id="stock-receipt-reminders" aria-labelledby="stock-receipt-reminder-title">
     <div class="stock-reminder-head">
-        <div><h2 id="stock-receipt-reminder-title">Nhắc nhập kho</h2><p>Các dòng đã đến ngày dự kiến hoặc đã đánh dấu hàng về nhưng chưa nhập kho. Chỉ xác nhận nhập khi đã nhận và kiểm đủ hàng; lời nhắc không tự cộng tồn kho.</p></div>
+        <div><h2 id="stock-receipt-reminder-title">Nhắc xác nhận hàng về</h2><p>Nếu hàng chưa về, mở dòng đặt hàng và sửa ngày dự kiến. Nếu đã về, kiểm từng size, lưu số thực nhận rồi bấm Đẩy lên kho.</p></div>
         <button type="button" class="button secondary" data-close-stock-reminders aria-label="Đóng nhắc nhập kho">×</button>
     </div>
     <div class="stock-reminder-list">
@@ -45,5 +45,16 @@
     button.addEventListener('click', () => popup.showModal());
     popup.querySelector('[data-close-stock-reminders]').addEventListener('click', () => popup.close());
     popup.addEventListener('close', () => button.focus());
+    const dueOrders = @json($receiptReminders['workshop']->pluck('id')->values());
+    if (dueOrders.length) window.addEventListener('load', () => {
+        const key = 'workshop-arrival:' + @json($receiptReminders['today']);
+        if (document.querySelector('dialog[open]')) return;
+        try {
+            const seen = JSON.parse(sessionStorage.getItem(key) || '[]');
+            if (dueOrders.every(id => seen.includes(id))) return;
+            sessionStorage.setItem(key, JSON.stringify([...new Set([...seen, ...dueOrders])]));
+        } catch (_) {}
+        popup.showModal();
+    });
 })();
 </script>

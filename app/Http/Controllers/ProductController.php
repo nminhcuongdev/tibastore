@@ -392,7 +392,8 @@ class ProductController extends Controller
             if ($uploadedPath) \Illuminate\Support\Facades\Storage::disk('public')->delete($uploadedPath);
             throw $exception;
         }
-        return response()->json(['variants' => $result, 'message' => 'Đã lưu kho']);
+        return response()->json(['variants' => $result, 'message' => 'Đã lưu kho',
+            'booking_shortages' => $this->inventory->bookingShortages($data['code'])]);
     }
 
     public function incomingSchedule(Product $product): View
