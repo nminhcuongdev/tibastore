@@ -12,7 +12,7 @@
             @if($image)<img src="{{ asset('storage/'.$image->image_path) }}" alt="{{ $product->name }}">@else CHƯA CÓ ẢNH @endif
         </div>
         <input data-stock-image-file type="file" accept="image/jpeg,image/png,image/gif,image/webp" aria-label="Tải ảnh sản phẩm từ máy tính">
-        <small>Chọn ảnh từ máy hoặc copy ảnh rồi nhấn Ctrl+V. Tối đa 5MB.</small>
+        <small>Chọn ảnh từ máy hoặc nhấn Ctrl+V trên trang này để thay ảnh. Tối đa 5MB.</small>
         <label>Mã sản phẩm<input name="code" value="{{ $product->code }}" required maxlength="50"></label>
         <label>Tên sản phẩm<input name="name" value="{{ $product->name }}" required maxlength="255"></label>
         <label>Danh mục<input name="category" value="{{ $product->category }}" maxlength="255"></label>
@@ -57,9 +57,14 @@
         changed();
     }
     imageFile.addEventListener('change', () => acceptStockImage(imageFile.files[0]));
-    form.addEventListener('paste', event => {
-        const item = Array.from(event.clipboardData?.items || []).find(item => item.type.startsWith('image/'));
-        if (item) { event.preventDefault(); acceptStockImage(item.getAsFile()); }
+    document.addEventListener('paste', event => {
+        if (event.defaultPrevented) return;
+        const clipboard = event.clipboardData;
+        const item = Array.from(clipboard?.items || []).find(item => item.kind === 'file' && item.type.startsWith('image/'));
+        const file = item?.getAsFile() ?? Array.from(clipboard?.files || []).find(file => file.type.startsWith('image/'));
+        if (!file) return;
+        event.preventDefault();
+        acceptStockImage(file);
     });
     window.addEventListener('pagehide', () => { if (previewUrl) URL.revokeObjectURL(previewUrl); });
     function changed() { revision++; dirty = true; clearTimeout(timer); state.textContent = 'Chờ tự lưu…'; timer = setTimeout(save, 800); }
