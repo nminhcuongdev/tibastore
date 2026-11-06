@@ -4,7 +4,7 @@
 @endphp
 <button type="button" class="button secondary" data-open-stock-reminders aria-haspopup="dialog" aria-controls="stock-receipt-reminders">Nhắc nhập kho ({{ number_format($receiptReminderCount) }})</button>
 <style>
-#stock-receipt-reminders{border:1px solid #d8e4f5;border-radius:12px;padding:0;width:min(800px,92vw);max-height:85vh;color:#243b58;background:white}
+#stock-receipt-reminders{border:1px solid #d8e4f5;border-radius:12px;padding:0;width:min(800px,calc(92vw / var(--desktop-display-scale, 1)));max-height:calc(85vh / var(--desktop-display-scale, 1));overflow:auto;color:#243b58;background:white}
 #stock-receipt-reminders::backdrop{background:rgba(15,23,42,.4)}
 .stock-reminder-head{padding:20px;background:#fff5e7;display:flex;gap:20px;justify-content:space-between;align-items:flex-start}
 .stock-reminder-head h2{margin:0 0 8px;font-size:22px}.stock-reminder-head p{margin:0;line-height:1.6}
