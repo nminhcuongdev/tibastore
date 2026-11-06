@@ -91,6 +91,27 @@
         width: 100%;
     }
     .app-sidebar .logout:hover { background: #eff6ff; }
+    .sidebar-display-mode {
+        display: grid;
+        gap: 4px;
+        margin-bottom: 6px;
+    }
+    .sidebar-display-mode select {
+        background: #fff;
+        border: 1px solid #b9cfee;
+        border-radius: 8px;
+        color: #1e40af;
+        width: 100%;
+    }
+    @media screen and (min-width: 861px) {
+        .app-sidebar.is-collapsed .sidebar-display-mode { display: none; }
+        html[data-display-mode="desktop"] body { zoom: 1.2; }
+        html[data-display-mode="desktop"] .layout .page { font-weight: 600; }
+        html[data-display-mode="desktop"] .app-sidebar {
+            height: calc(100vh / 1.2);
+            overflow-y: auto !important;
+        }
+    }
     @media print {
         .app-sidebar { display: none !important; }
         .layout { display: block; }
@@ -127,6 +148,13 @@
         <span class="txt">Tiba Boutique</span>
         <span class="ico" style="display: none;" data-brand-short>T</span>
     </a>
+    <label class="sidebar-display-mode">
+        Giao diện
+        <select data-display-mode-select>
+            <option value="laptop">Laptop</option>
+            <option value="desktop">Máy tính cây</option>
+        </select>
+    </label>
     <nav class="side-nav">
         <a class="{{ $active === 'products' ? 'active' : '' }}" href="{{ route('products.index') }}" title="Kho hàng">
             <span class="ico">&#128087;</span><span class="txt">Kho hàng</span>
@@ -178,6 +206,18 @@
         const toggle = sidebar.querySelector('[data-sidebar-toggle]');
         const icon = sidebar.querySelector('[data-sidebar-icon]');
         const brandShort = sidebar.querySelector('[data-brand-short]');
+        const displayMode = sidebar.querySelector('[data-display-mode-select]');
+        const displayModeKey = 'tiba_display_mode';
+
+        try {
+            if (localStorage.getItem(displayModeKey) === 'desktop') displayMode.value = 'desktop';
+        } catch (e) {}
+        document.documentElement.dataset.displayMode = displayMode.value;
+
+        displayMode.addEventListener('change', function () {
+            document.documentElement.dataset.displayMode = displayMode.value;
+            try { localStorage.setItem(displayModeKey, displayMode.value); } catch (e) {}
+        });
 
         function apply(collapsed) {
             sidebar.classList.toggle('is-collapsed', collapsed);
