@@ -1422,7 +1422,7 @@
                 }
             }
             if (group && !group.items.some(product => stockLimit(product) > 0)) {
-                selectedInfo.textContent += ' — Chưa có tồn khả dụng. Chọn nguồn Cần od – Xưởng / Mua ngoài, hoặc nhập kho trước khi dùng Sẵn kho.';
+                selectedInfo.append(' — Chưa có tồn khả dụng. Chọn nguồn Cần od – Xưởng / Mua ngoài, hoặc nhập kho trước khi dùng Sẵn kho.');
             }
             selectedInfo.style.display = 'block';
             const image = block.querySelector('[data-code-preview]');

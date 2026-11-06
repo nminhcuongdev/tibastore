@@ -394,7 +394,11 @@ class OrderInventoryService
             ->keyBy(fn ($receipt) => $receipt->workshop_order_id.':'.$receipt->product_id);
         $codes = Product::whereIn('id', $productIds)->pluck('code', 'id');
         $orders = WorkshopOrder::whereIn('product_code', $codes->unique()->values())
-            ->whereIn('status', [WorkshopOrder::STATUS_ORDERED, WorkshopOrder::STATUS_ARRIVED])
+            ->where(function ($query) {
+                $query->whereIn('status', [WorkshopOrder::STATUS_ORDERED, WorkshopOrder::STATUS_ARRIVED])
+                    ->orWhere(fn ($reserve) => $reserve->where('status', WorkshopOrder::STATUS_NOT_YET)
+                        ->whereNull('customer_order_id'));
+            })
             ->whereNull('stocked_at')->whereDate('returned_date', '<=', $through)->get();
         foreach ($orders as $order) {
             $lines = collect($order->plannedSizeLines())->groupBy('product_id');
