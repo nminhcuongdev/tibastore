@@ -834,6 +834,12 @@
                 <span class="summary-label">Số đơn</span>
                 <span class="summary-value">{{ number_format($orders->total()) }}</span>
             </div>
+            @if ($filteredCode !== null)
+                <div class="summary-item">
+                    <span class="summary-label">Tổng số lượng {{ $filteredCode }}</span>
+                    <span class="summary-value">{{ number_format($filteredQuantity) }}</span>
+                </div>
+            @endif
             <div class="summary-item">
                 <span class="summary-label">Tổng đơn</span>
                 <span class="summary-value">{{ number_format($orderTotal) }}</span>
@@ -900,6 +906,9 @@
                     @forelse ($orders as $order)
                         @php
                             $codeSummary = $order->codeSummary();
+                            if ($filteredCode !== null) {
+                                $codeSummary = $codeSummary->filter(fn ($line) => strcasecmp($line['code'], $filteredCode) === 0);
+                            }
                             $codeTotal = $codeSummary->sum('quantity');
                         @endphp
                         <tr class="row-{{ $order->statusColorKey() }}" data-order-row="{{ $order->id }}">
@@ -930,7 +939,7 @@
                                     </div>
                                 @endif
                             </td>
-                            <td>{{ number_format($order->items->sum('quantity') ?: $order->quantity) }}</td>
+                            <td>{{ number_format($filteredCode !== null ? $codeTotal : ($order->items->sum('quantity') ?: $order->quantity)) }}</td>
                             <td>
                                 <form method="POST" action="{{ route('orders.status', $order) }}" class="status-form">
                                     @csrf

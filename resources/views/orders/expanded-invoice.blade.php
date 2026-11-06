@@ -13,6 +13,9 @@
             'price' => null, 'days' => 1, 'amount' => $order->total_amount, 'note' => null,
         ]));
     }
+    if (($filteredCode ?? null) !== null) {
+        $invoiceLines = $invoiceLines->filter(fn ($line) => strcasecmp($line['code'], $filteredCode) === 0);
+    }
     $invoiceLines = $invoiceLines->groupBy('code')->map(function ($lines) {
         $line = $lines->first();
         $line['image'] = $lines->firstWhere('image', '!=', null)['image'] ?? null;
@@ -57,6 +60,9 @@
         @endforeach
         </tbody>
         <tfoot>
+            @if (($filteredCode ?? null) !== null)
+                <tr class="order-invoice-total"><td colspan="7">Tổng tiền hàng {{ $filteredCode }}</td><td colspan="2" class="order-invoice-money">{{ number_format($invoiceLines->sum('amount'), 0, ',', '.') }} đ</td></tr>
+            @else
             <tr><td colspan="7">Tổng tiền hàng</td><td colspan="2" class="order-invoice-money">{{ number_format($order->total_amount, 0, ',', '.') }} đ</td></tr>
             <tr><td colspan="7">Chiết khấu @if($order->discount_percent)({{ (float) $order->discount_percent }}%)@endif</td><td colspan="2" class="order-invoice-money">− {{ number_format($order->discount_amount, 0, ',', '.') }} đ</td></tr>
             <tr data-expanded-compensation-row @if(!$order->compensation_amount) hidden @endif><td colspan="7">Bồi thường</td><td colspan="2" class="order-invoice-money" data-expanded-compensation>{{ number_format($order->compensation_amount, 0, ',', '.') }} đ</td></tr>
@@ -65,6 +71,7 @@
             <tr><td colspan="7">Thanh toán lần 1</td><td colspan="2" class="order-invoice-money">{{ number_format($order->payment_1, 0, ',', '.') }} đ</td></tr>
             <tr><td colspan="7">Thanh toán lần 2</td><td colspan="2" class="order-invoice-money">{{ number_format($order->payment_2, 0, ',', '.') }} đ</td></tr>
             <tr class="order-invoice-total"><td colspan="7">CÒN LẠI</td><td colspan="2" class="order-invoice-money" data-expanded-remaining>{{ number_format($order->remaining, 0, ',', '.') }} đ</td></tr>
+            @endif
         </tfoot>
     </table>
 </div>

@@ -85,6 +85,7 @@ class OrderController extends Controller
         $sort = $request->query('sort', 'created');
         $direction = $request->query('direction', 'desc');
         $query = trim((string) $request->query('q', ''));
+        $filteredCode = $query !== '' ? Product::where('code', $query)->value('code') : null;
         // Loc trang thai cho phep chon nhieu; giu tuong thich voi link cu dang ?status=da_gui.
         $selectedStatuses = collect((array) $request->query('status', []))
             ->map(fn ($value) => (string) $value)
@@ -176,7 +177,13 @@ class OrderController extends Controller
             ->when($eventTo, fn ($builder) => $builder->whereDate('orders.event_date', '<=', $eventTo))
             ->when($returnFrom, fn ($builder) => $builder->whereDate('orders.return_date', '>=', $returnFrom))
             ->when($returnTo, fn ($builder) => $builder->whereDate('orders.return_date', '<=', $returnTo))
-            ->when($query !== '', function ($builder) use ($query) {
+            ->when($filteredCode !== null, function ($builder) use ($filteredCode) {
+                $builder->where(function ($search) use ($filteredCode) {
+                    $search->whereHas('items.product', fn ($product) => $product->where('code', $filteredCode))
+                        ->orWhere(fn ($legacy) => $legacy->whereDoesntHave('items')->where('products.code', $filteredCode));
+                });
+            })
+            ->when($query !== '' && $filteredCode === null, function ($builder) use ($query) {
                 $builder->where(function ($search) use ($query) {
                     $search->where('orders.closer_name', 'like', "%{$query}%")
                         ->orWhere('orders.order_name', 'like', "%{$query}%")
@@ -205,6 +212,17 @@ class OrderController extends Controller
             ))
             ->first();
 
+        $filteredQuantity = null;
+        if ($filteredCode !== null) {
+            $matchingOrders = (clone $ordersQuery)->reorder()->select('orders.id', 'orders.quantity');
+            $filteredQuantity = DB::query()->fromSub($matchingOrders, 'matching_orders')
+                ->leftJoin('order_items', 'order_items.order_id', '=', 'matching_orders.id')
+                ->leftJoin('products', 'products.id', '=', 'order_items.product_id')
+                ->where(fn ($query) => $query->where('products.code', $filteredCode)->orWhereNull('order_items.id'))
+                ->selectRaw('COALESCE(SUM(COALESCE(order_items.quantity, matching_orders.quantity)), 0) as quantity')
+                ->value('quantity');
+        }
+
         $orders = $ordersQuery->paginate(25)->withQueryString();
 
         $closers = Order::query()
@@ -222,6 +240,8 @@ class OrderController extends Controller
             'orderTotal' => (int) ($totals->order_total ?? 0),
             'collectedTotal' => (int) ($totals->order_total ?? 0) - (int) ($totals->remaining_total ?? 0),
             'query' => $query,
+            'filteredCode' => $filteredCode,
+            'filteredQuantity' => $filteredQuantity,
             'selectedStatuses' => $selectedStatuses,
             'selectedRegions' => $selectedRegions,
             'sort' => $sort,
