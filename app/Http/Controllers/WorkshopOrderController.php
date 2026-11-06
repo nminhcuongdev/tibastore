@@ -15,6 +15,18 @@ use Illuminate\View\View;
 
 class WorkshopOrderController extends Controller
 {
+    private const DEFAULT_SOURCE_COOKIE = 'workshop_default_supply_source';
+
+    public function saveDefaultSupplySource(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'supply_source' => ['required', Rule::in(array_keys(WorkshopOrder::supplySources()))],
+        ]);
+
+        return redirect()->route('workshop-orders.index')
+            ->withCookie(cookie()->forever(self::DEFAULT_SOURCE_COOKIE, $data['supply_source']));
+    }
+
     public function index(Request $request): View
     {
         $query = trim((string) $request->query('q', ''));
@@ -26,9 +38,11 @@ class WorkshopOrderController extends Controller
         if ($showDuplicates) $focusedIds = array_merge($focusedIds, $duplicateRows[$focusedOrder->id] ?? []);
         $status = (string) $request->query('status', '');
         $source = trim((string) $request->query('source', ''));
-        // Danh sach luon chi hien MOT nguon hang, doi qua lai bang toggle;
-        // vao thang khong kem tham so thi mac dinh xem hang dat xuong.
-        $supplySource = (string) $request->query('supply_source', WorkshopOrder::DEFAULT_SUPPLY_SOURCE);
+        $defaultSupplySource = $request->cookie(self::DEFAULT_SOURCE_COOKIE);
+        if (! array_key_exists($defaultSupplySource ?? '', WorkshopOrder::supplySources())) {
+            $defaultSupplySource = WorkshopOrder::DEFAULT_SUPPLY_SOURCE;
+        }
+        $supplySource = (string) $request->query('supply_source', $defaultSupplySource);
         if ($focusedOrder) {
             $supplySource = $focusedOrder->supply_source;
         }
@@ -82,6 +96,7 @@ class WorkshopOrderController extends Controller
         return view('workshop_orders.index', [
             'orders' => $orders,
             'duplicateRows' => $duplicateRows,
+            'defaultSupplySource' => $defaultSupplySource,
             'focusedOrder' => $focusedOrder,
             'quantityTotal' => (int) ($totals->quantity_total ?? 0),
             'amountTotal' => (int) ($totals->amount_total ?? 0),

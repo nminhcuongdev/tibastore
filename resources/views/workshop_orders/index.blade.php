@@ -312,6 +312,19 @@
         @endforeach
     </div>
 
+    <form class="toolbar" method="POST" action="{{ route('workshop-orders.default-source') }}">
+        @csrf
+        <div class="field">
+            <label for="workshop-default-source">Nguồn mặc định</label>
+            <select id="workshop-default-source" name="supply_source">
+                @foreach ($supplySources as $value => $label)
+                    <option value="{{ $value }}" @selected($defaultSupplySource === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
+        </div>
+        <button class="button secondary" type="submit">Lưu mặc định</button>
+    </form>
+
     {{-- Tổng của toàn bộ kết quả đang lọc, không phải chỉ trang đang xem. --}}
     <div class="summary">
         <div class="summary-item">
