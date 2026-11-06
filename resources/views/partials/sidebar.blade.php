@@ -105,10 +105,11 @@
     }
     @media screen and (min-width: 861px) {
         .app-sidebar.is-collapsed .sidebar-display-mode { display: none; }
-        html[data-display-mode="desktop"] body { zoom: 1.2; }
+        html[data-display-mode="desktop"] { --desktop-display-scale: 1.44; }
+        html[data-display-mode="desktop"] body { zoom: var(--desktop-display-scale); }
         html[data-display-mode="desktop"] .layout .page { font-weight: 600; }
         html[data-display-mode="desktop"] .app-sidebar {
-            height: calc(100vh / 1.2);
+            height: calc(100vh / var(--desktop-display-scale));
             overflow-y: auto !important;
         }
     }
