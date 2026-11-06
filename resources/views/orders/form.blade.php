@@ -396,6 +396,16 @@
             border-color: #b4233f;
             color: #fff;
         }
+        .order-schedule-dates {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 12px;
+        }
+        .order-schedule-dates input { min-width: 0; }
+        @media (max-width: 700px) {
+            .order-schedule-dates { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
     </style>
     @include('orders.status-colors')
     @include('partials.compact')
@@ -549,22 +559,19 @@
             </div>
 
             <div class="order-editor-section section-schedule"><span>02</span><div><h2>Lịch thuê & xử lý</h2><p>Ngày lấy, ngày diễn, ngày trả và trạng thái đơn</p></div></div>
-            <div class="field">
-                <label for="pickup_date">Ngày lấy</label>
-                <input id="pickup_date" name="pickup_date" type="date" value="{{ old('pickup_date', $order->pickup_date?->format('Y-m-d')) }}" required>
-                @error('pickup_date') <div class="error">{{ $message }}</div> @enderror
+            <div class="order-schedule-dates">
+                @foreach (['dispatch_date' => 'Ngày đi đơn', 'pickup_date' => 'Ngày lấy', 'event_date' => 'Ngày diễn', 'return_date' => 'Ngày trả', 'actual_return_date' => 'Ngày về TT'] as $dateField => $dateLabel)
+                    <div class="field">
+                        <label for="{{ $dateField }}">{{ $dateLabel }}</label>
+                        <input id="{{ $dateField }}" name="{{ $dateField }}" type="date"
+                            value="{{ old($dateField, $order->{$dateField}?->format('Y-m-d')) }}"
+                            @required(in_array($dateField, ['pickup_date', 'event_date', 'return_date'], true))>
+                        @error($dateField) <div class="error">{{ $message }}</div> @enderror
+                    </div>
+                @endforeach
             </div>
 
             <div class="field">
-                <label for="event_date">Ngày diễn</label>
-                <input id="event_date" name="event_date" type="date" value="{{ old('event_date', $order->event_date?->format('Y-m-d')) }}" required>
-                @error('event_date') <div class="error">{{ $message }}</div> @enderror
-            </div>
-
-            <div class="field">
-                <label for="return_date">Ngày trả</label>
-                <input id="return_date" name="return_date" type="date" value="{{ old('return_date', $order->return_date?->format('Y-m-d')) }}" required>
-                @error('return_date') <div class="error">{{ $message }}</div> @enderror
                 <label for="return_period">Buổi trả</label>
                 <select id="return_period" name="return_period">
                     @foreach (\App\Models\Order::dayPeriods() as $value => $label)
@@ -2194,7 +2201,8 @@
                 note: val('note'),
                 phone: val('phone'), address: val('address'),
                 region: val('region'), carrier: val('carrier'),
-                pickup_date: val('pickup_date'), event_date: val('event_date'), return_date: val('return_date'),
+                dispatch_date: val('dispatch_date'), pickup_date: val('pickup_date'), event_date: val('event_date'),
+                return_date: val('return_date'), actual_return_date: val('actual_return_date'),
                 return_period: val('return_period'),
                 status: val('status'), source: val('source'),
                 shipping_fee: val('shipping_fee'), payment_1: val('payment_1'), payment_2: val('payment_2'),
@@ -2243,6 +2251,7 @@
             set('phone', d.phone); set('address', d.address);
             set('region', d.region); set('carrier', d.carrier);
             set('pickup_date', d.pickup_date); set('event_date', d.event_date); set('return_date', d.return_date);
+            set('dispatch_date', d.dispatch_date); set('actual_return_date', d.actual_return_date);
             set('return_period', d.return_period || 'sang');
             set('status', d.status); set('source', d.source);
             set('shipping_fee', d.shipping_fee); set('payment_1', d.payment_1); set('payment_2', d.payment_2);
@@ -2279,6 +2288,22 @@
                 }
                 restoredFromDraft = true;
             }
+        }
+
+        const scheduleRegion = document.getElementById('region');
+        for (const [source, targetId] of [[pickupDateInput, 'dispatch_date'], [returnDateInput, 'actual_return_date']]) {
+            const target = document.getElementById(targetId);
+            let manuallyEdited = target.value !== '' && target.value !== source.value;
+
+            const copyDate = () => {
+                if (!manuallyEdited && ['ha_noi', 'tinh_mb'].includes(scheduleRegion.value)) {
+                    target.value = source.value;
+                }
+            };
+
+            target.addEventListener('input', () => { manuallyEdited = true; });
+            source.addEventListener('change', copyDate);
+            scheduleRegion.addEventListener('change', copyDate);
         }
 
         const groupedBlocks = [];

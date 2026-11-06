@@ -20,9 +20,11 @@ class Order extends Model
         'address',
         'region',
         'carrier',
+        'dispatch_date',
         'pickup_date',
         'event_date',
         'return_date',
+        'actual_return_date',
         'return_period',
         'order_name',
         'note',
@@ -46,9 +48,11 @@ class Order extends Model
     ];
 
     protected $casts = [
+        'dispatch_date' => 'date',
         'pickup_date' => 'date',
         'event_date' => 'date',
         'return_date' => 'date',
+        'actual_return_date' => 'date',
         'quantity' => 'integer',
         'total_amount' => 'integer',
         'discount_amount' => 'integer',
@@ -71,9 +75,11 @@ class Order extends Model
             'address' => 'Địa chỉ',
             'region' => 'Miền',
             'carrier' => 'Nhà xe',
+            'dispatch_date' => 'Ngày đi đơn',
             'pickup_date' => 'Ngày lấy',
             'event_date' => 'Ngày diễn',
             'return_date' => 'Ngày trả',
+            'actual_return_date' => 'Ngày về TT',
             'return_period' => 'Buổi trả',
             'order_name' => 'Tên đơn',
             'note' => 'Ghi chú',
@@ -136,7 +142,7 @@ class Order extends Model
             return self::regions()[$value] ?? (string) $value;
         }
 
-        if (in_array($field, ['pickup_date', 'event_date', 'return_date'], true)) {
+        if (in_array($field, ['dispatch_date', 'pickup_date', 'event_date', 'return_date', 'actual_return_date'], true)) {
             return $value instanceof \Illuminate\Support\Carbon
                 ? $value->format('d/m/Y')
                 : \Illuminate\Support\Carbon::parse($value)->format('d/m/Y');

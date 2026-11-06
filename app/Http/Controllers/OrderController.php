@@ -712,6 +712,8 @@ class OrderController extends Controller
             'address' => ['nullable', 'string', 'max:500'],
             'region' => [$order ? 'nullable' : 'required', Rule::in(array_keys(Order::regions()))],
             'carrier' => ['nullable', 'string', 'max:255'],
+            'dispatch_date' => ['nullable', 'date'],
+            'actual_return_date' => ['nullable', 'date'],
             'pickup_date' => ['required', 'date'],
             'event_date' => ['required', 'date', 'after_or_equal:pickup_date'],
             'return_date' => ['required', 'date', 'after_or_equal:event_date'],
@@ -875,7 +877,7 @@ class OrderController extends Controller
             }
         }
 
-        return [
+        return array_intersect_key($data, array_flip(['dispatch_date', 'actual_return_date'])) + [
             'closer_name' => $data['closer_name'],
             'phone' => $data['phone'] ?? null,
             'address' => $data['address'] ?? null,
