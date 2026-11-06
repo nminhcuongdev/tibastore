@@ -16,7 +16,7 @@
     @foreach ($statusPalette as $key => [$background, $foreground])
         .row-{{ $key }} { background: #fff1f5; color: #1e293b; }
         .row-{{ $key }} > td { background: #fff1f5; color: #1e293b; }
-        tr[data-order-row].row-{{ $key }} > td:nth-child(5) {
+        tr[data-order-row].row-{{ $key }} > td:nth-child(7) {
             background: {{ $background }}; color: {{ $foreground }};
         }
         @if (in_array($key, ['thanh_cong_thieu', 'huy_don'], true))
@@ -32,8 +32,8 @@
         }
     @endforeach
     .status-chua_cho_size { border: 1px solid #cbd5e1; }
-    tr[data-order-row] > td:nth-child(5) .muted,
-    tr[data-order-row] > td:nth-child(5) .name { color: inherit; }
+    tr[data-order-row] > td:nth-child(7) .muted,
+    tr[data-order-row] > td:nth-child(7) .name { color: inherit; }
     .row-thanh_cong_thieu .muted, .row-thanh_cong_thieu .name,
     .row-thanh_cong_thieu .codes-panel__title,
     .row-huy_don .muted, .row-huy_don .name,

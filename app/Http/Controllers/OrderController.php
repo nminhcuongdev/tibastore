@@ -67,6 +67,8 @@ class OrderController extends Controller
 
         $sortMap = [
             'closer' => 'orders.closer_name',
+            'dispatch_date' => 'orders.dispatch_date',
+            'actual_return_date' => 'orders.actual_return_date',
             'pickup_date' => 'orders.pickup_date',
             'event_date' => 'orders.event_date',
             'return_date' => 'orders.return_date',

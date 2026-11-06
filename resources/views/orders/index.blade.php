@@ -573,18 +573,18 @@
     @include('orders.status-colors')
     @include('partials.compact')
     <style>
-        .table-shell th:nth-child(5), tr[data-order-row] > td:nth-child(5),
-        .table-shell th:nth-child(9), tr[data-order-row] > td:nth-child(9),
-        .table-shell th:nth-child(12), tr[data-order-row] > td:nth-child(12) {
+        .table-shell th:nth-child(7), tr[data-order-row] > td:nth-child(7),
+        .table-shell th:nth-child(11), tr[data-order-row] > td:nth-child(11),
+        .table-shell th:nth-child(14), tr[data-order-row] > td:nth-child(14) {
             width: 220px; min-width: 200px; max-width: 280px;
             white-space: normal; overflow-wrap: anywhere;
         }
-        .orders-scroll > table > thead > tr > th:nth-child(6), tr[data-order-row] > td:nth-child(6) {
+        .orders-scroll > table > thead > tr > th:nth-child(8), tr[data-order-row] > td:nth-child(8) {
             width: 130px; min-width: 120px; max-width: 145px;
             text-align: center; vertical-align: middle;
         }
-        tr[data-order-row] > td:nth-child(6) .code-buttons { justify-content: center; }
-        tr[data-order-row] > td:nth-child(6) .codes-toggle { width: auto; margin-inline: auto; }
+        tr[data-order-row] > td:nth-child(8) .code-buttons { justify-content: center; }
+        tr[data-order-row] > td:nth-child(8) .codes-toggle { width: auto; margin-inline: auto; }
         .table-shell thead th {
             text-align: center; vertical-align: middle;
             background: #dbeafe; color: #172f60;
@@ -592,11 +592,11 @@
         }
         .table-shell thead th a { color: inherit; }
         .table-shell thead th a { justify-content: center; width: 100%; }
-        .table-shell th:nth-child(8), tr[data-order-row] > td:nth-child(8),
-        .table-shell th:nth-child(10), tr[data-order-row] > td:nth-child(10) {
+        .table-shell th:nth-child(10), tr[data-order-row] > td:nth-child(10),
+        .table-shell th:nth-child(12), tr[data-order-row] > td:nth-child(12) {
             width: 145px; min-width: 125px; max-width: 160px;
         }
-        .orders-scroll > table > thead > tr > th:nth-child(11), tr[data-order-row] > td:nth-child(11) {
+        .orders-scroll > table > thead > tr > th:nth-child(13), tr[data-order-row] > td:nth-child(13) {
             width: 190px; min-width: 175px; max-width: 240px;
         }
         .status-control { position: relative; width: 140px; max-width: 100%; }
@@ -612,11 +612,11 @@
             appearance: none; background: transparent !important; color: transparent !important;
         }
         .status-control .status-select option { color: var(--status-text, #1e293b) !important; }
-        tr[data-order-row] > td:nth-child(5),
-        tr[data-order-row] > td:nth-child(9),
-        tr[data-order-row] > td:nth-child(10),
+        tr[data-order-row] > td:nth-child(7),
         tr[data-order-row] > td:nth-child(11),
-        tr[data-order-row] > td:nth-child(12) {
+        tr[data-order-row] > td:nth-child(12),
+        tr[data-order-row] > td:nth-child(13),
+        tr[data-order-row] > td:nth-child(14) {
             text-align: center; vertical-align: middle;
             white-space: normal; overflow-wrap: anywhere;
         }
@@ -633,16 +633,16 @@
             overflow: auto !important; max-height: 75vh !important;
             max-width: 100%; position: relative; isolation: isolate;
         }
-        .orders-scroll table { min-width: 2300px !important; }
+        .orders-scroll table { min-width: 2500px !important; }
         .orders-scroll thead th { position: sticky; top: 0; z-index: 6; }
-        .orders-scroll tr[data-order-row] > td:nth-child(-n+7) {
+        .orders-scroll tr[data-order-row] > td:nth-child(-n+9) {
             position: sticky; left: var(--frozen-left, 0px); z-index: 4;
         }
-        .orders-scroll thead th:nth-child(-n+7) {
+        .orders-scroll thead th:nth-child(-n+9) {
             left: var(--frozen-left, 0px); z-index: 8;
         }
-        .orders-scroll tr[data-order-row] > td:nth-child(7),
-        .orders-scroll thead th:nth-child(7) { border-right: 2px solid #b8cbed; }
+        .orders-scroll tr[data-order-row] > td:nth-child(9),
+        .orders-scroll thead th:nth-child(9) { border-right: 2px solid #b8cbed; }
         .orders-scroll .codes-panel {
             position: sticky; left: 13px; z-index: 2;
             width: var(--codes-panel-width, 800px); max-width: 100%;
@@ -875,9 +875,11 @@
                 <thead>
                     <tr>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'closer', 'direction' => $sort === 'closer' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Người chốt {{ $sort === 'closer' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
+                        <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'dispatch_date', 'direction' => $sort === 'dispatch_date' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Ngày đi đơn {{ $sort === 'dispatch_date' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'pickup_date', 'direction' => $sort === 'pickup_date' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Ngày lấy {{ $sort === 'pickup_date' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'event_date', 'direction' => $sort === 'event_date' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Ngày diễn {{ $sort === 'event_date' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'return_date', 'direction' => $sort === 'return_date' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Ngày trả {{ $sort === 'return_date' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
+                        <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'actual_return_date', 'direction' => $sort === 'actual_return_date' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Ngày trả về TT {{ $sort === 'actual_return_date' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'order_name', 'direction' => $sort === 'order_name' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Tên đơn {{ $sort === 'order_name' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'product_code', 'direction' => $sort === 'product_code' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Mã hàng {{ $sort === 'product_code' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
                         <th><a href="{{ route('orders.index', array_merge(request()->except('page'), ['sort' => 'quantity', 'direction' => $sort === 'quantity' && $direction === 'asc' ? 'desc' : 'asc'])) }}">Số lượng {{ $sort === 'quantity' ? ($direction === 'asc' ? 'ASC' : 'DESC') : '' }}</a></th>
@@ -902,9 +904,11 @@
                         @endphp
                         <tr class="row-{{ $order->statusColorKey() }}" data-order-row="{{ $order->id }}">
                             <td class="name">{{ $order->closer_name }}</td>
+                            <td>{{ $order->dispatch_date?->format('d/m/Y') }}</td>
                             <td>{{ $order->pickup_date?->format('d/m/Y') }}</td>
                             <td>{{ $order->event_date?->format('d/m/Y') }}</td>
                             <td>{{ $order->return_date?->format('d/m/Y') }} {{ $order->periodLabel($order->return_period) }}</td>
+                            <td>{{ $order->actual_return_date?->format('d/m/Y') }}</td>
                             <td class="order-name-cell">
                                 @if ($order->needs_purchase)
                                     <span class="order-needs-purchase" data-purchase-needed="{{ $order->id }}" role="img" aria-label="Đơn có hàng cần đặt thêm" title="Có hàng chọn Cần od – Xưởng hoặc Mua ngoài">☀️</span>
@@ -998,7 +1002,7 @@
                                  hoac nut "So tat ca ma hang" tren thanh cong cu. --}}
                             <tr class="codes-row row-{{ $order->statusColorKey() }}" id="codes-panel-{{ $order->id }}"
                                 data-codes-panel="{{ $order->id }}" hidden>
-                                <td colspan="18">
+                                <td colspan="20">
                                     <div class="codes-panel">
                                         <div class="codes-panel__head">
                                             <span class="codes-panel__title"><span class="click-copy" data-copy-value="{{ $order->order_name }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $order->order_name }}</span></span>
@@ -1011,7 +1015,7 @@
                         @endif
                     @empty
                         <tr>
-                            <td class="empty" colspan="18">Chưa có đơn hàng phù hợp.</td>
+                            <td class="empty" colspan="20">Chưa có đơn hàng phù hợp.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -1103,7 +1107,7 @@
     (function () {
         const table = document.querySelector('.orders-scroll table');
         if (!table) return;
-        const headers = Array.from(table.querySelectorAll('thead th')).slice(0, 7);
+        const headers = Array.from(table.querySelectorAll('thead th')).slice(0, 9);
         function updateFrozenColumns() {
             table.style.setProperty('--codes-panel-width', Math.max(0, table.parentElement.clientWidth - 26) + 'px');
             let left = 0;
