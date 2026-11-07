@@ -141,7 +141,9 @@
 </style>
 @include('partials.click-copy')
 <script src="{{ asset('js/money-inputs.js') }}" defer></script>
+<link rel="stylesheet" href="{{ asset('css/mobile.css') }}">
 <aside class="app-sidebar" data-sidebar>
+    <button type="button" class="mobile-menu-toggle" aria-expanded="false" data-mobile-menu>☰ Menu</button>
     <button class="sidebar-toggle" type="button" data-sidebar-toggle
         aria-label="Thu gọn / mở rộng menu" aria-expanded="true" title="Thu gọn menu">
         <span data-sidebar-icon>&#9664;</span>
@@ -155,6 +157,7 @@
         <select data-display-mode-select>
             <option value="laptop">Laptop</option>
             <option value="desktop">Máy tính cây</option>
+            <option value="mobile">Điện thoại</option>
         </select>
     </label>
     <nav class="side-nav">
@@ -212,13 +215,27 @@
         const displayModeKey = 'tiba_display_mode';
 
         try {
-            if (localStorage.getItem(displayModeKey) === 'desktop') displayMode.value = 'desktop';
+            const savedMode = localStorage.getItem(displayModeKey);
+            if (['desktop', 'mobile'].includes(savedMode)) displayMode.value = savedMode;
         } catch (e) {}
         document.documentElement.dataset.displayMode = displayMode.value;
+        const mobileScreen = window.matchMedia('(max-width: 860px)');
+        function applyMobileLayout() {
+            const mobile = mobileScreen.matches || displayMode.value === 'mobile';
+            document.documentElement.toggleAttribute('data-mobile-layout', mobile);
+            if (mobileScreen.matches) displayMode.value = 'mobile';
+        }
+        applyMobileLayout();
+        mobileScreen.addEventListener('change', applyMobileLayout);
+        sidebar.querySelector('[data-mobile-menu]').addEventListener('click', function () {
+            const open = sidebar.classList.toggle('is-mobile-open');
+            this.setAttribute('aria-expanded', String(open));
+        });
 
         displayMode.addEventListener('change', function () {
             document.documentElement.dataset.displayMode = displayMode.value;
             try { localStorage.setItem(displayModeKey, displayMode.value); } catch (e) {}
+            applyMobileLayout();
         });
 
         function apply(collapsed) {
