@@ -298,7 +298,6 @@ class OrderController extends Controller
 
         $data['pickup_date'] = $data['dispatch_date'] ?? $data['pickup_date'] ?? null;
         $data['return_date'] = $data['actual_return_date'] ?? $data['return_date'] ?? null;
-        if (!empty($data['actual_return_date'])) $data['return_period'] = 'chieu';
 
         $productIds = collect($data['product_ids'] ?? [])
             ->map(fn ($productId) => (int) $productId)
@@ -851,7 +850,7 @@ class OrderController extends Controller
             $dispatchDate ?? $data['pickup_date'],
             $actualReturnDate ?? $data['return_date'],
             $order?->id,
-            $actualReturnDate ? 'chieu' : ($data['return_period'] ?? null)
+            $data['return_period'] ?? null
         );
 
         $data['discount_percent'] = ($data['discount_type'] ?? 'vnd') === 'percent'

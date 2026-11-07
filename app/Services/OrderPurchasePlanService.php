@@ -119,7 +119,7 @@ class OrderPurchasePlanService
             app(OrderInventoryService::class)->assertItemsAvailable($order->items->toArray(),
                 ($order->dispatch_date ?? $order->pickup_date)->toDateString(),
                 ($order->actual_return_date ?? $order->return_date)->toDateString(), $order->id,
-                $order->actual_return_date ? 'chieu' : $order->return_period,
+                $order->return_period,
                 $dedicatedQuantities);
             $warning = app(WorkshopDuplicateService::class)->warningForOrder($order->id);
             if ($warning) session()->flash('workshop_duplicate_warning', $warning);

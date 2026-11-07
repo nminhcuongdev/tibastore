@@ -333,7 +333,7 @@ class OrderInventoryService
             $start = $this->date($booking->pickup_date);
             if ($booking->dispatched_at) $start = $start->min($this->date($booking->dispatched_at));
             $end = $this->date($booking->return_date);
-            if (!$booking->actual_return_date && $booking->return_period === 'toi') {
+            if ($booking->return_period === 'toi') {
                 $end->addDay();
             }
 
@@ -432,7 +432,7 @@ class OrderInventoryService
         $items = $order->items->reject('size_pending')->groupBy('product_id');
         $pickup = ($order->dispatch_date ?? $order->pickup_date)->toDateString();
         $available = $this->projectedAvailableQuantities($items->keys()->all(), $pickup,
-            ($order->actual_return_date ?? $order->return_date)->toDateString(), $order->id, true, $order->actual_return_date ? 'chieu' : $order->return_period);
+            ($order->actual_return_date ?? $order->return_date)->toDateString(), $order->id, true, $order->return_period);
 
         return $items->map(function ($lines, $id) use ($order, $available, $pickup) {
             $shortage = $lines->sum('quantity') - ($available[$id] ?? 0);
@@ -581,7 +581,7 @@ class OrderInventoryService
             $bookingStart = $this->date($row->pickup_date);
             if ($row->dispatched_at) $bookingStart = $bookingStart->min($this->date($row->dispatched_at));
             $bookingEndExclusive = $this->bookingEndExclusive(
-                $bookingStart, $this->date($row->return_date), $row->actual_return_date ? 'chieu' : $row->return_period, $allowSameDayTurnaround
+                $bookingStart, $this->date($row->return_date), $row->return_period, $allowSameDayTurnaround
             );
 
             if ($bookingStart->lt($start) && $bookingEndExclusive->gt($start)) {
