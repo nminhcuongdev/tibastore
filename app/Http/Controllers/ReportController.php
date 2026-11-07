@@ -285,16 +285,17 @@ class ReportController extends Controller
             return Carbon::createFromFormat('Y-m-d', $value . '-01')->startOfDay();
         }
 
-        return now()->startOfMonth();
+        return now('Asia/Ho_Chi_Minh')->startOfMonth();
     }
 
     /**
-     * Mặc định 30 ngày gần nhất; giới hạn 366 ngày để bảng không phình quá lớn.
+     * Mặc định trọn tháng hiện tại; giới hạn khoảng lọc trong 366 ngày.
      */
     private function parseRange(Request $request): array
     {
-        $from = $this->parseDate($request->query('from')) ?? now()->startOfDay()->subDays(29);
-        $to = $this->parseDate($request->query('to')) ?? now()->startOfDay();
+        $today = now('Asia/Ho_Chi_Minh');
+        $from = $this->parseDate($request->query('from')) ?? $today->copy()->startOfMonth()->startOfDay();
+        $to = $this->parseDate($request->query('to')) ?? $today->copy()->endOfMonth()->startOfDay();
 
         if ($to->lt($from)) {
             $to = $from->copy();
