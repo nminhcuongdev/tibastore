@@ -98,7 +98,7 @@ class OrderPurchasePlanService
                 $receipt = ProductExpectedReceipt::firstOrNew(['workshop_order_id' => $workshop->id, 'product_id' => $productId]);
                 if (!$receipt->received_at) {
                     $receipt->fill(['expected_receive_date' => $plan['expected_date'], 'expected_receive_quantity' => $quantity])->save();
-                    if (!$workshop->stocked_at && $receipt->expected_receive_date->lte($order->pickup_date)) {
+                    if (!$workshop->stocked_at && $receipt->expected_receive_date->lte($order->dispatch_date ?? $order->pickup_date)) {
                         $demand = $items->where('product_id', $productId)->where('size_pending', false)->sum('quantity');
                         $dedicatedQuantities[$productId] = ($dedicatedQuantities[$productId] ?? 0) + min($quantity, $demand);
                     }

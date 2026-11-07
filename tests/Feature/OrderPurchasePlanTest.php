@@ -16,6 +16,36 @@ class OrderPurchasePlanTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_later_booking_and_receipt_do_not_take_existing_stock_from_earlier_booking(): void
+    {
+        $product = Product::create(['code' => 'TIMELINE-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'fabric' => '', 'size' => 'L', 'stock_quantity' => 3]);
+        $first = Order::create(['product_id' => $product->id, 'quantity' => 3, 'order_name' => 'First',
+            'closer_name' => 'Test', 'status' => Order::DEFAULT_STATUS,
+            'dispatch_date' => '2032-11-10', 'pickup_date' => '2032-11-10',
+            'event_date' => '2032-11-12', 'return_date' => '2032-11-20',
+            'actual_return_date' => '2032-11-20', 'return_period' => 'sang']);
+        $first->items()->create(['product_id' => $product->id, 'quantity' => 3]);
+        $later = Order::create(['product_id' => $product->id, 'quantity' => 3, 'order_name' => 'Later',
+            'closer_name' => 'Test', 'status' => Order::DEFAULT_STATUS,
+            'dispatch_date' => '2032-11-12', 'pickup_date' => '2032-11-12',
+            'event_date' => '2032-11-13', 'return_date' => '2032-11-18',
+            'actual_return_date' => '2032-11-18', 'return_period' => 'sang']);
+        $later->items()->create(['product_id' => $product->id, 'quantity' => 3]);
+        $receipt = ProductExpectedReceipt::create(['product_id' => $product->id,
+            'expected_receive_date' => '2032-11-11', 'expected_receive_quantity' => 3]);
+        $inventory = app(OrderInventoryService::class);
+        $available = fn ($order) => $inventory->projectedAvailableQuantities([$product->id],
+            $order->dispatch_date->toDateString(), $order->actual_return_date->toDateString(),
+            $order->id, true, $order->return_period)[$product->id];
+        $this->assertSame(3, $available($first));
+        $this->assertSame(3, $available($later));
+
+        $receipt->update(['expected_receive_date' => '2032-11-13']);
+        $this->assertSame(0, $available($first));
+        $this->assertSame(0, $available($later));
+    }
+
     public function test_confirmed_workshop_sizes_are_available_after_the_first_booking_returns(): void
     {
         $product = Product::create(['code' => 'FORECAST-'.bin2hex(random_bytes(4)), 'name' => 'Test',

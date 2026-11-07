@@ -245,23 +245,22 @@ class OrderInventoryService
         $products = Product::whereIn('id', $productIds->all())
             ->get(['id', 'stock_quantity'])
             ->keyBy('id');
-        $expectedReceiptQuantities = $this->incomingByProduct($productIds->all(), $start->toDateString())
-            ->map(fn ($rows) => $rows->sum('quantity'))->all();
+        $expectedReceipts = $this->incomingByProduct($productIds->all(), $endExclusive->copy()->subDay()->toDateString());
         $openQuantities = $this->openStockQuantities($productIds->all());
         $reservedQuantities = $this->maxReservedQuantities(
             $productIds->all(),
             $start,
             $endExclusive,
             $excludeOrderId,
-            $allowSameDayTurnaround
+            $allowSameDayTurnaround,
+            $expectedReceipts
         );
         $availability = [];
 
         foreach ($productIds as $productId) {
             $product = $products->get($productId);
             $totalPhysicalQuantity = (int) ($product?->stock_quantity ?? 0)
-                + (int) ($openQuantities[$productId] ?? 0)
-                + (int) ($expectedReceiptQuantities[$productId] ?? 0);
+                + (int) ($openQuantities[$productId] ?? 0);
             $reservedQuantity = (int) ($reservedQuantities[$productId] ?? 0);
 
             $availability[$productId] = max(0, $totalPhysicalQuantity - $reservedQuantity);
@@ -551,7 +550,8 @@ class OrderInventoryService
         Carbon $start,
         Carbon $endExclusive,
         ?int $excludeOrderId = null,
-        bool $allowSameDayTurnaround = true
+        bool $allowSameDayTurnaround = true,
+        ?\Illuminate\Support\Collection $expectedReceipts = null
     ): array {
         $rows = OrderItem::query()
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
@@ -597,6 +597,18 @@ class OrderInventoryService
             }
         }
 
+        // Hàng về giữa lịch thuê bù cho đơn bắt đầu sau đó, không lấy tồn của đơn đi trước.
+        // Giữ số ròng có thể âm để lượng hàng dự kiến vẫn tăng tồn khả dụng.
+        foreach ($expectedReceipts ?? [] as $productId => $receipts) {
+            foreach ($receipts as $receipt) {
+                if ($receipt['date'] <= $start->toDateString()) {
+                    $initialReserved[$productId] -= (int) $receipt['quantity'];
+                } elseif ($receipt['date'] < $endExclusive->toDateString()) {
+                    $events[$productId][$receipt['date']][] = -(int) $receipt['quantity'];
+                }
+            }
+        }
+
         $reservedQuantities = [];
 
         foreach ($productIds as $productId) {
@@ -611,7 +623,7 @@ class OrderInventoryService
                 $maxReserved = max($maxReserved, $runningReserved);
             }
 
-            $reservedQuantities[$productId] = max(0, $maxReserved);
+            $reservedQuantities[$productId] = $maxReserved;
         }
 
         return $reservedQuantities;
