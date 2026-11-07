@@ -141,7 +141,7 @@
 </style>
 @include('partials.click-copy')
 <script src="{{ asset('js/money-inputs.js') }}" defer></script>
-<link rel="stylesheet" href="{{ asset('css/mobile.css') }}">
+@include('partials.mobile')
 <aside class="app-sidebar" data-sidebar>
     <button type="button" class="mobile-menu-toggle" aria-expanded="false" data-mobile-menu>☰ Menu</button>
     <button class="sidebar-toggle" type="button" data-sidebar-toggle

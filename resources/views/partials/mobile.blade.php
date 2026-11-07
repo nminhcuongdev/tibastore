@@ -1,3 +1,4 @@
+<style>
 .mobile-menu-toggle { display: none; }
 @media screen {
     html[data-mobile-layout] { --desktop-display-scale: 1; }
@@ -73,3 +74,5 @@
     html[data-mobile-layout] .order-entry-table .entry-sr-only { position: static; width: auto; height: auto; clip-path: none; }
     html[data-mobile-layout] dialog { box-sizing: border-box; max-width: 94vw; max-height: 85dvh; overflow: auto; }
 }
+
+</style>
