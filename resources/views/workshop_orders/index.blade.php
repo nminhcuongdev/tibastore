@@ -337,7 +337,7 @@
         </div>
         <div class="summary-item is-main">
             <span class="summary-label">Tổng tiền</span>
-            <span class="summary-value" data-summary-amount="{{ $amountTotal }}">{{ number_format($amountTotal) }}</span>
+            <span class="summary-value" data-summary-amount="{{ $amountTotal }}">{{ number_format($amountTotal, 0, ',', '.') }}</span>
         </div>
     </div>
 
@@ -413,7 +413,7 @@
                         <td class="wrap"><textarea form="workshop-edit-{{ $item->id }}" name="size_note" rows="1" wrap="soft" aria-label="Size" maxlength="255">{{ $item->size_note }}</textarea></td>
                         <td class="num"><input form="workshop-edit-{{ $item->id }}" name="quantity" type="number" value="{{ $item->quantity }}" aria-label="Số lượng" min="1" step="1" required></td>
                         <td class="num"><input form="workshop-edit-{{ $item->id }}" name="unit_price" type="number" value="{{ $item->unit_price ?? 0 }}" aria-label="Đơn giá" min="0" step="1"></td>
-                        <td class="num strong" data-row-total>{{ number_format($item->total_amount) }}</td>
+                        <td class="num strong" data-row-total>{{ number_format($item->total_amount, 0, ',', '.') }}</td>
                         <td><textarea form="workshop-edit-{{ $item->id }}" name="order_name" rows="1" wrap="soft" aria-label="Tên đơn" maxlength="255">{{ $item->order_name }}</textarea></td>
                         <td><textarea form="workshop-edit-{{ $item->id }}" name="buyer_note" rows="2" maxlength="2000" aria-label="Ghi chú">{{ $item->buyer_note }}</textarea></td>
                         <td><textarea form="workshop-edit-{{ $item->id }}" name="source" rows="1" wrap="soft" aria-label="Tên nhà cung cấp" maxlength="255">{{ $item->source }}</textarea></td>

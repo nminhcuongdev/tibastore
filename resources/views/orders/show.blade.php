@@ -493,31 +493,31 @@
                 <div class="details">
                     <div class="detail">
                         <div class="label">Tổng đơn</div>
-                        <div class="value">{{ number_format($order->total_with_compensation) }}</div>
+                        <div class="value">{{ number_format($order->total_with_compensation, 0, ',', '.') }}</div>
                     </div>
                     <div class="detail">
                         <div class="label">Chiết khấu @if ($order->discount_percent !== null) ({{ $order->discount_percent }}%) @endif</div>
-                        <div class="value">{{ number_format($order->discount_amount) }}</div>
+                        <div class="value">{{ number_format($order->discount_amount, 0, ',', '.') }}</div>
                     </div>
                     <div class="detail">
                         <div class="label">Tiền bồi thường</div>
-                        <div class="value">{{ number_format($order->compensation_amount) }}</div>
+                        <div class="value">{{ number_format($order->compensation_amount, 0, ',', '.') }}</div>
                     </div>
                     <div class="detail">
                         <div class="label">Tiền ship</div>
-                        <div class="value">{{ number_format($order->shipping_fee) }}</div>
+                        <div class="value">{{ number_format($order->shipping_fee, 0, ',', '.') }}</div>
                     </div>
                     <div class="detail">
                         <div class="label">Thanh toán lần 1</div>
-                        <div class="value">{{ number_format($order->payment_1) }}</div>
+                        <div class="value">{{ number_format($order->payment_1, 0, ',', '.') }}</div>
                     </div>
                     <div class="detail">
                         <div class="label">Thanh toán lần 2</div>
-                        <div class="value">{{ number_format($order->payment_2) }}</div>
+                        <div class="value">{{ number_format($order->payment_2, 0, ',', '.') }}</div>
                     </div>
                     <div class="detail">
                         <div class="label">Còn lại</div>
-                        <div class="value">{{ number_format($order->remaining) }}</div>
+                        <div class="value">{{ number_format($order->remaining, 0, ',', '.') }}</div>
                     </div>
                 </div>
             </section>

@@ -140,6 +140,7 @@
     }
 </style>
 @include('partials.click-copy')
+<script src="{{ asset('js/money-inputs.js') }}" defer></script>
 <aside class="app-sidebar" data-sidebar>
     <button class="sidebar-toggle" type="button" data-sidebar-toggle
         aria-label="Thu gọn / mở rộng menu" aria-expanded="true" title="Thu gọn menu">

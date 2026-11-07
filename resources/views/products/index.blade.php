@@ -672,7 +672,7 @@
                                     <td>{{ $product->expected_receive_date ? \Illuminate\Support\Carbon::parse($product->expected_receive_date)->format('d/m/Y') : 'N/A' }}</td>
                                     <td>{{ number_format($product->total_expected_receive_quantity ?? 0) }}</td>
                                     <td>{{ number_format($product->size_count) }}</td>
-                                    <td>{{ $product->rental_price_text ?? (number_format($product->rental_price).' VND') }}</td>
+                                    <td>{{ $product->rental_price_text ?? (number_format($product->rental_price, 0, ',', '.').' VND') }}</td>
                                     <td>
                                         <div class="row-actions">
                                             <a class="link-action" href="{{ route('products.show', $product) }}">Chi tiết</a>

@@ -842,15 +842,15 @@
             @endif
             <div class="summary-item">
                 <span class="summary-label">Tổng đơn</span>
-                <span class="summary-value">{{ number_format($orderTotal) }}</span>
+                <span class="summary-value">{{ number_format($orderTotal, 0, ',', '.') }}</span>
             </div>
             <div class="summary-item is-main">
                 <span class="summary-label">Tổng còn lại</span>
-                <span class="summary-value">{{ number_format($remainingTotal) }}</span>
+                <span class="summary-value">{{ number_format($remainingTotal, 0, ',', '.') }}</span>
             </div>
             <div class="summary-item" title="Tổng đơn − (Tổng còn lại)">
                 <span class="summary-label">Đã thu = Tổng đơn − (Tổng còn lại)</span>
-                <span class="summary-value">{{ number_format($collectedTotal) }}</span>
+                <span class="summary-value">{{ number_format($collectedTotal, 0, ',', '.') }}</span>
             </div>
             @if ($filters['remaining'] === 'positive')
                 <div class="summary-note">
@@ -989,11 +989,11 @@
                                     <div class="address-cell" title="{{ $order->address }}">{{ $order->address }}</div>
                                 @endif
                             </td>
-                            <td data-cell="total">{{ number_format($order->total_with_compensation) }}</td>
-                            <td>{{ number_format($order->shipping_fee) }}</td>
-                            <td>{{ number_format($order->payment_1) }}</td>
-                            <td>{{ number_format($order->payment_2) }}</td>
-                            <td data-cell="remaining">{{ number_format($order->remaining) }}</td>
+                            <td data-cell="total">{{ number_format($order->total_with_compensation, 0, ',', '.') }}</td>
+                            <td>{{ number_format($order->shipping_fee, 0, ',', '.') }}</td>
+                            <td>{{ number_format($order->payment_1, 0, ',', '.') }}</td>
+                            <td>{{ number_format($order->payment_2, 0, ',', '.') }}</td>
+                            <td data-cell="remaining">{{ number_format($order->remaining, 0, ',', '.') }}</td>
                             <td>
                                 <div class="row-actions">
                                     <a class="link-action" href="{{ route('orders.show', $order) }}">Xem</a>
