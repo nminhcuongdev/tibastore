@@ -66,7 +66,8 @@ body.order-receipt-page{background:radial-gradient(ellipse at 0 10%,#fff0c9 0,tr
     .order-receipt-page .section-title{break-after:avoid}
     .order-receipt-page th.sortable{padding-right:4px!important;white-space:normal}
     .order-receipt-page th.sortable:after{display:none}
-    .order-receipt-page .product-thumb,.order-receipt-page .product-thumb img{width:34px;height:34px;min-width:0;max-width:100%;object-fit:contain}
+    .order-receipt-page .product-thumb{display:block;box-sizing:border-box;width:100%;height:auto;min-width:0;max-width:100%;border:0;border-radius:0;background:white}
+    .order-receipt-page .product-thumb img{display:block;width:100%;height:auto;max-height:48mm;object-fit:contain;transform:none}
     .order-receipt-page .summary{padding-top:5px}
     .order-receipt-page .summary-box{padding:5px 8px;min-width:100px}
     .order-receipt-page .summary-box .value{font-size:14px}

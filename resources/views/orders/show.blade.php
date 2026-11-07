@@ -465,7 +465,7 @@
                         <div class="label">Cập nhật lần cuối</div>
                         <div class="value">{{ $order->updated_at?->format('d/m/Y H:i') }}</div>
                     </div>
-                    <div class="detail">
+                    <div class="detail no-print">
                         <div class="label">Ngày đi đơn</div>
                         <div class="value">{{ $order->dispatch_date?->format('d/m/Y') }}</div>
                     </div>
@@ -481,7 +481,7 @@
                         <div class="label">Ngày trả</div>
                         <div class="value">{{ $order->return_date?->format('d/m/Y') }} {{ $order->periodLabel($order->return_period) }}</div>
                     </div>
-                    <div class="detail">
+                    <div class="detail no-print">
                         <div class="label">Ngày trả về TT</div>
                         <div class="value">{{ $order->actual_return_date?->format('d/m/Y') }}</div>
                     </div>
