@@ -26,8 +26,8 @@ class OrderTurnaroundService
                     ->orWhereHas('product', fn ($p) => $p->whereIn('code', $pendingCodes));
             })
             ->whereHas('order', function ($query) use ($pickupDate, $excludeOrderId) {
-                $query->whereDate('return_date', $pickupDate)
-                    ->whereDate('pickup_date', '<', $pickupDate)
+                $query->whereDate(DB::raw('COALESCE(actual_return_date, return_date)'), $pickupDate)
+                    ->whereDate(DB::raw('COALESCE(dispatch_date, pickup_date)'), '<', $pickupDate)
                     ->whereNotIn('status', ['huy_don', Order::RETURNED_STATUS, Order::CHECKED_STATUS])
                     ->when($excludeOrderId !== null, fn ($q) => $q->where('id', '!=', $excludeOrderId));
             })->get();
@@ -37,8 +37,8 @@ class OrderTurnaroundService
     {
         $today = ($today ?? now('Asia/Ho_Chi_Minh'))->copy()->startOfDay();
         $orders = Order::with('items.product')
-            ->whereDate('pickup_date', '>=', $today->toDateString())
-            ->when(! $allUpcoming, fn ($query) => $query->whereDate('pickup_date', '<=', $today->copy()->addDay()->toDateString()))
+            ->whereDate(DB::raw('COALESCE(dispatch_date, pickup_date)'), '>=', $today->toDateString())
+            ->when(! $allUpcoming, fn ($query) => $query->whereDate(DB::raw('COALESCE(dispatch_date, pickup_date)'), '<=', $today->copy()->addDay()->toDateString()))
             ->whereNotIn('status', ['huy_don', 'da_gui', Order::RETURNED_STATUS, Order::CHECKED_STATUS])
             ->orderBy('pickup_date')->orderBy('id')->get();
         $reminders = collect();
@@ -47,7 +47,7 @@ class OrderTurnaroundService
             $items = $order->items;
             $ids = $items->pluck('product_id')->unique()->all();
             $pendingCodes = $items->filter(fn ($item) => $item->size_pending)->map(fn ($item) => $item->product?->code)->filter()->all();
-            $returnItems = $this->returns($ids, $order->pickup_date->toDateString(), $order->id, $pendingCodes);
+            $returnItems = $this->returns($ids, ($order->dispatch_date ?? $order->pickup_date)->toDateString(), $order->id, $pendingCodes);
             $returns = $returnItems->reject(fn ($item) => $item->size_pending)->groupBy('product_id');
             foreach ($items->groupBy(fn ($item) => $item->product?->code) as $code => $lines) {
                 $matching = $returnItems->filter(fn ($item) => $item->product?->code === $code);
@@ -66,7 +66,7 @@ class OrderTurnaroundService
                 continue;
             }
             $strict = $this->inventory->projectedAvailableQuantities(
-                $ids, $order->pickup_date->toDateString(), $order->return_date->toDateString(), $order->id, false
+                $ids, ($order->dispatch_date ?? $order->pickup_date)->toDateString(), ($order->actual_return_date ?? $order->return_date)->toDateString(), $order->id, false
             );
             foreach ($items->groupBy('product_id') as $productId => $lines) {
                 $lines = $lines->reject(fn ($item) => $item->size_pending);
@@ -97,7 +97,7 @@ class OrderTurnaroundService
 
         return $reminders->filter(function ($reminder) use ($preferences, $tomorrow) {
             $order = $reminder['order'];
-            $date = $order->pickup_date->toDateString();
+            $date = ($order->dispatch_date ?? $order->pickup_date)->toDateString();
             if ($date > $tomorrow) {
                 return false;
             }
@@ -114,7 +114,7 @@ class OrderTurnaroundService
         foreach ($reminders->pluck('order')->unique('id') as $order) {
             DB::table('order_reminder_preferences')->updateOrInsert(
                 ['user_id' => $userId, 'order_id' => $order->id],
-                ['pickup_date' => $order->pickup_date->toDateString(), 'mode' => $mode,
+                ['pickup_date' => ($order->dispatch_date ?? $order->pickup_date)->toDateString(), 'mode' => $mode,
                     'remind_after' => $mode === 'repeat' ? now()->addHours(5) : null]
             );
         }

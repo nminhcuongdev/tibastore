@@ -897,6 +897,8 @@
                         'X-CSRF-TOKEN': csrfToken,
                     },
                     body: JSON.stringify({
+                        dispatch_date: document.getElementById('dispatch_date').value,
+                        actual_return_date: document.getElementById('actual_return_date').value,
                         pickup_date: pickupDateInput.value,
                         event_date: eventDateInput.value,
                         return_date: returnDateInput.value,
@@ -2092,8 +2094,9 @@
 
         addItemButton.addEventListener('click', () => addItemBlock());
 
-        [pickupDateInput, eventDateInput, returnDateInput, document.getElementById('return_period')].forEach(input => {
-            input.addEventListener('change', () => refreshAvailability('date-change'));
+        [pickupDateInput, eventDateInput, returnDateInput, document.getElementById('return_period'),
+            document.getElementById('dispatch_date'), document.getElementById('actual_return_date')].forEach(input => {
+            input.addEventListener('change', () => queueMicrotask(() => refreshAvailability('date-change')));
         });
 
         orderForm.addEventListener('submit', event => {
@@ -2298,6 +2301,7 @@
             const copyDate = () => {
                 if (!manuallyEdited && ['ha_noi', 'tinh_mb'].includes(scheduleRegion.value)) {
                     target.value = source.value;
+                    target.dispatchEvent(new Event('change', {bubbles: true}));
                 }
             };
 

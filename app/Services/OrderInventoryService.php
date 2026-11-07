@@ -314,15 +314,16 @@ class OrderInventoryService
             ->whereNotIn('orders.status', ['huy_don', Order::RETURNED_STATUS, Order::CHECKED_STATUS])
             ->whereIn('order_items.product_id', $productIds)
             ->where('order_items.size_pending', false)
-            ->where(fn ($query) => $query->whereDate('orders.pickup_date', '<=', $to->toDateString())
+            ->where(fn ($query) => $query->whereDate(\Illuminate\Support\Facades\DB::raw('COALESCE(orders.dispatch_date, orders.pickup_date)'), '<=', $to->toDateString())
                 ->orWhereDate('order_items.dispatched_at', '<=', $to->toDateString()))
-            ->whereDate('orders.return_date', '>=', $from->copy()->subDay()->toDateString())
+            ->whereDate(\Illuminate\Support\Facades\DB::raw('COALESCE(orders.actual_return_date, orders.return_date)'), '>=', $from->copy()->subDay()->toDateString())
             ->get([
                 'order_items.product_id',
                 'order_items.quantity',
                 'order_items.dispatched_at',
-                'orders.pickup_date',
-                'orders.return_date',
+                \Illuminate\Support\Facades\DB::raw('COALESCE(orders.dispatch_date, orders.pickup_date) as pickup_date'),
+                \Illuminate\Support\Facades\DB::raw('COALESCE(orders.actual_return_date, orders.return_date) as return_date'),
+                'orders.actual_return_date',
                 'orders.return_period',
             ]);
 
@@ -332,7 +333,7 @@ class OrderInventoryService
             $start = $this->date($booking->pickup_date);
             if ($booking->dispatched_at) $start = $start->min($this->date($booking->dispatched_at));
             $end = $this->date($booking->return_date);
-            if ($booking->return_period === 'toi') {
+            if (!$booking->actual_return_date && $booking->return_period === 'toi') {
                 $end->addDay();
             }
 
@@ -414,7 +415,7 @@ class OrderInventoryService
     public function bookingShortages(string $code): \Illuminate\Support\Collection
     {
         $products = Product::where('code', $code)->pluck('size', 'id');
-        $orders = Order::whereDate('pickup_date', '>=', now('Asia/Ho_Chi_Minh')->toDateString())
+        $orders = Order::whereDate(\Illuminate\Support\Facades\DB::raw('COALESCE(dispatch_date, pickup_date)'), '>=', now('Asia/Ho_Chi_Minh')->toDateString())
             ->whereNotIn('status', ['huy_don', 'da_gui', Order::RETURNED_STATUS, Order::CHECKED_STATUS])
             ->withWhereHas('items', fn ($query) => $query->whereIn('product_id', $products->keys())->where('size_pending', false))
             ->orderBy('pickup_date')->orderBy('id')->get();
@@ -425,13 +426,13 @@ class OrderInventoryService
     public function shortagesForOrder(Order $order): \Illuminate\Support\Collection
     {
         if (!$order->exists || in_array($order->status, ['huy_don', 'da_gui', Order::RETURNED_STATUS, Order::CHECKED_STATUS], true)
-            || $order->pickup_date->toDateString() < now('Asia/Ho_Chi_Minh')->toDateString()) return collect();
+            || ($order->dispatch_date ?? $order->pickup_date)->toDateString() < now('Asia/Ho_Chi_Minh')->toDateString()) return collect();
 
         $order->loadMissing('items.product');
         $items = $order->items->reject('size_pending')->groupBy('product_id');
-        $pickup = $order->pickup_date->toDateString();
+        $pickup = ($order->dispatch_date ?? $order->pickup_date)->toDateString();
         $available = $this->projectedAvailableQuantities($items->keys()->all(), $pickup,
-            $order->return_date->toDateString(), $order->id, true, $order->return_period);
+            ($order->actual_return_date ?? $order->return_date)->toDateString(), $order->id, true, $order->actual_return_date ? 'chieu' : $order->return_period);
 
         return $items->map(function ($lines, $id) use ($order, $available, $pickup) {
             $shortage = $lines->sum('quantity') - ($available[$id] ?? 0);
@@ -558,15 +559,16 @@ class OrderInventoryService
             ->whereIn('order_items.product_id', $productIds)
             ->where('order_items.size_pending', false)
             ->when($excludeOrderId !== null, fn ($query) => $query->where('orders.id', '!=', $excludeOrderId))
-            ->where(fn ($query) => $query->whereDate('orders.pickup_date', '<', $endExclusive)
+            ->where(fn ($query) => $query->whereDate(\Illuminate\Support\Facades\DB::raw('COALESCE(orders.dispatch_date, orders.pickup_date)'), '<', $endExclusive)
                 ->orWhereDate('order_items.dispatched_at', '<', $endExclusive))
-            ->whereDate('orders.return_date', '>=', $start->copy()->subDay())
+            ->whereDate(\Illuminate\Support\Facades\DB::raw('COALESCE(orders.actual_return_date, orders.return_date)'), '>=', $start->copy()->subDay())
             ->get([
                 'order_items.product_id',
                 'order_items.quantity',
                 'order_items.dispatched_at',
-                'orders.pickup_date',
-                'orders.return_date',
+                \Illuminate\Support\Facades\DB::raw('COALESCE(orders.dispatch_date, orders.pickup_date) as pickup_date'),
+                \Illuminate\Support\Facades\DB::raw('COALESCE(orders.actual_return_date, orders.return_date) as return_date'),
+                'orders.actual_return_date',
                 'orders.return_period',
             ]);
 
@@ -579,7 +581,7 @@ class OrderInventoryService
             $bookingStart = $this->date($row->pickup_date);
             if ($row->dispatched_at) $bookingStart = $bookingStart->min($this->date($row->dispatched_at));
             $bookingEndExclusive = $this->bookingEndExclusive(
-                $bookingStart, $this->date($row->return_date), $row->return_period, $allowSameDayTurnaround
+                $bookingStart, $this->date($row->return_date), $row->actual_return_date ? 'chieu' : $row->return_period, $allowSameDayTurnaround
             );
 
             if ($bookingStart->lt($start) && $bookingEndExclusive->gt($start)) {

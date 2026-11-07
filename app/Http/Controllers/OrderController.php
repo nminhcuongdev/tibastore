@@ -285,6 +285,8 @@ class OrderController extends Controller
         $this->inventory->syncDueOrders();
 
         $data = $request->validate([
+            'dispatch_date' => ['nullable', 'date'],
+            'actual_return_date' => ['nullable', 'date'],
             'pickup_date' => ['nullable', 'date'],
             'event_date' => ['nullable', 'date'],
             'return_date' => ['nullable', 'date'],
@@ -293,6 +295,10 @@ class OrderController extends Controller
             'product_ids.*' => ['integer', 'exists:products,id'],
             'exclude_order_id' => ['nullable', 'integer', 'exists:orders,id'],
         ]);
+
+        $data['pickup_date'] = $data['dispatch_date'] ?? $data['pickup_date'] ?? null;
+        $data['return_date'] = $data['actual_return_date'] ?? $data['return_date'] ?? null;
+        if (!empty($data['actual_return_date'])) $data['return_period'] = 'chieu';
 
         $productIds = collect($data['product_ids'] ?? [])
             ->map(fn ($productId) => (int) $productId)
@@ -838,12 +844,14 @@ class OrderController extends Controller
 
         // Cho phép cùng mã-size xuất hiện nhiều dòng với giá khác nhau (thuê bộ / thuê lẻ),
         // nên KHÔNG chặn trùng ở đây. Kiểm tồn sẽ cộng dồn số lượng theo từng sản phẩm.
+        $dispatchDate = array_key_exists('dispatch_date', $data) ? $data['dispatch_date'] : $order?->dispatch_date?->toDateString();
+        $actualReturnDate = array_key_exists('actual_return_date', $data) ? $data['actual_return_date'] : $order?->actual_return_date?->toDateString();
         $this->inventory->assertItemsAvailable(
             array_values(array_filter($data['items'], fn ($item) => $item['fulfillment_source'] === 'stock' || empty($item['purchase_plan']))),
-            $data['pickup_date'],
-            $data['return_date'],
+            $dispatchDate ?? $data['pickup_date'],
+            $actualReturnDate ?? $data['return_date'],
             $order?->id,
-            $data['return_period'] ?? null
+            $actualReturnDate ? 'chieu' : ($data['return_period'] ?? null)
         );
 
         $data['discount_percent'] = ($data['discount_type'] ?? 'vnd') === 'percent'
