@@ -944,7 +944,7 @@
                     const conflicts = [];
 
                     itemsContainer.querySelectorAll('.size-row').forEach(sizeRow => {
-                        if (isPendingRow(sizeRow)) {
+                        if (isPendingRow(sizeRow) || sizeRow.closest('.order-item').querySelector('[data-supply-choice]').value !== 'stock') {
                             return;
                         }
 
@@ -1761,10 +1761,13 @@
                 block.appliedPurchaseLines = result.applied;
                 purchaseApplied = true;
                 savePlan(); renumberRows(); refreshProductChoices();
-                state.textContent = result.additions.length || result.removals.length ? 'Đã đưa số mua thêm vào đơn' : 'Không thay đổi';
+                state.textContent = result.additions.length || result.removals.length
+                    ? 'Đã đưa số mua thêm vào đơn · Đang chờ lưu'
+                    : 'Phần mua thêm đã có trong tổng số lượng bên phải · Không cộng trùng';
                 state.title = result.additions.length || result.removals.length
                     ? 'Đã điều chỉnh phần mua thêm vào đơn. Thay đổi được lưu cùng đơn.'
                     : 'Số lượng không thay đổi, không cộng trùng.';
+                block.dispatchEvent(new Event('change', {bubbles: true}));
             });
             block.querySelector('[data-supply-choice]').addEventListener('change', () => { refresh(); refreshProductChoices(); });
             block.addEventListener('product-updated', refresh);

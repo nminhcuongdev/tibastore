@@ -62,15 +62,17 @@ class OrderPurchasePlanService
                 $workshop->customer_order_id = $order->id;
                 if ($workshop->stocked_at && !$workshop->purchase_plan) {
                     $workshop->purchase_plan = $plan;
-                    $workshop->save();
                 }
+                $workshop->save();
             } else {
                 $workshop = WorkshopOrder::firstOrNew(['customer_order_id' => $order->id,
                     'product_code' => $first->product->code, 'supply_source' => $first->fulfillment_source]);
             }
             if ($workshop->exists && $workshop->purchase_plan && ($workshop->stocked_at
                 || ProductExpectedReceipt::where('workshop_order_id', $workshop->id)->whereNotNull('received_at')->exists())) {
-                if ($workshop->purchase_plan !== $plan) {
+                // Dòng được chọn đã đối chiếu số lượng thực tế ở trên.
+                // Ngày về thực tế có thể khác ngày dự kiến trong kế hoạch cũ.
+                if (!$selectedId && $workshop->purchase_plan !== $plan) {
                     throw ValidationException::withMessages(['items' => 'Kế hoạch od đã nhận hàng không thể sửa. Hãy tạo dòng đặt bổ sung.']);
                 }
                 $active[] = $workshop->id;

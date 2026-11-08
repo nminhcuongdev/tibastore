@@ -16,6 +16,33 @@ class OrderPurchasePlanTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_linking_received_od_with_changed_arrival_date_preserves_quantities_and_saves_link(): void
+    {
+        $product = Product::create(['code' => 'RECEIVED-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'fabric' => '', 'size' => 'CÁI', 'stock_quantity' => 10]);
+        $lines = [['product_id' => $product->id, 'quantity' => 1]];
+        $originalPlan = ['expected_date' => '2032-11-09', 'lines' => $lines];
+        $od = WorkshopOrder::create(['product_code' => $product->code, 'supply_source' => 'mua_ngoai',
+            'quantity' => 1, 'status' => WorkshopOrder::STATUS_ARRIVED, 'size_quantities' => $lines,
+            'purchase_plan' => $originalPlan, 'returned_date' => '2032-11-11', 'stocked_at' => now()]);
+        $order = Order::create(['product_id' => $product->id, 'quantity' => 4, 'order_name' => 'Received OD',
+            'closer_name' => 'Test', 'status' => Order::DEFAULT_STATUS, 'pickup_date' => '2032-11-12',
+            'event_date' => '2032-11-13', 'return_date' => '2032-11-15']);
+        $order->items()->create(['product_id' => $product->id, 'quantity' => 4,
+            'fulfillment_source' => 'mua_ngoai', 'purchase_plan' => [
+                'workshop_order_id' => $od->id, 'expected_date' => '2032-11-11',
+                'lines' => $lines, 'updated_once' => true, 'applied_lines' => $lines,
+            ]]);
+        $service = app(\App\Services\OrderPurchasePlanService::class);
+        $service->sync($order);
+        $service->sync($order);
+        $this->assertSame($order->id, $od->fresh()->customer_order_id);
+        $this->assertSame($originalPlan, $od->fresh()->purchase_plan);
+        $this->assertSame(4, (int) $order->items()->sum('quantity'));
+        $this->assertSame(10, $product->fresh()->stock_quantity);
+        $this->assertSame(1, WorkshopOrder::where('product_code', $product->code)->count());
+    }
+
     public function test_later_booking_and_receipt_do_not_take_existing_stock_from_earlier_booking(): void
     {
         $product = Product::create(['code' => 'TIMELINE-'.bin2hex(random_bytes(4)), 'name' => 'Test',

@@ -50,6 +50,7 @@
                 if (unchanged) {
                     clearDraft();
                     itemsContainer.querySelectorAll('.order-item').forEach(block => block.dispatchEvent(new Event('order-autosaved')));
+                    refreshAvailability('saved');
                 } else saveDraftNow();
                 autosaveState.textContent = data.warning ? 'Đã lưu đơn #' + data.id + ' · ' + data.warning : 'Đã tự lưu đơn #' + data.id;
                 if (autosaveFinish && unchanged) { window.location.assign(data.show_url); return; }
