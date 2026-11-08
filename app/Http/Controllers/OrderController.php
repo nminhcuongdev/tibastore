@@ -769,6 +769,7 @@ class OrderController extends Controller
             'items.*.purchase_plan.applied_lines' => ['nullable', 'array', 'max:100'],
             'items.*.purchase_plan.updated_once' => ['sometimes', 'boolean'],
             'items.*.purchase_plan.workshop_order_id' => ['nullable', 'integer', 'exists:workshop_orders,id'],
+            'items.*.purchase_plan.supplement_key' => ['nullable', 'uuid'],
             'items.*.purchase_plan.applied_lines.*.product_id' => ['required', 'integer'],
             'items.*.purchase_plan.applied_lines.*.quantity' => ['required', 'integer', 'min:0'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
@@ -846,7 +847,7 @@ class OrderController extends Controller
         $dispatchDate = array_key_exists('dispatch_date', $data) ? $data['dispatch_date'] : $order?->dispatch_date?->toDateString();
         $actualReturnDate = array_key_exists('actual_return_date', $data) ? $data['actual_return_date'] : $order?->actual_return_date?->toDateString();
         $this->inventory->assertItemsAvailable(
-            array_values(array_filter($data['items'], fn ($item) => $item['fulfillment_source'] === 'stock' || empty($item['purchase_plan']))),
+            array_values(array_filter($data['items'], fn ($item) => $item['fulfillment_source'] === 'stock')),
             $dispatchDate ?? $data['pickup_date'],
             $actualReturnDate ?? $data['return_date'],
             $order?->id,

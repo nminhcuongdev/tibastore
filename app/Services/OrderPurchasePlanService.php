@@ -24,9 +24,11 @@ class OrderPurchasePlanService
             $first = $items->first();
             $plan = $first->purchase_plan;
             unset($plan['applied_lines'], $plan['updated_once']);
+            if (empty($plan['supplement_key'])) unset($plan['supplement_key']);
             foreach ($items as $item) {
                 $itemPlan = $item->purchase_plan;
                 unset($itemPlan['applied_lines'], $itemPlan['updated_once']);
+                if (empty($itemPlan['supplement_key'])) unset($itemPlan['supplement_key']);
                 if ($itemPlan !== $plan) {
                     throw ValidationException::withMessages(['items' => 'Các dòng cùng mã và nguồn od phải dùng cùng kế hoạch mua.']);
                 }
@@ -65,8 +67,15 @@ class OrderPurchasePlanService
                 }
                 $workshop->save();
             } else {
-                $workshop = WorkshopOrder::firstOrNew(['customer_order_id' => $order->id,
-                    'product_code' => $first->product->code, 'supply_source' => $first->fulfillment_source]);
+                $workshopQuery = WorkshopOrder::where('customer_order_id', $order->id)
+                    ->where('product_code', $first->product->code)->where('supply_source', $first->fulfillment_source);
+                if (!empty($plan['supplement_key'])) {
+                    $workshopQuery->where('purchase_plan->supplement_key', $plan['supplement_key']);
+                }
+                $workshop = $workshopQuery->first() ?? new WorkshopOrder([
+                    'customer_order_id' => $order->id, 'product_code' => $first->product->code,
+                    'supply_source' => $first->fulfillment_source,
+                ]);
             }
             if ($workshop->exists && $workshop->purchase_plan && ($workshop->stocked_at
                 || ProductExpectedReceipt::where('workshop_order_id', $workshop->id)->whereNotNull('received_at')->exists())) {
@@ -109,7 +118,7 @@ class OrderPurchasePlanService
         }
         // Chỉ dọn các dòng do kế hoạch này tạo, chưa nhận hàng; giữ nguyên lịch sử đã nhận.
         $obsolete = WorkshopOrder::where('customer_order_id', $order->id)->whereNotNull('purchase_plan')
-            ->whereNotIn('id', $active)->where('status', '!=', WorkshopOrder::STATUS_ARRIVED)->get();
+            ->whereNotIn('id', $active)->whereNull('stocked_at')->where('status', '!=', WorkshopOrder::STATUS_ARRIVED)->get();
         foreach ($obsolete as $item) {
             if (!ProductExpectedReceipt::where('workshop_order_id', $item->id)->whereNotNull('received_at')->exists()) {
                 ProductExpectedReceipt::where('workshop_order_id', $item->id)->whereNull('received_at')->delete();
@@ -118,7 +127,7 @@ class OrderPurchasePlanService
         }
         // Kiểm lại sau khi đã đồng bộ dự kiến, để phần mua thêm thực sự đủ bù thiếu tồn.
         if ($order->status !== 'huy_don') {
-            app(OrderInventoryService::class)->assertItemsAvailable($order->items->toArray(),
+            app(OrderInventoryService::class)->assertItemsAvailable($order->items->where('fulfillment_source', 'stock')->values()->toArray(),
                 ($order->dispatch_date ?? $order->pickup_date)->toDateString(),
                 ($order->actual_return_date ?? $order->return_date)->toDateString(), $order->id,
                 $order->return_period,

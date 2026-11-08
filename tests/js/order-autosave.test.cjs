@@ -7,11 +7,11 @@ const vm = require('node:vm');
     let resolveRequest;
     const status = {style:{}, setAttribute(){}};
     const form = {action:'/orders', appendChild(node){ if (node.name === '_method') method = node; },
-        checkValidity:() => valid, querySelector:selector => selector === '[name=_method]' ? method : {textContent:''}, addEventListener(){}};
+        checkValidity:() => valid, querySelectorAll:() => [], querySelector:selector => selector === '[name=_method]' ? method : {textContent:''}, addEventListener(){}};
     const context = vm.createContext({
         document:{createElement:() => ({...status})}, orderForm:form, currentOrderId:null, orderDraftDiscarded:false,
         readFormDraft:() => ({...data}), restoredFromDraft:false, hasOldInput:false,
-        renumberRows(){}, itemsContainer:{querySelectorAll:selector => selector === '.size-row'
+        refreshAvailability(){}, renumberRows(){}, itemsContainer:{querySelectorAll:selector => selector === '.size-row'
             ? [{querySelector:() => ({value:'1'})}] : [{dispatchEvent(){}}]},
         saveDraftNow(){draftSaves++;}, clearDraft(){}, DRAFT_KEY:'create', EDIT_DRAFT_PREFIX:'edit_',
         history:{replaceState(){}}, window:{addEventListener(){}, location:{assign(){}}},

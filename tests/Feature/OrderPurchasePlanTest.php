@@ -41,6 +41,18 @@ class OrderPurchasePlanTest extends TestCase
         $this->assertSame(4, (int) $order->items()->sum('quantity'));
         $this->assertSame(10, $product->fresh()->stock_quantity);
         $this->assertSame(1, WorkshopOrder::where('product_code', $product->code)->count());
+        $item = $order->items()->firstOrFail();
+        $item->update(['quantity' => 5, 'purchase_plan' => [
+            'supplement_key' => (string) \Illuminate\Support\Str::uuid(),
+            'expected_date' => '2032-11-12', 'lines' => $lines,
+            'updated_once' => true, 'applied_lines' => $lines,
+        ]]);
+        $service->sync($order);
+        $service->sync($order);
+        $this->assertSame(2, WorkshopOrder::where('product_code', $product->code)->count());
+        $this->assertSame($originalPlan, $od->fresh()->purchase_plan);
+        $this->assertSame(5, (int) $order->items()->sum('quantity'));
+        $this->assertSame(10, $product->fresh()->stock_quantity);
     }
 
     public function test_later_booking_and_receipt_do_not_take_existing_stock_from_earlier_booking(): void
@@ -280,7 +292,7 @@ class OrderPurchasePlanTest extends TestCase
         $this->putJson('/orders/'.$order->id, $data)->assertUnprocessable()->assertJsonValidationErrors('items.0.purchase_plan.expected_date');
     }
 
-    public function test_planned_purchase_must_cover_shortage_and_clears_only_its_own_pending_receipts(): void
+    public function test_od_orders_can_save_with_shortage_and_clear_only_their_own_pending_receipts(): void
     {
         $this->actingAs(User::create(['code' => 'cover-'.bin2hex(random_bytes(4)), 'name' => 'Test',
             'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
@@ -289,15 +301,16 @@ class OrderPurchasePlanTest extends TestCase
         $data = ['closer_name' => 'Test', 'order_name' => $p->code, 'pickup_date' => '2034-06-02', 'event_date' => '2034-06-03',
             'return_date' => '2034-06-04', 'source' => Order::DEFAULT_SOURCE, 'region' => 'tinh_mb', 'status' => Order::DEFAULT_STATUS,
             'items' => [['product_id' => $p->id, 'quantity' => 2, 'fulfillment_source' => 'xuong_may', 'purchase_plan' => $plan]]];
-        $this->postJson('/orders', $data)->assertUnprocessable();
-        $this->assertSame(0, WorkshopOrder::where('product_code', $p->code)->count());
+        $this->postJson('/orders', $data)->assertCreated();
+        $order = Order::where('order_name', $p->code)->firstOrFail();
+        $this->assertSame(1, WorkshopOrder::where('product_code', $p->code)->count());
         $overlap = Order::create(['product_id' => $p->id, 'quantity' => 1, 'order_name' => 'Other booking',
             'closer_name' => 'Test', 'status' => Order::DEFAULT_STATUS, 'pickup_date' => '2034-06-02',
             'event_date' => '2034-06-03', 'return_date' => '2034-06-04']);
         $overlap->items()->create(['product_id' => $p->id, 'quantity' => 1]);
-        $this->postJson('/orders', $data)->assertUnprocessable();
+        $this->putJson('/orders/'.$order->id, $data)->assertOk();
         $data['items'][0]['purchase_plan']['lines'][0]['quantity'] = 2;
-        $this->post('/orders', $data)->assertSessionHasNoErrors()->assertRedirect();
+        $this->put('/orders/'.$order->id, $data)->assertSessionHasNoErrors()->assertRedirect();
         $order = Order::where('order_name', $p->code)->firstOrFail();
         $od = WorkshopOrder::where('customer_order_id', $order->id)->firstOrFail();
         $manual = ProductExpectedReceipt::create(['product_id' => $p->id, 'expected_receive_date' => '2034-06-01', 'expected_receive_quantity' => 1]);

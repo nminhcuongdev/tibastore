@@ -17,6 +17,7 @@
         }
         async function saveOrderAutomatically(force = false) {
             if (autosaveBusy || orderDraftDiscarded) return;
+            itemsContainer.querySelectorAll('.order-item').forEach(block => block.applyPurchaseBeforeSave?.());
             renumberRows();
             const snapshot = autosaveSnapshot();
             if (!force && (snapshot === autosaveLastSaved || snapshot === autosaveLastAttempt)) return;
@@ -24,7 +25,12 @@
             if (!orderForm.checkValidity() || !sizeRows.length || sizeRows.some(row => !row.querySelector('[data-product-id]').value)) {
                 autosaveLastAttempt = snapshot;
                 saveDraftNow(); autosaveFinish = false;
-                autosaveState.textContent = 'Đã lưu nháp trên máy này. Điền đủ thông tin để tự lưu đơn vào hệ thống.';
+                const invalid = Array.from(orderForm.querySelectorAll('input,select,textarea'))
+                    .find(input => !input.disabled && !input.checkValidity());
+                const label = invalid?.labels?.[0]?.textContent.trim()
+                    || invalid?.getAttribute('aria-label') || invalid?.name || 'sản phẩm và size';
+                autosaveState.textContent = 'Chưa lưu được đơn. Kiểm tra ' + label + (invalid?.validationMessage ? ' — ' + invalid.validationMessage : '.');
+                if (force && invalid) invalid.reportValidity();
                 return;
             }
             autosaveBusy = true; autosaveLastAttempt = snapshot; saveDraftNow();

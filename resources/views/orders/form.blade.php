@@ -1620,6 +1620,7 @@
             if (typeof savedPlan === 'string') { try { savedPlan = JSON.parse(savedPlan); } catch (_) { savedPlan = null; } }
             let purchaseApplied = savedPlan?.updated_once === true;
             let selectedWorkshopId = savedPlan?.workshop_order_id || null;
+            let supplementKey = savedPlan?.supplement_key || null;
             block.appliedPurchaseLines = purchaseApplied ? (savedPlan.applied_lines || []) : [];
             const box = document.createElement('div'); box.className = 'purchase-plan'; box.hidden = true;
             box.innerHTML = `<strong>Size cần mua thêm</strong><div data-purchase-lines></div><button type="button" class="button secondary" data-add-purchase>+ Thêm size cần mua</button><button type="button" class="button secondary" data-apply-purchase>Update vào đơn</button><span data-apply-purchase-state role="status"></span><label>Ngày dự kiến nhận<input data-purchase-date type="date"></label><small>Sửa size, số lượng rồi bấm Update vào đơn. Chỉ điều chỉnh phần chênh lệch so với lần cập nhật trước, không cộng trùng khi bấm lại. Lưu đơn để cập nhật Đặt hàng và dự kiến ở Kho. Hàng chỉ vào tồn thực tế khi bấm Đẩy lên kho hoặc nhập tay tại Kho.</small>`;
@@ -1636,7 +1637,7 @@
             box.insertBefore(addWarehouseSize, box.querySelector('label'));
             let code = null;
             function savePlan() {
-                block.purchasePlan = {workshop_order_id:selectedWorkshopId, expected_date:date.value, updated_once:purchaseApplied, applied_lines:block.appliedPurchaseLines, lines:Array.from(lines.children).map(row => ({
+                block.purchasePlan = {workshop_order_id:selectedWorkshopId, supplement_key:supplementKey, expected_date:date.value, updated_once:purchaseApplied, applied_lines:block.appliedPurchaseLines, lines:Array.from(lines.children).map(row => ({
                     product_id:Number(row.querySelector('select').value), quantity:Number(row.querySelector('input').value)
                 }))};
                 renumberRows();
@@ -1660,13 +1661,14 @@
                 if (group) addWarehouseSize.href = @json(route('products.show', ['product' => '__PRODUCT__'])).replace('__PRODUCT__', group.items[0].id);
                 box.hidden = !needed;
                 if (code !== block.dataset.productCode) {
-                    if (code !== null) { savedPlan = null; block.appliedPurchaseLines = []; purchaseApplied = false; selectedWorkshopId = null; }
+                    if (code !== null) { savedPlan = null; block.appliedPurchaseLines = []; purchaseApplied = false; selectedWorkshopId = null; supplementKey = null; }
                     code = block.dataset.productCode;
                     lines.replaceChildren();
                     (savedPlan?.lines?.length ? savedPlan.lines : [{}]).forEach(addLine);
                 }
                 box.querySelectorAll('input,select,button').forEach(input => input.disabled = !needed);
                 date.required = needed; date.max = pickupDateInput.value;
+                if (needed && !date.value) date.value = document.getElementById('dispatch_date').value || pickupDateInput.value;
                 if (purchaseApplied) {
                     const state = box.querySelector('[data-apply-purchase-state]');
                     state.textContent = 'Đã đưa số mua thêm vào đơn';
@@ -1675,13 +1677,43 @@
                 savePlan();
             }
             box.addEventListener('input', savePlan); box.addEventListener('change', savePlan);
+            block.applyPurchaseBeforeSave = () => {
+                if (box.hidden || !Array.from(lines.querySelectorAll('input,select')).every(input => input.checkValidity())) return;
+                const planned = Array.from(lines.children).map(row => ({
+                    product_id: Number(row.querySelector('select').value),
+                    quantity: Number(row.querySelector('input').value),
+                }));
+                const applied = block.appliedPurchaseLines || [];
+                const result = purchaseSizeUpdates([], planned, []);
+                const previous = purchaseSizeUpdates([], applied, []);
+                const sorted = rows => JSON.stringify(rows.sort((a, b) => a.product_id - b.product_id));
+                if (!purchaseApplied || sorted(result.applied) !== sorted(previous.applied)) {
+                    box.querySelector('[data-apply-purchase]').click();
+                }
+            };
             box.querySelector('[data-add-purchase]').addEventListener('click', () => { addLine(); savePlan(); });
+            const supplement = document.createElement('button');
+            supplement.type = 'button'; supplement.className = 'button secondary';
+            supplement.textContent = 'OD bổ sung đợt mới';
+            supplement.addEventListener('click', () => {
+                selectedWorkshopId = null;
+                supplementKey = crypto.randomUUID();
+                purchaseApplied = false;
+                block.appliedPurchaseLines = [];
+                lines.replaceChildren();
+                addLine();
+                date.value = document.getElementById('dispatch_date').value || pickupDateInput.value;
+                savePlan();
+                box.querySelector('[data-apply-purchase-state]').textContent = 'Nhập phần cần mua thêm cho đợt mới.';
+            });
+            box.insertBefore(supplement, addWarehouseSize);
             block.applyExistingOd = item => {
                 const group = productOptions.find(group => group.code === block.dataset.productCode);
                 if (!item.lines?.length || item.lines.some(line => !group?.items.some(product => Number(product.id) === Number(line.product_id)))) {
                     showBlockInfo(block, 'Dòng od chưa có size khớp trong Kho. Hãy bổ sung size bên Đặt hàng rồi kiểm tra lại.'); return;
                 }
                 selectedWorkshopId = item.id;
+                supplementKey = null;
                 lines.replaceChildren(); item.lines.forEach(addLine);
                 date.value = item.expected_date || pickupDateInput.value;
                 savePlan();
