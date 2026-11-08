@@ -68,7 +68,7 @@
             box-shadow: 0 18px 45px rgba(30, 64, 175, .08);
             overflow-x: auto;
         }
-        table { border-collapse: separate; border-spacing: 0; width: 100%; }
+        table { border-collapse: separate; border-spacing: 0; table-layout: fixed; }
         th, td { border-bottom: 1px solid #e7eef8; border-right: 1px solid #e7eef8; padding: 8px 10px; text-align: center; white-space: nowrap; }
         thead th {
             background: #eff6ff;
@@ -82,7 +82,10 @@
         th.prod, td.prod {
             background: #fff;
             left: 0;
-            min-width: 220px;
+            width: 280px;
+            min-width: 280px;
+            white-space: normal;
+            overflow-wrap: anywhere;
             position: sticky;
             text-align: left;
             z-index: 1;
@@ -157,7 +160,7 @@
     </style>
     @include('partials.compact')
     <style>
-        .stock-category th.stock-category-name { position: sticky; left: 0; z-index: 3; min-width: 320px; text-align: left; white-space: normal; padding: 14px 12px; background: #dcedfa; color: #285a7e; border-block: 1px solid #bdd7ec; }
+        .stock-category th.stock-category-name { position: sticky; left: 0; z-index: 3; min-width: 280px; text-align: left; white-space: normal; padding: 14px 12px; background: #dcedfa; color: #285a7e; border-block: 1px solid #bdd7ec; }
         .stock-category .stock-category-name span { display: block; margin-top: 5px; font-size: 11px; font-weight: normal; color: #69839b; }
         .stock-category td { background: #dcedfa; border-block: 1px solid #bdd7ec; }
         .stock-category-picker { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px; margin: 0 0 18px; background: white; border: 1px solid #d6e5f1; border-radius: 12px; }
@@ -208,7 +211,13 @@
     </nav>
 
     <div class="table-shell">
-        <table>
+        <table style="width: {{ 280 + count($dates) * 72 }}px">
+            <colgroup>
+                <col style="width: 280px">
+                @foreach ($dates as $date)
+                    <col style="width: 72px">
+                @endforeach
+            </colgroup>
             <thead>
                 <tr>
                     <th class="prod">Sản phẩm</th>
