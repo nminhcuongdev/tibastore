@@ -47,11 +47,11 @@ body.order-editor{background:radial-gradient(ellipse at 90% 0%,#dce9ee 0,transpa
 @media(max-width:1100px){.order-editor-header{flex-wrap:wrap;gap:18px}.order-editor-brand{padding-right:18px}.order-editor-back{margin-left:auto}.order-editor-brand img{width:72px;height:72px}}
 @media(max-width:700px){.order-editor-header{padding:20px;gap:18px}.order-editor-brand{width:100%;border-right:0;border-bottom:1px solid #ffffff25;padding:0 0 15px}.order-editor-title{flex-basis:100%}.order-editor .order-editor-title h1{font-size:21px!important}.order-editor-back{margin-left:0}.order-editor .form-shell{padding:16px;gap:15px}.order-editor .actions>.button{width:auto}.order-editor-section p{line-height:1.6}}
 
-.order-editor .order-compact-row{grid-column:1/-1;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;align-items:start}
+.order-editor .order-compact-row{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;align-items:start}
 .order-editor .order-compact-row>.field{min-width:0}
 .order-editor .order-payment-row{grid-template-columns:repeat(7,minmax(0,1fr))}
 .order-editor .order-compact-row input,.order-editor .order-compact-row select,.order-editor .order-compact-row textarea{width:100%;min-width:0;box-sizing:border-box}
-.order-editor .order-customer-row textarea{height:36px;min-height:36px!important;resize:vertical}
+.order-editor .order-customer-row textarea{min-height:64px!important;resize:vertical}
 .order-editor .order-compact-row .readonly-value{min-width:0;overflow-wrap:anywhere}
 @media(max-width:860px){.order-editor .order-compact-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:500px){.order-editor .order-compact-row{grid-template-columns:minmax(0,1fr)}}

@@ -530,13 +530,6 @@
             </div>
 
             <div class="field">
-                <label for="note">Ghi chú đơn</label>
-                <textarea id="note" name="note" rows="1" maxlength="2000" data-order-note
-                    placeholder="Dặn dò chung của đơn, VD: khách hẹn lấy sau 17h, gửi kèm hóa đơn...">{{ old('note', $order->note) }}</textarea>
-                @error('note') <div class="error">{{ $message }}</div> @enderror
-            </div>
-
-            <div class="field">
                 <label for="region">Miền{{ $mode === 'create' ? ' *' : '' }}</label>
                 <select id="region" name="region" @if($mode === 'create') required @endif>
                     <option value="">Chưa xác định</option>
@@ -557,6 +550,13 @@
                 <label for="address">Địa chỉ</label>
                 <input id="address" name="address" type="text" value="{{ old('address', $order->address) }}" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành...">
                 @error('address') <div class="error">{{ $message }}</div> @enderror
+            </div>
+
+            <div class="field full">
+                <label for="note">Ghi chú đơn</label>
+                <textarea id="note" name="note" rows="2" maxlength="2000" data-order-note
+                    placeholder="Dặn dò chung của đơn, VD: khách hẹn lấy sau 17h, gửi kèm hóa đơn...">{{ old('note', $order->note) }}</textarea>
+                @error('note') <div class="error">{{ $message }}</div> @enderror
             </div>
 
             </div>
