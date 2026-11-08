@@ -1849,6 +1849,7 @@
             function updateOdLink() {
                 loadRelatedOd();
                 const needed = supplyChoice.value !== 'stock';
+                block.classList.toggle('is-stock-source', !needed);
                 const link = block.querySelector('[data-od-link]');
                 const savedOrderId = currentOrderId;
                 const canOpen = needed && savedOrderId && block.dataset.productCode && !odDirty
@@ -1976,9 +1977,11 @@
             Array.from(pickerCell.childNodes).filter(node => node !== purchasePanel).forEach(node => codeMain.appendChild(node));
             const pickerControls = document.createElement('div');
             pickerControls.className = 'order-picker-controls';
-            pickerControls.append(block.querySelector('[data-search]'), block.querySelector('[data-category]'), sourceBox);
+            pickerControls.append(codeMain.querySelector('[data-search]'), codeMain.querySelector('[data-category]'), sourceBox);
             codeMain.prepend(pickerControls);
-            codeLayout.append(codeMain, purchasePanel); pickerCell.appendChild(codeLayout);
+            codeLayout.appendChild(codeMain);
+            if (purchasePanel) codeLayout.appendChild(purchasePanel);
+            pickerCell.appendChild(codeLayout);
             return block;
         }
 

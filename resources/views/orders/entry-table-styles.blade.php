@@ -12,6 +12,15 @@
     .order-entry-table .product-picker-cell [data-search] { background: #b84a00; color: #fff; border: 2px solid #963b00; font-weight: 800; box-shadow: 0 3px 8px #9a3c0026; }
     .order-code-layout { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px; align-items: start; }
     .order-code-layout > * { min-width: 0; }
+    .order-entry-table .is-stock-source .order-code-layout { grid-template-columns: minmax(0, 1fr); }
+    .order-entry-table .is-stock-source > td { padding-top: 8px; padding-bottom: 8px; }
+    .order-entry-table .is-stock-source .size-row { padding-bottom: 5px; gap: 4px 6px; }
+    .order-entry-table .is-stock-source .size-note-field textarea {
+        height: 32px; min-height: 32px !important; padding: 5px 7px !important;
+    }
+    .order-entry-table .is-stock-source .size-note-field:focus-within textarea { min-height: 60px !important; }
+    .order-entry-table .is-stock-source .entry-code-thumb { width: 48px; height: 54px; margin: 5px 0; }
+    .order-entry-table .is-stock-source [data-add-size] { margin-top: 4px; }
     .order-picker-controls { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 8px; align-items: start; }
     .order-picker-controls > * { min-width: 0; }
     .order-entry-table .order-picker-controls .entry-supply-choice { margin: 0; padding: 0; border: 0; background: none; }
