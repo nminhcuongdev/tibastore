@@ -12,6 +12,12 @@
     .order-entry-table .product-picker-cell [data-search] { background: #b84a00; color: #fff; border: 2px solid #963b00; font-weight: 800; box-shadow: 0 3px 8px #9a3c0026; }
     .order-code-layout { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px; align-items: start; }
     .order-code-layout > * { min-width: 0; }
+    .order-picker-controls { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 8px; align-items: start; }
+    .order-picker-controls > * { min-width: 0; }
+    .order-entry-table .order-picker-controls .entry-supply-choice { margin: 0; padding: 0; border: 0; background: none; }
+    .order-picker-controls .entry-supply-choice > label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    @media (max-width: 860px) { .order-picker-controls { grid-template-columns: minmax(0, 1fr); } }
+    @media screen { html[data-mobile-layout] .order-picker-controls { grid-template-columns: minmax(0, 1fr); } }
     .order-code-layout > .purchase-plan { margin-top: 0; }
     .purchase-plan [data-apply-purchase-state] { font-size: 12px; color: #655166; }
     .purchase-plan strong[title], .purchase-plan [data-apply-purchase-state][title] { cursor: help; }

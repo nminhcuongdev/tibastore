@@ -510,6 +510,7 @@
                 @method('PUT')
             @endif
 
+            <div class="order-compact-row order-customer-row">
             <div class="field">
                 <label for="closer_name">Người chốt</label>
                 <input id="closer_name" name="closer_name" type="text" value="{{ old('closer_name', $order->closer_name) }}" required>
@@ -528,17 +529,11 @@
                 @error('phone') <div class="error">{{ $message }}</div> @enderror
             </div>
 
-            <div class="field full">
+            <div class="field">
                 <label for="note">Ghi chú đơn</label>
-                <textarea id="note" name="note" rows="2" maxlength="2000" data-order-note
+                <textarea id="note" name="note" rows="1" maxlength="2000" data-order-note
                     placeholder="Dặn dò chung của đơn, VD: khách hẹn lấy sau 17h, gửi kèm hóa đơn...">{{ old('note', $order->note) }}</textarea>
                 @error('note') <div class="error">{{ $message }}</div> @enderror
-            </div>
-
-            <div class="field full">
-                <label for="address">Địa chỉ</label>
-                <input id="address" name="address" type="text" value="{{ old('address', $order->address) }}" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành...">
-                @error('address') <div class="error">{{ $message }}</div> @enderror
             </div>
 
             <div class="field">
@@ -556,6 +551,14 @@
                 <label for="carrier">Nhà xe</label>
                 <input id="carrier" name="carrier" type="text" value="{{ old('carrier', $order->carrier) }}" placeholder="VD: Nhà xe Hải Vân, Phương Trang...">
                 @error('carrier') <div class="error">{{ $message }}</div> @enderror
+            </div>
+
+            <div class="field full">
+                <label for="address">Địa chỉ</label>
+                <input id="address" name="address" type="text" value="{{ old('address', $order->address) }}" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành...">
+                @error('address') <div class="error">{{ $message }}</div> @enderror
+            </div>
+
             </div>
 
             <div class="order-editor-section section-schedule"><span>02</span><div><h2>Lịch thuê & xử lý</h2><p>Ngày lấy, ngày diễn, ngày trả và trạng thái đơn</p></div></div>
@@ -592,6 +595,7 @@
             </div>
 
             <div class="order-editor-section section-payment"><span>03</span><div><h2>Thanh toán & chiết khấu</h2><p>Theo dõi tiền hàng, vận chuyển và các lần thanh toán</p></div></div>
+            <div class="order-compact-row order-payment-row">
             <div class="field">
                 <label for="source">Nguồn hàng *</label>
                 <select id="source" name="source" required>
@@ -604,7 +608,7 @@
             </div>
 
             <div class="field">
-                <label>Tổng đơn (giá thuê × số lượng × số ngày − chiết khấu)</label>
+                <label title="Giá thuê × số lượng × số ngày − chiết khấu">Tổng đơn</label>
                 <div class="readonly-value" data-total-display>0</div>
             </div>
 
@@ -634,10 +638,14 @@
                     <option value="percent" @selected(old('discount_type', $order->discount_percent !== null ? 'percent' : 'vnd') === 'percent')>Phần trăm (%)</option>
                 </select>
                 @error('discount_type') <div class="error">{{ $message }}</div> @enderror
+            </div>
+            <div class="field">
                 <label for="discount_amount">Mức chiết khấu</label>
                 <input id="discount_amount" name="discount_amount" type="number" min="0" step="0.01" value="{{ old('discount_amount', $order->discount_percent ?? $order->discount_amount ?? 0) }}">
                 <div class="muted" data-discount-display>Giảm trực tiếp vào tổng tiền hàng.</div>
                 @error('discount_amount') <div class="error">{{ $message }}</div> @enderror
+            </div>
+
             </div>
 
             <div class="order-editor-section section-products"><span>04</span><div><h2>Sản phẩm trong đơn</h2><p>Chọn mã, size và số lượng trực tiếp trong bảng</p></div></div>
@@ -1966,6 +1974,10 @@
             const codeMain = document.createElement('div'); codeMain.className = 'order-code-main';
             const purchasePanel = pickerCell.querySelector('.purchase-plan');
             Array.from(pickerCell.childNodes).filter(node => node !== purchasePanel).forEach(node => codeMain.appendChild(node));
+            const pickerControls = document.createElement('div');
+            pickerControls.className = 'order-picker-controls';
+            pickerControls.append(block.querySelector('[data-search]'), block.querySelector('[data-category]'), sourceBox);
+            codeMain.prepend(pickerControls);
             codeLayout.append(codeMain, purchasePanel); pickerCell.appendChild(codeLayout);
             return block;
         }

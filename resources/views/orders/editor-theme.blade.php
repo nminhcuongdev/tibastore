@@ -33,9 +33,9 @@ body.order-editor{background:radial-gradient(ellipse at 90% 0%,#dce9ee 0,transpa
 .order-editor-section>span{display:grid;place-items:center;flex-shrink:0;width:38px;height:40px;border-radius:8px;background:var(--section-color);color:#fff;font-size:13px;font-weight:800}
 .order-editor-section h2{margin:0!important;font-size:18px!important;font-weight:800;color:var(--section-color);line-height:1.4}
 .order-editor-section p{margin:5px 0 0;color:#52647b;font-size:12px;line-height:1.5}
-.order-editor .form-shell>.field{align-content:start;gap:8px}
-.order-editor .form-shell>.field>label{font-size:12px!important;font-weight:600;color:#526982}
-.order-editor .form-shell>.field>input,.order-editor .form-shell>.field>select,.order-editor .form-shell>.field>textarea{background:#fbfcfe;border-color:#d8e1ed;border-radius:7px;padding:10px 12px;font-size:13px;box-shadow:0 1px 2px #1c355403}
+.order-editor .form-shell>.field,.order-editor .order-compact-row>.field{align-content:start;gap:8px}
+.order-editor .form-shell>.field>label,.order-editor .order-compact-row>.field>label{font-size:12px!important;font-weight:600;color:#526982}
+.order-editor .form-shell>.field>input,.order-editor .form-shell>.field>select,.order-editor .form-shell>.field>textarea,.order-editor .order-compact-row>.field>input,.order-editor .order-compact-row>.field>select,.order-editor .order-compact-row>.field>textarea{background:#fbfcfe;border-color:#d8e1ed;border-radius:7px;padding:10px 12px;font-size:13px;box-shadow:0 1px 2px #1c355403}
 .order-editor .form-shell>.field>input:focus,.order-editor .form-shell>.field>select:focus,.order-editor .form-shell>.field>textarea:focus{outline:2px solid #c1a474;outline-offset:1px;background:white;border-color:#c1a474}
 .order-editor .readonly-value{border:1px solid #d4e3e6;background:#eef5f5;color:#2d6471;font-weight:700;border-radius:7px;padding:11px 12px}
 .order-editor .flash{max-width:none;border:1px solid #d8e4dd;border-left:4px solid #55947c;border-radius:10px;box-shadow:0 3px 14px #1c355405;background:#fff;padding:14px 18px;color:#527168;font-size:12px}
@@ -46,4 +46,14 @@ body.order-editor{background:radial-gradient(ellipse at 90% 0%,#dce9ee 0,transpa
 .order-editor .actions>.button.secondary{background:#fff;color:#687d96;border-color:#d7e1ed;border-radius:8px}
 @media(max-width:1100px){.order-editor-header{flex-wrap:wrap;gap:18px}.order-editor-brand{padding-right:18px}.order-editor-back{margin-left:auto}.order-editor-brand img{width:72px;height:72px}}
 @media(max-width:700px){.order-editor-header{padding:20px;gap:18px}.order-editor-brand{width:100%;border-right:0;border-bottom:1px solid #ffffff25;padding:0 0 15px}.order-editor-title{flex-basis:100%}.order-editor .order-editor-title h1{font-size:21px!important}.order-editor-back{margin-left:0}.order-editor .form-shell{padding:16px;gap:15px}.order-editor .actions>.button{width:auto}.order-editor-section p{line-height:1.6}}
+
+.order-editor .order-compact-row{grid-column:1/-1;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;align-items:start}
+.order-editor .order-compact-row>.field{min-width:0}
+.order-editor .order-payment-row{grid-template-columns:repeat(7,minmax(0,1fr))}
+.order-editor .order-compact-row input,.order-editor .order-compact-row select,.order-editor .order-compact-row textarea{width:100%;min-width:0;box-sizing:border-box}
+.order-editor .order-customer-row textarea{height:36px;min-height:36px!important;resize:vertical}
+.order-editor .order-compact-row .readonly-value{min-width:0;overflow-wrap:anywhere}
+@media(max-width:860px){.order-editor .order-compact-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:500px){.order-editor .order-compact-row{grid-template-columns:minmax(0,1fr)}}
+@media screen{html[data-mobile-layout] .order-editor .order-compact-row{grid-template-columns:minmax(0,1fr)}}
 </style>
