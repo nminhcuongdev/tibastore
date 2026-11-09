@@ -33,16 +33,17 @@
 @endphp
 <div class="order-invoice-wrap">
     <table class="order-invoice-table" aria-label="Chi tiết sản phẩm đơn {{ $order->order_name }}">
-        <colgroup><col style="width:5%"><col style="width:13%"><col style="width:21%"><col style="width:10%"><col style="width:6%"><col style="width:7%"><col style="width:12%"><col style="width:13%"><col style="width:13%"></colgroup>
+        <colgroup><col style="width:5%"><col style="width:20%"><col style="width:14%"><col style="width:10%"><col style="width:6%"><col style="width:7%"><col style="width:12%"><col style="width:13%"><col style="width:13%"></colgroup>
         <thead><tr><th>STT</th><th>Mã / Ảnh</th><th>Tên sản phẩm</th><th>Size / ĐVT</th><th>SL</th><th>Số ngày</th><th>Đơn giá</th><th>Thành tiền</th><th>Ghi chú</th></tr></thead>
         <tbody>
         @foreach($invoiceLines as $line)
             <tr><td>{{ $loop->iteration }}</td><td><strong class="order-invoice-code"><span class="click-copy" data-copy-value="{{ $line['code'] }}" role="button" tabindex="0" title="Bấm để sao chép">{{ $line['code'] }}</span></strong>
+                <div class="order-invoice-product-controls">
                 @if($line['image'])
                     <button type="button" class="code-thumb has-image" data-zoom-src="{{ $line['image'] }}" data-zoom-alt="{{ $line['code'] }} - {{ $line['name'] }}" aria-label="Phóng to ảnh {{ $line['code'] }}"><img src="{{ $line['image'] }}" alt="{{ $line['code'] }}" loading="lazy"></button>
                 @else <span class="order-invoice-no-image">Chưa có ảnh</span> @endif
                 @if($order->exists && $order->allowsCodeDispatch() && $order->items->isNotEmpty() && $line['code'] !== 'N/A')
-                    <form method="POST" action="{{ route('orders.code-dispatch', $order) }}" style="margin-top:8px">
+                    <form method="POST" action="{{ route('orders.code-dispatch', $order) }}" class="order-invoice-dispatch">
                         @csrf
                         @method('PATCH')
                         <input type="hidden" name="code" value="{{ $line['code'] }}">
@@ -56,6 +57,7 @@
                 @elseif(in_array($order->status, [\App\Models\Order::RETURNED_STATUS, \App\Models\Order::CHECKED_STATUS], true))
                     <div>Đã về kho</div>
                 @endif
+                </div>
             </td><td>{{ $line['name'] }}</td><td>@foreach($line['sizes'] as $size)<div class="order-invoice-size">{{ $size['size'] }}: {{ number_format($size['quantity']) }}</div>@endforeach</td><td class="order-invoice-number">{{ number_format($line['quantity']) }}</td><td class="order-invoice-number">@foreach($line['day_values'] as $days)<div>{{ rtrim(rtrim(number_format($days, 2, '.', ''), '0'), '.') }}</div>@endforeach</td><td class="order-invoice-money">@foreach($line['prices'] as $price)<div>{{ $price === null ? '—' : number_format($price, 0, ',', '.') }}</div>@endforeach</td><td class="order-invoice-money"><strong>{{ number_format($line['amount'], 0, ',', '.') }}</strong></td><td>{{ $line['note'] ?: '—' }}</td></tr>
         @endforeach
         </tbody>
