@@ -332,8 +332,50 @@ class OrderPurchasePlanTest extends TestCase
         $data['items'][0]['fulfillment_source'] = 'stock';
         $data['items'][0]['purchase_plan'] = null;
         $this->put('/orders/'.$order->id, $data)->assertSessionHasNoErrors()->assertRedirect();
-        $this->assertNull($od->fresh());
-        $this->assertSame(0, ProductExpectedReceipt::where('workshop_order_id', $od->id)->count());
+        $this->assertNotNull($od->fresh());
+        $this->assertNull($od->fresh()->customer_order_id);
+        $this->assertSame(1, ProductExpectedReceipt::where('workshop_order_id', $od->id)->count());
         $this->assertNotNull($manual->fresh());
+    }
+
+    public function test_editing_to_stock_preserves_the_expected_supply_used_by_the_order(): void
+    {
+        $this->actingAs(User::create(['code' => 'edit-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $product = Product::create(['code' => 'EDIT-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'fabric' => '', 'size' => 'TRẮNG', 'stock_quantity' => 0]);
+        $data = ['closer_name' => 'Test', 'order_name' => $product->code,
+            'pickup_date' => '2034-06-02', 'event_date' => '2034-06-03', 'return_date' => '2034-06-04',
+            'source' => Order::DEFAULT_SOURCE, 'region' => 'tinh_mb', 'status' => Order::DEFAULT_STATUS,
+            'items' => [['product_id' => $product->id, 'quantity' => 7, 'fulfillment_source' => 'mua_ngoai',
+                'purchase_plan' => ['expected_date' => '2034-06-02',
+                    'lines' => [['product_id' => $product->id, 'quantity' => 7]]]]]];
+        $id = $this->postJson('/orders', $data)->assertCreated()->json('id');
+        $workshop = WorkshopOrder::where('customer_order_id', $id)->firstOrFail();
+        $receipt = ProductExpectedReceipt::where('workshop_order_id', $workshop->id)->firstOrFail();
+        $data['items'][0]['quantity'] = 1;
+        $data['items'][0]['fulfillment_source'] = 'stock';
+        $data['items'][0]['purchase_plan'] = null;
+        $this->putJson('/orders/'.$id, $data)->assertOk();
+        $this->putJson('/orders/'.$id, $data)->assertOk();
+        $this->assertSame(1, (int) Order::findOrFail($id)->items()->sum('quantity'));
+        $this->assertNull($workshop->fresh()->customer_order_id);
+        $this->assertSame(7, (int) $receipt->fresh()->expected_receive_quantity);
+        $this->assertSame(0, $product->fresh()->stock_quantity);
+        $this->postJson(route('orders.availability'), [
+            'product_ids' => [$product->id], 'pickup_date' => '2034-06-02',
+            'return_date' => '2034-06-04', 'exclude_order_id' => $id,
+        ])->assertOk()->assertJsonPath('availability.'.$product->id, 7);
+        $data['items'][0]['quantity'] = 7;
+        $this->putJson('/orders/'.$id, $data)->assertOk();
+        $data['items'][0]['quantity'] = 8;
+        $response = $this->putJson('/orders/'.$id, $data)->assertUnprocessable()
+            ->assertJsonValidationErrors('items.0.quantity');
+        $message = $response->json('errors')['items.0.quantity'][0];
+        $this->assertStringContainsString('size TRẮNG: đang đặt 8, chỉ còn 7', $message);
+        $this->assertStringContainsString('thiếu 1', $message);
+        $this->assertStringContainsString('Giảm tổng số lượng size này xuống 7', $message);
+        $this->assertStringContainsString('Size cần mua thêm', $message);
+        $this->assertSame(7, (int) Order::findOrFail($id)->items()->sum('quantity'));
     }
 }

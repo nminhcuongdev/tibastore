@@ -202,7 +202,8 @@ class OrderInventoryService
                 $code = $product?->code ?? 'N/A';
                 $size = $product?->size ?? 'N/A';
 
-                $messages["items.{$index}.quantity"] = "Mã {$code} - size {$size}: đặt {$totalQuantity} nhưng tồn dự kiến chỉ {$availableQuantity} trong khoảng ngày lấy {$fromLabel} → trả {$toLabel}.";
+                $shortage = $totalQuantity - $availableQuantity;
+                $messages["items.{$index}.quantity"] = "Mã {$code} - size {$size}: đang đặt {$totalQuantity}, chỉ còn {$availableQuantity} theo lịch lấy {$fromLabel} → trả {$toLabel}, thiếu {$shortage}. Giảm tổng số lượng size này xuống {$availableQuantity} hoặc chọn nguồn “Cần od – Xưởng” / “Cần od – Mua ngoài” và nhập phần thiếu {$shortage} vào “Size cần mua thêm”, với ngày nhận không sau ngày đi đơn. Nếu đã có hàng thực tế, cập nhật số lượng tại Kho rồi lưu lại đơn.";
             }
         }
 

@@ -130,6 +130,15 @@ class OrderPurchasePlanService
             ->whereNotIn('id', $active)->whereNull('stocked_at')->where('status', '!=', WorkshopOrder::STATUS_ARRIVED)->get();
         foreach ($obsolete as $item) {
             if (!ProductExpectedReceipt::where('workshop_order_id', $item->id)->whereNotNull('received_at')->exists()) {
+                // Chuyển sang Sẵn kho vẫn có thể dùng hàng dự kiến của OD này.
+                // Giữ nguồn cung và bỏ liên kết riêng, tránh xóa dự kiến ngay khi lưu.
+                if ($order->status !== 'huy_don' && $order->items->contains(
+                    fn ($orderItem) => $orderItem->fulfillment_source === 'stock'
+                        && $orderItem->product->code === $item->product_code
+                )) {
+                    $item->update(['customer_order_id' => null]);
+                    continue;
+                }
                 ProductExpectedReceipt::where('workshop_order_id', $item->id)->whereNull('received_at')->delete();
                 $item->delete();
             }
