@@ -170,6 +170,7 @@ class WorkshopOrderController extends Controller
                 'update_url' => route('workshop-orders.update', $item),
                 'delete_url' => route('workshop-orders.destroy', $item),
                 'stock_url' => route('workshop-orders.stock', $item),
+                'manual_stock_url' => route('workshop-orders.manual-stock', $item),
                 'quantity' => $item->quantity, 'total' => $item->total_amount,
                 'size_note' => $item->size_note,
                 'product_name' => $item->product?->name ?? ($item->product_code === WorkshopOrder::NO_PRODUCT_CODE ? 'Chưa tạo mã' : 'Mã không còn trong kho'),
@@ -274,14 +275,24 @@ class WorkshopOrderController extends Controller
 
     public function pushToStock(Request $request, WorkshopOrder $workshopOrder): RedirectResponse|JsonResponse
     {
-        $message = DB::transaction(function () use ($workshopOrder, $request) {
+        return $this->receiveStock($request, $workshopOrder, false);
+    }
+
+    public function markManuallyStocked(Request $request, WorkshopOrder $workshopOrder): RedirectResponse|JsonResponse
+    {
+        return $this->receiveStock($request, $workshopOrder, true);
+    }
+
+    private function receiveStock(Request $request, WorkshopOrder $workshopOrder, bool $manual): RedirectResponse|JsonResponse
+    {
+        $message = DB::transaction(function () use ($workshopOrder, $request, $manual) {
             $item = WorkshopOrder::whereKey($workshopOrder->id)->lockForUpdate()->firstOrFail();
-            if ($item->image_path && $item->product_code !== WorkshopOrder::NO_PRODUCT_CODE) {
+            if (!$manual && $item->image_path && $item->product_code !== WorkshopOrder::NO_PRODUCT_CODE) {
                 foreach (Product::where('code', $item->product_code)->orderBy('id')->lockForUpdate()->get() as $variant) {
                     if ($variant->image_path !== $item->image_path) $variant->update(['image_path' => $item->image_path]);
                 }
             }
-            if ($item->stocked_at) return $item->image_path ? 'Đã cập nhật ảnh vào kho. Số lượng không cộng thêm.' : 'Dòng này đã được đẩy lên kho trước đó, không cộng thêm.';
+            if ($item->stocked_at) return !$manual && $item->image_path ? 'Đã cập nhật ảnh vào kho. Số lượng không cộng thêm.' : 'Dòng này đã được ghi nhận nhập kho trước đó, không cộng thêm.';
             $lines = $item->plannedSizeLines();
             if (!$lines || $item->product_code === WorkshopOrder::NO_PRODUCT_CODE) {
                 throw \Illuminate\Validation\ValidationException::withMessages(['size_quantities' => 'Hãy chọn mã hàng, nhập size và số lượng từng size rồi lưu dòng trước khi đẩy lên kho.']);
@@ -296,7 +307,7 @@ class WorkshopOrderController extends Controller
                 $receipts = \App\Models\ProductExpectedReceipt::where('workshop_order_id', $item->id)
                     ->where('product_id', $productId)->lockForUpdate()->get();
                 // Phiếu đã nhận theo cơ chế cũ không được cộng lần nữa.
-                if (!$receipts->contains(fn ($receipt) => $receipt->received_at !== null)) {
+                if (!$manual && !$receipts->contains(fn ($receipt) => $receipt->received_at !== null)) {
                     $previous = (int) $product->stock_quantity;
                     $product->update(['stock_quantity' => $previous + $quantity]);
                     \App\Models\StockImportHistory::create(['product_id' => $productId, 'user_id' => $request->user()->id,
@@ -313,6 +324,7 @@ class WorkshopOrderController extends Controller
                 'previous_status' => $item->status, 'lines' => $snapshot, 'user_id' => $request->user()->id,
                 'transferred_at' => $transferredAt, 'can_undo' => !empty($snapshot)]);
             $item->update(['stocked_at' => $transferredAt, 'status' => WorkshopOrder::STATUS_ARRIVED]);
+            if ($manual) return 'Đã ghi nhận bạn tự nhập tay vào kho. Không cộng thêm tồn kho; đã bỏ phần OD này khỏi hàng dự kiến.';
             return $item->image_path ? 'Đã cộng số lượng từng size và cập nhật ảnh vào kho.' : 'Đã cộng số lượng từng size vào kho.';
         });
         $shortages = app(\App\Services\OrderInventoryService::class)->bookingShortages($workshopOrder->product_code);

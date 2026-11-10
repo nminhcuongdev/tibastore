@@ -13,6 +13,38 @@ class WorkshopStockTransferTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_manual_stock_acknowledgement_removes_forecast_without_adding_stock(): void
+    {
+        $this->actingAs(User::create(['code' => 'manual-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $product = Product::create(['code' => 'MANUAL-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'size' => 'M', 'fabric' => '', 'stock_quantity' => 9]);
+        $item = WorkshopOrder::create(['product_code' => $product->code, 'supply_source' => WorkshopOrder::SUPPLY_OUTSIDE,
+            'quantity' => 7, 'status' => WorkshopOrder::STATUS_ORDERED, 'returned_date' => '2034-06-01',
+            'size_quantities' => [['product_id' => $product->id, 'quantity' => 7]]]);
+        $receipt = \App\Models\ProductExpectedReceipt::create(['product_id' => $product->id,
+            'workshop_order_id' => $item->id, 'expected_receive_date' => '2034-06-01', 'expected_receive_quantity' => 7]);
+        $inventory = app(\App\Services\OrderInventoryService::class);
+        $available = fn () => $inventory->projectedAvailableQuantities([$product->id], '2034-06-02', '2034-06-04')[$product->id];
+        $this->assertSame(16, $available());
+        $this->get('/workshop-orders?supply_source=mua_ngoai')->assertOk()->assertSee('Tự nhập tay vào kho');
+        $url = route('workshop-orders.manual-stock', $item);
+        $this->postJson($url)->assertOk();
+        $this->assertSame(9, $available());
+        $this->assertSame(9, $product->fresh()->stock_quantity);
+        $this->assertNotNull($receipt->fresh()->received_at);
+        $this->assertNotNull($item->fresh()->stocked_at);
+        $this->assertSame(WorkshopOrder::STATUS_ARRIVED, $item->fresh()->status);
+        $this->postJson($url)->assertOk();
+        $this->postJson(route('workshop-orders.stock', $item))->assertOk();
+        $this->assertSame(9, $product->fresh()->stock_quantity);
+        $this->assertSame(0, StockImportHistory::where('product_id', $product->id)->count());
+        $entry = \App\Models\WorkshopStockTransfer::where('workshop_order_id', $item->id)->sole();
+        $this->assertFalse((bool) $entry->can_undo);
+        $this->postJson(route('workshop-orders.undo-stock', $entry))->assertUnprocessable();
+        $this->assertSame(9, $product->fresh()->stock_quantity);
+    }
+
     public function test_stock_transfer_syncs_image_to_all_sizes_and_retry_only_updates_image(): void
     {
         $this->actingAs(User::create(['code' => 'img-'.bin2hex(random_bytes(4)), 'name' => 'Test',

@@ -421,18 +421,27 @@
             });
         }
         const stockButton = document.createElement('button'); stockButton.type = 'button'; stockButton.className = 'inline-save';
-        row.querySelector('[data-stock-cell]').appendChild(stockButton);
+        const manualStockButton = document.createElement('button'); manualStockButton.type = 'button'; manualStockButton.className = 'inline-save';
+        manualStockButton.textContent = 'Tự nhập tay vào kho';
+        manualStockButton.title = 'Chỉ bấm khi bạn đã nhập đủ hàng của dòng này trực tiếp tại Kho. Không cộng kho lần nữa, chỉ bỏ phần OD dự kiến.';
+        manualStockButton.style.marginTop = '8px';
+        row.querySelector('[data-stock-cell]').append(stockButton, manualStockButton);
+        let receivingStock = false;
         function updateStockButton() {
-            stockButton.textContent = row.dataset.stocked === '1' ? (customImage ? 'Cập nhật ảnh lên kho' : 'Đã đẩy lên kho') : 'Đẩy lên kho';
-            stockButton.disabled = !row.dataset.stockUrl || (row.dataset.stocked === '1' && !customImage);
+            stockButton.textContent = row.dataset.stocked === '1' ? (customImage ? 'Cập nhật ảnh lên kho' : 'Đã nhập kho') : 'Đẩy lên kho';
+            stockButton.disabled = receivingStock || !row.dataset.stockUrl || (row.dataset.stocked === '1' && !customImage);
+            manualStockButton.disabled = receivingStock || !row.dataset.stockUrl || row.dataset.stocked === '1';
         }
         updateStockButton();
-        stockButton.addEventListener('click', async () => {
-            if (saving || row.classList.contains('has-changes')) { state.textContent = 'Vui lòng chờ tự lưu xong rồi đẩy lên kho.'; return; }
-            stockButton.disabled = true;
+        async function receiveStock(manual) {
+            if (receivingStock) return;
+            if (saving || row.classList.contains('has-changes')) { state.textContent = 'Vui lòng chờ tự lưu xong rồi ghi nhận nhập kho.'; return; }
+            if (manual && !confirm('Bạn đã nhập đủ hàng của dòng này trực tiếp tại Kho? Thao tác này không cộng thêm kho và sẽ bỏ phần OD dự kiến để tránh tính trùng.')) return;
+            receivingStock = true; updateStockButton();
             try {
                 const body = new FormData(); body.append('_token', form.querySelector('[name=_token]').value);
-                const response = await fetch(row.dataset.stockUrl, {method:'POST',body,credentials:'same-origin',headers:{Accept:'application/json'}});
+                const url = manual ? row.dataset.stockUrl.replace(/\/stock$/, '/manual-stock') : row.dataset.stockUrl;
+                const response = await fetch(url, {method:'POST',body,credentials:'same-origin',headers:{Accept:'application/json'}});
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.errors ? Object.values(data.errors).flat().join(' ') : data.message);
                 row.dataset.stocked = '1'; row.querySelector('[name=status]').value = 'da_ve'; colorRow(); state.textContent = data.message;
@@ -440,8 +449,10 @@
                 refreshQuantityEditing();
                 addSize.hidden = true; sizeList.querySelectorAll('input,select,button').forEach(input => input.disabled = true);
             } catch (error) { state.textContent = error.message; state.style.color = '#b42318'; }
-            finally { updateStockButton(); }
-        });
+            finally { receivingStock = false; updateStockButton(); }
+        }
+        stockButton.addEventListener('click', () => receiveStock(false));
+        manualStockButton.addEventListener('click', () => receiveStock(true));
         function changed(event) {
             if (!event.target.matches('input,textarea,select')) return;
             if (event.target === totalQuantity && row.dataset.stocked !== '1' && sizeList.children.length === 1) {
