@@ -58,23 +58,32 @@ class OrderPurchasePlanService
                 $actual = collect($workshop->plannedSizeLines())
                     ->groupBy('product_id')->map(fn ($rows) => (int) $rows->sum('quantity'))->sortKeys()->all();
                 $requested = collect($quantities)->sortKeys()->all();
-                if ($actual !== $requested) {
+                if (collect($requested)->contains(fn ($quantity, $productId) => $quantity > ($actual[$productId] ?? 0))) {
                     $sizeProducts = Product::whereIn('id', array_unique(array_merge(array_keys($actual), array_keys($requested))))->get()->keyBy('id');
                     $differences = [];
                     foreach (array_unique(array_merge(array_keys($actual), array_keys($requested))) as $productId) {
                         $current = $actual[$productId] ?? 0;
                         $submitted = $requested[$productId] ?? 0;
-                        if ($current === $submitted) continue;
+                        if ($submitted <= $current) continue;
                         $size = $sizeProducts->get($productId)?->size ?? '#'.$productId;
                         $differences[] = 'size '.$size.': trong đơn đang chọn '.$submitted.', Đặt hàng hiện có '.$current;
                     }
                     throw ValidationException::withMessages(['items' => 'Không thể lưu mã '.$first->product->code.' vì không khớp dòng Đặt hàng #'.$workshop->id.' ('.implode('; ', $differences).'). Mở Đặt hàng #'.$workshop->id.' để kiểm tra size/số lượng; sau đó chọn lại dòng này trong đơn để lấy số mới. Nếu cần mua thêm riêng, bấm “OD bổ sung đợt mới”.']);
                 }
                 $workshop->customer_order_id = $order->id;
-                if ($workshop->stocked_at && !$workshop->purchase_plan) {
-                    $workshop->purchase_plan = $plan;
-                }
                 $workshop->save();
+                // Đơn chỉ lấy phần cần dùng; không thu nhỏ hoặc đổi kế hoạch OD dự phòng.
+                if (!$workshop->stocked_at) {
+                    foreach ($actual as $productId => $quantity) {
+                        $receipt = ProductExpectedReceipt::firstOrNew(['workshop_order_id' => $workshop->id, 'product_id' => $productId]);
+                        if (!$receipt->received_at) {
+                            $receipt->fill(['expected_receive_date' => $workshop->returned_date ?? $plan['expected_date'],
+                                'expected_receive_quantity' => $quantity])->save();
+                        }
+                    }
+                }
+                $active[] = $workshop->id;
+                continue;
             } else {
                 $workshopQuery = WorkshopOrder::where('customer_order_id', $order->id)
                     ->where('product_code', $first->product->code)->where('supply_source', $first->fulfillment_source);

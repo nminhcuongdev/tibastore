@@ -1703,14 +1703,25 @@
                 }
                 selectedWorkshopId = item.id;
                 supplementKey = null;
-                lines.replaceChildren(); item.lines.forEach(addLine);
+                const demand = new Map();
+                Array.from(block.querySelectorAll('.size-row')).filter(row => !isPendingRow(row)).forEach(row => {
+                    const id = Number(row.querySelector('[data-product-id]').value);
+                    demand.set(id, (demand.get(id) || 0) + Number(row.querySelector('[data-quantity]').value));
+                });
+                const portion = item.lines.map(line => ({product_id:line.product_id,
+                    quantity:Math.min(Number(line.quantity), demand.get(Number(line.product_id)) || 0)})).filter(line => line.quantity > 0);
+                lines.replaceChildren(); (portion.length ? portion : item.lines).forEach(addLine);
                 date.value = item.expected_date || pickupDateInput.value;
+                if (portion.length) {
+                    block.appliedPurchaseLines = portion;
+                    purchaseApplied = true;
+                }
                 savePlan();
-                box.querySelector('[data-apply-purchase]').click();
+                if (!portion.length) box.querySelector('[data-apply-purchase]').click();
                 block.dispatchEvent(new Event('change', {bubbles:true}));
                 const state = box.querySelector('[data-apply-purchase-state]');
-                state.textContent = 'Đã chọn od #' + item.id;
-                state.title = 'Đã lấy size và số lượng từ od #' + item.id + '. Liên kết được lưu cùng đơn, không tạo od mới.';
+                state.textContent = 'Đã chọn od #' + item.id + ' · Có thể dùng ít hơn số OD dự phòng';
+                state.title = 'Giữ số lượng khách thuê bên phải. Phần chọn từ OD được phép ít hơn số đã đặt; số OD dự phòng giữ nguyên.';
             };
             box.querySelector('[data-apply-purchase]').addEventListener('click', () => {
                 const state = box.querySelector('[data-apply-purchase-state]');

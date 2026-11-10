@@ -15,6 +15,42 @@ class OrderSupplyChoiceTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_order_can_use_part_of_reserve_od_without_shrinking_supply(): void
+    {
+        $this->actingAs(User::create(['code' => 'reserve-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $code = 'RESERVE-'.bin2hex(random_bytes(4));
+        $medium = Product::create(['code' => $code, 'name' => 'Test', 'size' => 'M', 'fabric' => '', 'stock_quantity' => 0]);
+        $large = Product::create(['code' => $code, 'name' => 'Test', 'size' => 'L', 'fabric' => '', 'stock_quantity' => 0]);
+        $lines = [['product_id' => $medium->id, 'quantity' => 5], ['product_id' => $large->id, 'quantity' => 4]];
+        $originalPlan = ['expected_date' => '2032-03-01', 'lines' => $lines];
+        $od = WorkshopOrder::create(['product_code' => $code, 'supply_source' => WorkshopOrder::SUPPLY_OUTSIDE,
+            'quantity' => 9, 'status' => WorkshopOrder::STATUS_ORDERED, 'size_quantities' => $lines,
+            'purchase_plan' => $originalPlan, 'returned_date' => '2032-03-01', 'order_name' => 'OD dự phòng']);
+        $data = ['closer_name' => 'Test', 'order_name' => $code,
+            'pickup_date' => '2032-03-03', 'event_date' => '2032-03-04', 'return_date' => '2032-03-05',
+            'source' => Order::DEFAULT_SOURCE, 'region' => 'tinh_mb', 'status' => Order::DEFAULT_STATUS,
+            'items' => [['product_id' => $medium->id, 'quantity' => 2, 'fulfillment_source' => 'mua_ngoai',
+                'purchase_plan' => ['workshop_order_id' => $od->id, 'expected_date' => '2032-03-02',
+                    'lines' => [['product_id' => $medium->id, 'quantity' => 2]]]]]];
+        $id = $this->postJson('/orders', $data)->assertCreated()->json('id');
+        $this->putJson('/orders/'.$id, $data)->assertOk();
+        $this->assertSame(2, (int) Order::findOrFail($id)->items()->sum('quantity'));
+        $this->assertSame(9, $od->fresh()->quantity);
+        $this->assertSame($lines, $od->fresh()->size_quantities);
+        $this->assertSame($originalPlan, $od->fresh()->purchase_plan);
+        $this->assertSame('OD dự phòng', $od->fresh()->order_name);
+        $this->assertSame('2032-03-01', $od->fresh()->returned_date->toDateString());
+        $this->assertSame(9, (int) \App\Models\ProductExpectedReceipt::where('workshop_order_id', $od->id)->sum('expected_receive_quantity'));
+        $available = app(\App\Services\OrderInventoryService::class)->projectedAvailableQuantities(
+            [$medium->id, $large->id], '2032-03-03', '2032-03-05');
+        $this->assertSame(3, $available[$medium->id]);
+        $this->assertSame(4, $available[$large->id]);
+        $data['items'][0]['purchase_plan']['lines'][0]['quantity'] = 6;
+        $this->putJson('/orders/'.$id, $data)->assertUnprocessable()->assertJsonValidationErrors('items');
+        $this->assertSame(9, $od->fresh()->quantity);
+    }
+
     public function test_selecting_existing_od_links_it_without_creating_duplicate_or_changing_status(): void
     {
         $this->actingAs(User::create(['code' => 'adopt-'.bin2hex(random_bytes(4)), 'name' => 'Test',
