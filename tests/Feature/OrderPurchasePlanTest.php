@@ -42,6 +42,20 @@ class OrderPurchasePlanTest extends TestCase
         $this->assertSame(10, $product->fresh()->stock_quantity);
         $this->assertSame(1, WorkshopOrder::where('product_code', $product->code)->count());
         $item = $order->items()->firstOrFail();
+        $mismatchedPlan = $item->purchase_plan;
+        $mismatchedPlan['lines'][0]['quantity'] = 2;
+        $item->update(['purchase_plan' => $mismatchedPlan]);
+        try {
+            $service->sync($order);
+            $this->fail('A changed OD quantity must prevent saving.');
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            $message = $exception->errors()['items'][0];
+            $this->assertStringContainsString($product->code, $message);
+            $this->assertStringContainsString('Đặt hàng #'.$od->id, $message);
+            $this->assertStringContainsString('size CÁI: trong đơn đang chọn 2, Đặt hàng hiện có 1', $message);
+            $this->assertStringContainsString('chọn lại dòng này', $message);
+            $this->assertSame($originalPlan, $od->fresh()->purchase_plan);
+        }
         $item->update(['quantity' => 5, 'purchase_plan' => [
             'supplement_key' => (string) \Illuminate\Support\Str::uuid(),
             'expected_date' => '2032-11-12', 'lines' => $lines,

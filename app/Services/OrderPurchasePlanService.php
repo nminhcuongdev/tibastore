@@ -59,7 +59,16 @@ class OrderPurchasePlanService
                     ->groupBy('product_id')->map(fn ($rows) => (int) $rows->sum('quantity'))->sortKeys()->all();
                 $requested = collect($quantities)->sortKeys()->all();
                 if ($actual !== $requested) {
-                    throw ValidationException::withMessages(['items' => 'Size hoặc số lượng od đã thay đổi. Hãy kiểm tra và chọn lại dòng od.']);
+                    $sizeProducts = Product::whereIn('id', array_unique(array_merge(array_keys($actual), array_keys($requested))))->get()->keyBy('id');
+                    $differences = [];
+                    foreach (array_unique(array_merge(array_keys($actual), array_keys($requested))) as $productId) {
+                        $current = $actual[$productId] ?? 0;
+                        $submitted = $requested[$productId] ?? 0;
+                        if ($current === $submitted) continue;
+                        $size = $sizeProducts->get($productId)?->size ?? '#'.$productId;
+                        $differences[] = 'size '.$size.': trong đơn đang chọn '.$submitted.', Đặt hàng hiện có '.$current;
+                    }
+                    throw ValidationException::withMessages(['items' => 'Không thể lưu mã '.$first->product->code.' vì không khớp dòng Đặt hàng #'.$workshop->id.' ('.implode('; ', $differences).'). Mở Đặt hàng #'.$workshop->id.' để kiểm tra size/số lượng; sau đó chọn lại dòng này trong đơn để lấy số mới. Nếu cần mua thêm riêng, bấm “OD bổ sung đợt mới”.']);
                 }
                 $workshop->customer_order_id = $order->id;
                 if ($workshop->stocked_at && !$workshop->purchase_plan) {
