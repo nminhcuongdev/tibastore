@@ -355,7 +355,8 @@ class WorkshopOrderController extends Controller
         });
         $shortages = app(\App\Services\OrderInventoryService::class)->bookingShortages($workshopOrder->product_code);
         return $request->wantsJson()
-            ? response()->json(['message' => $message, 'booking_shortages' => $shortages])
+            ? response()->json(['message' => $message, 'booking_shortages' => $shortages,
+                'stock_receipt_method' => $workshopOrder->fresh()->stock_receipt_method])
             : back()->with('status', $message)->with('booking_shortages', $shortages);
     }
 

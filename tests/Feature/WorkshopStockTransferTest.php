@@ -52,12 +52,14 @@ class WorkshopStockTransferTest extends TestCase
         $this->assertSame(16, $available());
         $this->get('/workshop-orders?supply_source=mua_ngoai')->assertOk()->assertSee('Tự nhập tay vào kho');
         $url = route('workshop-orders.manual-stock', $item);
-        $this->postJson($url)->assertOk();
+        $this->postJson($url)->assertOk()->assertJsonPath('stock_receipt_method', 'manual');
         $this->assertSame(9, $available());
         $this->assertSame(9, $product->fresh()->stock_quantity);
         $this->assertNotNull($receipt->fresh()->received_at);
         $this->assertNotNull($item->fresh()->stocked_at);
         $this->assertSame('manual', $item->fresh()->stock_receipt_method);
+        $this->get(route('workshop-orders.index', ['focus' => $item->id]))->assertOk()
+            ->assertSee('data-receipt-method="manual"', false)->assertSee('✓ Đã tự nhập tay vào kho');
         $this->assertSame(WorkshopOrder::STATUS_ARRIVED, $item->fresh()->status);
         $this->postJson($url)->assertOk();
         $this->postJson(route('workshop-orders.stock', $item))->assertOk();
@@ -110,7 +112,9 @@ class WorkshopStockTransferTest extends TestCase
         $od = WorkshopOrder::where('product_code', $code)->firstOrFail();
         $this->assertSame('M: 2, L: 3', $od->size_note);
         $this->get('/workshop-orders?supply_source=mua_ngoai')->assertOk()->assertSee('Đẩy lên kho')->assertSee('data-stock-cell', false);
-        $this->postJson('/workshop-orders/'.$od->id.'/stock')->assertOk();
+        $this->postJson('/workshop-orders/'.$od->id.'/stock')->assertOk()->assertJsonPath('stock_receipt_method', 'pushed');
+        $this->get(route('workshop-orders.index', ['focus' => $od->id]))->assertOk()
+            ->assertSee('data-receipt-method="pushed"', false)->assertSee('✓ Đã đẩy lên kho');
         $this->assertSame(12, $m->fresh()->stock_quantity);
         $this->assertSame(8, $l->fresh()->stock_quantity);
         $this->assertNotNull($od->fresh()->stocked_at);

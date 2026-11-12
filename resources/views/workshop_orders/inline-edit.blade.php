@@ -427,10 +427,22 @@
         manualStockButton.textContent = 'Tự nhập tay vào kho';
         manualStockButton.title = 'Chỉ bấm khi bạn đã nhập đủ hàng của dòng này trực tiếp tại Kho. Không cộng kho lần nữa, chỉ bỏ phần OD dự kiến.';
         manualStockButton.style.marginTop = '8px';
-        row.querySelector('[data-stock-cell]').append(stockButton, manualStockButton);
+        const stockCell = row.querySelector('[data-stock-cell]');
+        let receiptBadge = stockCell.querySelector('[data-receipt-badge]');
+        if (!receiptBadge) {
+            receiptBadge = document.createElement('div'); receiptBadge.dataset.receiptBadge = '';
+            receiptBadge.style.cssText = 'margin-bottom:8px;padding:7px;border-radius:6px;background:#e6f4ea;color:#185b32;font-weight:700';
+            stockCell.appendChild(receiptBadge);
+        }
+        stockCell.append(stockButton, manualStockButton);
         let receivingStock = false;
         function updateStockButton() {
-            stockButton.textContent = row.dataset.stocked === '1' ? (customImage ? 'Cập nhật ảnh lên kho' : 'Đã nhập kho') : 'Đẩy lên kho';
+            const stocked = row.dataset.stocked === '1', method = stockCell.dataset.receiptMethod;
+            receiptBadge.hidden = !stocked;
+            receiptBadge.textContent = method === 'manual' ? '✓ Đã tự nhập tay vào kho'
+                : (method === 'pushed' ? '✓ Đã đẩy lên kho' : 'Đã nhập kho — chưa rõ cách nhập');
+            stockButton.textContent = stocked ? (customImage ? 'Cập nhật ảnh lên kho' : (method === 'pushed' ? '✓ Đã đẩy lên kho' : 'Đã nhập kho')) : 'Đẩy lên kho';
+            manualStockButton.textContent = stocked && method === 'manual' ? '✓ Đã tự nhập tay vào kho' : 'Tự nhập tay vào kho';
             stockButton.disabled = receivingStock || !row.dataset.stockUrl || (row.dataset.stocked === '1' && !customImage);
             manualStockButton.disabled = receivingStock || !row.dataset.stockUrl || row.dataset.stocked === '1';
         }
@@ -445,6 +457,7 @@
                 const body = new FormData(); body.append('_token', form.querySelector('[name=_token]').value);
                 const url = manual ? row.dataset.stockUrl.replace(/\/stock$/, '/manual-stock') : row.dataset.stockUrl;
                 const data = await sendSaveRequest(url, {method:'POST',body,credentials:'same-origin',headers:{Accept:'application/json'}});
+                stockCell.dataset.receiptMethod = data.stock_receipt_method || '';
                 row.dataset.stocked = '1'; row.querySelector('[name=status]').value = 'da_ve'; colorRow(); state.textContent = data.message;
                 showBookingShortages(state.parentElement, data.booking_shortages);
                 refreshQuantityEditing();

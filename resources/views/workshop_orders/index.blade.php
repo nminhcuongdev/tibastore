@@ -462,7 +462,13 @@
                                     <button class="danger" type="submit">Xóa dòng</button>
                                 </form>
                         </td>
-                        <td data-stock-cell></td>
+                        <td data-stock-cell data-receipt-method="{{ $item->stock_receipt_method }}">
+                            <div data-receipt-badge @if(!$item->stocked_at) hidden @endif style="margin-bottom:8px;padding:7px;border-radius:6px;background:#e6f4ea;color:#185b32;font-weight:700">
+                                @if($item->stocked_at)
+                                    {{ $item->stock_receipt_method === 'manual' ? '✓ Đã tự nhập tay vào kho' : ($item->stock_receipt_method === 'pushed' ? '✓ Đã đẩy lên kho' : 'Đã nhập kho — chưa rõ cách nhập') }}
+                                @endif
+                            </div>
+                        </td>
                     </tr>
                 @empty
                     <tr>
