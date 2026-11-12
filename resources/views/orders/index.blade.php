@@ -795,6 +795,14 @@
                         </div>
                     </div>
                     <div class="filter-field">
+                        <label for="dispatch_from">Ngày đi đơn từ</label>
+                        <input id="dispatch_from" name="dispatch_from" type="date" value="{{ $filters['dispatch_from'] }}">
+                    </div>
+                    <div class="filter-field">
+                        <label for="dispatch_to">Ngày đi đơn đến</label>
+                        <input id="dispatch_to" name="dispatch_to" type="date" value="{{ $filters['dispatch_to'] }}">
+                    </div>
+                    <div class="filter-field">
                         <label for="pickup_from">Ngày lấy từ</label>
                         <input id="pickup_from" name="pickup_from" type="date" value="{{ $filters['pickup_from'] }}">
                     </div>
@@ -817,6 +825,14 @@
                     <div class="filter-field">
                         <label for="return_to">Ngày trả đến</label>
                         <input id="return_to" name="return_to" type="date" value="{{ $filters['return_to'] }}">
+                    </div>
+                    <div class="filter-field">
+                        <label for="actual_return_from">Ngày trả về TT từ</label>
+                        <input id="actual_return_from" name="actual_return_from" type="date" value="{{ $filters['actual_return_from'] }}">
+                    </div>
+                    <div class="filter-field">
+                        <label for="actual_return_to">Ngày trả về TT đến</label>
+                        <input id="actual_return_to" name="actual_return_to" type="date" value="{{ $filters['actual_return_to'] }}">
                     </div>
                 </div>
                 <input type="hidden" name="sort" value="{{ $sort }}">

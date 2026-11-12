@@ -109,6 +109,10 @@ class OrderController extends Controller
         // Loc theo so tien con lai: '' = tat ca, 'positive' = con no (> 0),
         // 'negative' = so am, 'nonzero' = khac 0, 'zero' = bang 0.
         $remaining = (string) $request->query('remaining', '');
+        $dispatchFrom = $this->filterDate($request->query('dispatch_from'));
+        $dispatchTo = $this->filterDate($request->query('dispatch_to'));
+        $actualReturnFrom = $this->filterDate($request->query('actual_return_from'));
+        $actualReturnTo = $this->filterDate($request->query('actual_return_to'));
         $pickupFrom = $this->filterDate($request->query('pickup_from'));
         $pickupTo = $this->filterDate($request->query('pickup_to'));
         $eventFrom = $this->filterDate($request->query('event_from'));
@@ -171,6 +175,10 @@ class OrderController extends Controller
                     default => '<> 0',
                 });
             })
+            ->when($dispatchFrom, fn ($builder) => $builder->whereDate('orders.dispatch_date', '>=', $dispatchFrom))
+            ->when($dispatchTo, fn ($builder) => $builder->whereDate('orders.dispatch_date', '<=', $dispatchTo))
+            ->when($actualReturnFrom, fn ($builder) => $builder->whereDate('orders.actual_return_date', '>=', $actualReturnFrom))
+            ->when($actualReturnTo, fn ($builder) => $builder->whereDate('orders.actual_return_date', '<=', $actualReturnTo))
             ->when($pickupFrom, fn ($builder) => $builder->whereDate('orders.pickup_date', '>=', $pickupFrom))
             ->when($pickupTo, fn ($builder) => $builder->whereDate('orders.pickup_date', '<=', $pickupTo))
             ->when($eventFrom, fn ($builder) => $builder->whereDate('orders.event_date', '>=', $eventFrom))
@@ -259,6 +267,10 @@ class OrderController extends Controller
                 'address' => $address,
                 'carrier' => $carrier,
                 'remaining' => $remaining,
+                'dispatch_from' => $dispatchFrom,
+                'dispatch_to' => $dispatchTo,
+                'actual_return_from' => $actualReturnFrom,
+                'actual_return_to' => $actualReturnTo,
                 'pickup_from' => $pickupFrom,
                 'pickup_to' => $pickupTo,
                 'event_from' => $eventFrom,
