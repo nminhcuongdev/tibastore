@@ -13,6 +13,29 @@ class WorkshopStockTransferTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_receipt_filters_distinguish_pending_push_manual_and_unknown_history(): void
+    {
+        $this->actingAs(User::create(['code' => 'receipt-filter-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $code = 'RECEIPT-'.bin2hex(random_bytes(4));
+        $orders = collect();
+        foreach ([null, 'pushed', 'manual', null] as $index => $method) {
+            $orders->push(WorkshopOrder::create(['product_code' => $code, 'supply_source' => WorkshopOrder::SUPPLY_OUTSIDE,
+                'quantity' => $index + 1, 'unit_price' => 1000,
+                'status' => $index === 0 ? WorkshopOrder::STATUS_NOT_YET : WorkshopOrder::STATUS_ARRIVED,
+                'stocked_at' => $index === 0 ? null : now(), 'stock_receipt_method' => $method]));
+        }
+        foreach (['pending' => [0], 'received' => [1,2,3], 'pushed' => [1], 'manual' => [2], 'unknown' => [3]] as $filter => $indices) {
+            $expected = collect($indices)->map(fn ($index) => $orders[$index]->id)->sort()->values()->all();
+            $quantity = collect($indices)->sum(fn ($index) => $orders[$index]->quantity);
+            $this->get(route('workshop-orders.index', ['q' => $code, 'supply_source' => WorkshopOrder::SUPPLY_OUTSIDE, 'stock_receipt' => $filter]))
+                ->assertOk()->assertSee('Đã tự nhập tay vào kho')
+                ->assertViewHas('orders', fn ($rows) => $rows->pluck('id')->sort()->values()->all() === $expected)
+                ->assertViewHas('quantityTotal', $quantity)->assertViewHas('amountTotal', $quantity * 1000)
+                ->assertViewHas('stockReceipt', $filter);
+        }
+    }
+
     public function test_manual_stock_acknowledgement_removes_forecast_without_adding_stock(): void
     {
         $this->actingAs(User::create(['code' => 'manual-'.bin2hex(random_bytes(4)), 'name' => 'Test',
@@ -34,9 +57,11 @@ class WorkshopStockTransferTest extends TestCase
         $this->assertSame(9, $product->fresh()->stock_quantity);
         $this->assertNotNull($receipt->fresh()->received_at);
         $this->assertNotNull($item->fresh()->stocked_at);
+        $this->assertSame('manual', $item->fresh()->stock_receipt_method);
         $this->assertSame(WorkshopOrder::STATUS_ARRIVED, $item->fresh()->status);
         $this->postJson($url)->assertOk();
         $this->postJson(route('workshop-orders.stock', $item))->assertOk();
+        $this->assertSame('manual', $item->fresh()->stock_receipt_method);
         $this->assertSame(9, $product->fresh()->stock_quantity);
         $this->assertSame(0, StockImportHistory::where('product_id', $product->id)->count());
         $entry = \App\Models\WorkshopStockTransfer::where('workshop_order_id', $item->id)->sole();
@@ -89,6 +114,7 @@ class WorkshopStockTransferTest extends TestCase
         $this->assertSame(12, $m->fresh()->stock_quantity);
         $this->assertSame(8, $l->fresh()->stock_quantity);
         $this->assertNotNull($od->fresh()->stocked_at);
+        $this->assertSame('pushed', $od->fresh()->stock_receipt_method);
         $this->assertSame(WorkshopOrder::STATUS_ARRIVED, $od->fresh()->status);
         $this->postJson('/workshop-orders/'.$od->id.'/stock')->assertOk();
         $this->assertSame(12, $m->fresh()->stock_quantity);
@@ -102,6 +128,7 @@ class WorkshopStockTransferTest extends TestCase
         $this->assertSame(10, $m->fresh()->stock_quantity);
         $this->assertSame(5, $l->fresh()->stock_quantity);
         $this->assertNull($od->fresh()->stocked_at);
+        $this->assertNull($od->fresh()->stock_receipt_method);
         $this->assertNotNull($entry->fresh()->undone_at);
         $this->postJson(route('workshop-orders.undo-stock', $entry))->assertOk();
         $this->assertSame(10, $m->fresh()->stock_quantity);

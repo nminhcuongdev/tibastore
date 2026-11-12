@@ -275,6 +275,14 @@
             </select>
         </div>
         <div class="field">
+            <label for="stock_receipt">Nhập kho</label>
+            <select id="stock_receipt" name="stock_receipt">
+                @foreach(['' => 'Tất cả', 'pending' => 'Chưa nhập kho', 'received' => 'Đã nhập kho (tất cả)', 'pushed' => 'Đã đẩy lên kho', 'manual' => 'Đã tự nhập tay vào kho', 'unknown' => 'Đã nhập kho — chưa rõ cách nhập'] as $value => $label)
+                    <option value="{{ $value }}" @selected($stockReceipt === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="field">
             <label for="source">Tên nhà cung cấp</label>
             <input id="source" name="source" type="search" value="{{ $source }}" placeholder="VD: Huyền Trang">
         </div>

@@ -37,6 +37,7 @@ class WorkshopOrderController extends Controller
         $focusedIds = $focusedOrder ? [$focusedOrder->id] : [];
         if ($showDuplicates) $focusedIds = array_merge($focusedIds, $duplicateRows[$focusedOrder->id] ?? []);
         $status = (string) $request->query('status', '');
+        $stockReceipt = (string) $request->query('stock_receipt', '');
         $source = trim((string) $request->query('source', ''));
         $defaultSupplySource = $request->cookie(self::DEFAULT_SOURCE_COOKIE);
         if (! array_key_exists($defaultSupplySource ?? '', WorkshopOrder::supplySources())) {
@@ -70,6 +71,12 @@ class WorkshopOrderController extends Controller
             })
             ->when(array_key_exists($status, WorkshopOrder::statuses()),
                 fn ($builder) => $builder->where('status', $status))
+            ->when($stockReceipt === 'pending', fn ($builder) => $builder->whereNull('stocked_at'))
+            ->when($stockReceipt === 'received', fn ($builder) => $builder->whereNotNull('stocked_at'))
+            ->when(in_array($stockReceipt, ['pushed', 'manual'], true),
+                fn ($builder) => $builder->whereNotNull('stocked_at')->where('stock_receipt_method', $stockReceipt))
+            ->when($stockReceipt === 'unknown',
+                fn ($builder) => $builder->whereNotNull('stocked_at')->whereNull('stock_receipt_method'))
             ->when($source !== '', fn ($builder) => $builder->where('source', 'like', "%{$source}%"))
             ->when(!$showDuplicates, fn ($builder) => $builder->where('supply_source', $supplySource))
             ->when($buyer !== '', fn ($builder) => $builder->where('buyer', 'like', "%{$buyer}%"))
@@ -106,6 +113,7 @@ class WorkshopOrderController extends Controller
             'query' => $query,
             'productCodes' => $this->productCodes(),
             'status' => $status,
+            'stockReceipt' => $stockReceipt,
             'source' => $source,
             'buyer' => $buyer,
             'orderedFrom' => $orderedFrom,
@@ -323,7 +331,8 @@ class WorkshopOrderController extends Controller
                 'supply_source' => $item->supply_source, 'order_name' => $item->order_name, 'supplier' => $item->source,
                 'previous_status' => $item->status, 'lines' => $snapshot, 'user_id' => $request->user()->id,
                 'transferred_at' => $transferredAt, 'can_undo' => !empty($snapshot)]);
-            $item->update(['stocked_at' => $transferredAt, 'status' => WorkshopOrder::STATUS_ARRIVED]);
+            $item->update(['stocked_at' => $transferredAt, 'status' => WorkshopOrder::STATUS_ARRIVED,
+                'stock_receipt_method' => $manual ? 'manual' : 'pushed']);
             if ($manual) return 'Đã ghi nhận bạn tự nhập tay vào kho. Không cộng thêm tồn kho; đã bỏ phần OD này khỏi hàng dự kiến.';
             return $item->image_path ? 'Đã cộng số lượng từng size và cập nhật ảnh vào kho.' : 'Đã cộng số lượng từng size vào kho.';
         });
@@ -353,7 +362,7 @@ class WorkshopOrderController extends Controller
             if ($order) {
                 \App\Models\ProductExpectedReceipt::where('workshop_order_id', $entry->workshop_order_id)
                     ->whereIn('product_id', $quantities->keys())->update(['received_at' => null]);
-                $order->update(['stocked_at' => null, 'status' => $entry->previous_status === WorkshopOrder::STATUS_ARRIVED
+                $order->update(['stocked_at' => null, 'stock_receipt_method' => null, 'status' => $entry->previous_status === WorkshopOrder::STATUS_ARRIVED
                     ? WorkshopOrder::STATUS_ORDERED : $entry->previous_status]);
             }
             $entry->update(['undone_at' => now(), 'undone_by' => $request->user()->id]);

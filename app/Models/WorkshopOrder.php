@@ -32,6 +32,7 @@ class WorkshopOrder extends Model
         'purchase_plan',
         'size_quantities',
         'stocked_at',
+        'stock_receipt_method',
         'image_path',
         'supply_source',
         'size_note',
