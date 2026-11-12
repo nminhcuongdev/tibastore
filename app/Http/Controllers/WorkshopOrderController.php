@@ -27,11 +27,25 @@ class WorkshopOrderController extends Controller
             ->withCookie(cookie()->forever(self::DEFAULT_SOURCE_COOKIE, $data['supply_source']));
     }
 
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
         $query = trim((string) $request->query('q', ''));
         $focusedOrder = $request->integer('focus') > 0
             ? WorkshopOrder::find($request->integer('focus')) : null;
+        $receiptQueue = $request->boolean('receipt_queue');
+        $receiptQueueNextUrl = null;
+        $receiptQueueCount = 0;
+        if ($receiptQueue) {
+            $queue = app(\App\Services\StockReceiptReminderService::class)->reminders()['workshop'];
+            if ($queue->isEmpty()) return redirect()->route('workshop-orders.index', ['receipt_done' => 1]);
+            if (!$focusedOrder || !$queue->contains('id', $focusedOrder->id)) $focusedOrder = $queue->first();
+            $receiptQueueCount = $queue->count();
+            $position = $queue->search(fn ($item) => $item->id === $focusedOrder->id);
+            $next = $queue->slice($position + 1)->concat($queue->slice(0, $position))->first();
+            $receiptQueueNextUrl = $next
+                ? route('workshop-orders.index', ['focus' => $next->id, 'receipt_queue' => 1]).'#workshop-row-'.$next->id
+                : route('workshop-orders.index', ['receipt_done' => 1]);
+        }
         $duplicateRows = app(\App\Services\WorkshopDuplicateService::class)->duplicates();
         $showDuplicates = $focusedOrder && $request->boolean('duplicates');
         $focusedIds = $focusedOrder ? [$focusedOrder->id] : [];
@@ -105,6 +119,9 @@ class WorkshopOrderController extends Controller
             'duplicateRows' => $duplicateRows,
             'defaultSupplySource' => $defaultSupplySource,
             'focusedOrder' => $focusedOrder,
+            'receiptQueue' => $receiptQueue,
+            'receiptQueueNextUrl' => $receiptQueueNextUrl,
+            'receiptQueueCount' => $receiptQueueCount,
             'quantityTotal' => (int) ($totals->quantity_total ?? 0),
             'amountTotal' => (int) ($totals->amount_total ?? 0),
             'statuses' => WorkshopOrder::statuses(),

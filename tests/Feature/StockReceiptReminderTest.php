@@ -16,6 +16,38 @@ class StockReceiptReminderTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_receipt_queue_moves_between_sources_and_skips_already_received_rows(): void
+    {
+        $this->actingAs(User::create(['code' => 'queue-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $this->travelTo(Carbon::parse('2036-01-10 12:00:00', 'Asia/Ho_Chi_Minh'));
+        try {
+            $product = Product::create(['code' => 'QUEUE-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+                'fabric' => '', 'size' => 'M', 'stock_quantity' => 0]);
+            $first = WorkshopOrder::create(['product_code' => $product->code, 'quantity' => 2,
+                'supply_source' => WorkshopOrder::SUPPLY_WORKSHOP, 'status' => WorkshopOrder::STATUS_ORDERED,
+                'returned_date' => '2036-01-09', 'size_quantities' => [['product_id' => $product->id, 'quantity' => 2]]]);
+            $second = WorkshopOrder::create(['product_code' => $product->code, 'quantity' => 3,
+                'supply_source' => WorkshopOrder::SUPPLY_OUTSIDE, 'status' => WorkshopOrder::STATUS_ORDERED,
+                'returned_date' => '2036-01-10', 'size_quantities' => [['product_id' => $product->id, 'quantity' => 3]]]);
+            $firstUrl = route('workshop-orders.index', ['focus' => $first->id, 'receipt_queue' => 1]);
+            $secondUrl = route('workshop-orders.index', ['focus' => $second->id, 'receipt_queue' => 1]);
+            $this->get($firstUrl)->assertOk()->assertSee('Enter để lưu')
+                ->assertViewHas('focusedOrder', fn ($row) => $row->id === $first->id)
+                ->assertViewHas('supplySource', WorkshopOrder::SUPPLY_WORKSHOP)
+                ->assertViewHas('receiptQueueNextUrl', $secondUrl.'#workshop-row-'.$second->id);
+            $this->assertSame(0, $product->fresh()->stock_quantity);
+            $this->postJson(route('workshop-orders.stock', $first))->assertOk();
+            $this->get($firstUrl)->assertOk()
+                ->assertViewHas('focusedOrder', fn ($row) => $row->id === $second->id)
+                ->assertViewHas('supplySource', WorkshopOrder::SUPPLY_OUTSIDE)
+                ->assertViewHas('receiptQueueNextUrl', route('workshop-orders.index', ['receipt_done' => 1]));
+            $this->postJson(route('workshop-orders.manual-stock', $second))->assertOk();
+            $this->assertSame(2, $product->fresh()->stock_quantity);
+            $this->get($secondUrl)->assertRedirect(route('workshop-orders.index', ['receipt_done' => 1]));
+        } finally { $this->travelBack(); }
+    }
+
     public function test_due_and_arrived_goods_are_reminded_until_explicit_stock_transfer(): void
     {
         $this->actingAs(User::create(['code' => 'receipt-'.bin2hex(random_bytes(4)), 'name' => 'Test',

@@ -354,6 +354,15 @@
             <a href="{{ route('workshop-orders.index', ['supply_source' => $supplySource]) }}">Xem tất cả đặt hàng</a>
         </p>
     @endif
+    @if ($receiptQueue)
+        <div class="status" role="status" data-receipt-queue>
+            Còn {{ $receiptQueueCount }} mã cần xử lý. Kiểm size và nhập số thực nhận; nhấn Enter để lưu, đẩy lên kho và chuyển mã tiếp theo.
+            <a href="{{ $receiptQueueCount > 1 ? $receiptQueueNextUrl : route('workshop-orders.index', ['supply_source' => $supplySource]) }}">Bỏ qua mã này / Hàng chưa về</a>
+            <a href="{{ route('workshop-orders.index', ['supply_source' => $supplySource]) }}">Thoát nhập lần lượt</a>
+        </div>
+    @elseif(request()->boolean('receipt_done'))
+        <div class="status" role="status">Đã xử lý hết danh sách nhập kho hiện tại.</div>
+    @endif
     <div class="workshop-add-row-actions"><button type="button" data-add-inline-row>+ Thêm dòng sản phẩm</button></div>
 
     <div class="table-shell">

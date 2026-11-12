@@ -17,6 +17,9 @@
         <button type="button" class="button secondary" data-close-stock-reminders aria-label="Đóng nhắc nhập kho">×</button>
     </div>
     <div class="stock-reminder-list">
+        @if($receiptReminders['workshop']->isNotEmpty())
+            <a class="button" href="{{ route('workshop-orders.index', ['focus' => $receiptReminders['workshop']->first()->id, 'receipt_queue' => 1]) }}">Nhập kho lần lượt — Enter để lưu và sang mã tiếp</a>
+        @endif
         @foreach ($receiptReminders['workshop'] as $receiptItem)
             <article class="stock-reminder-item">
                 <strong>{{ $receiptItem->product_code }}{{ $receiptItem->order_name ? ' — '.$receiptItem->order_name : '' }}</strong>
@@ -24,7 +27,7 @@
                 <p>{{ $receiptItem->supplySourceLabel() }} · {{ $receiptItem->statusLabel() }} · Số lượng: {{ $receiptItem->quantity }}</p>
                 @if ($receiptItem->size_note)<p>Size: {{ $receiptItem->size_note }}</p>@endif
                 @if ($receiptItem->source)<p>Nhà cung cấp: {{ $receiptItem->source }}</p>@endif
-                <a class="button secondary" href="{{ route('workshop-orders.index', ['focus' => $receiptItem->id]) }}#workshop-row-{{ $receiptItem->id }}">Đến dòng đặt hàng để nhập kho</a>
+                <a class="button secondary" href="{{ route('workshop-orders.index', ['focus' => $receiptItem->id, 'receipt_queue' => 1]) }}#workshop-row-{{ $receiptItem->id }}">Đến dòng đặt hàng để nhập kho</a>
             </article>
         @endforeach
         @foreach ($receiptReminders['manual'] as $receiptItem)
@@ -46,7 +49,7 @@
     popup.querySelector('[data-close-stock-reminders]').addEventListener('click', () => popup.close());
     popup.addEventListener('close', () => button.focus());
     const dueOrders = @json($receiptReminders['workshop']->pluck('id')->values());
-    if (dueOrders.length) window.addEventListener('load', () => {
+    if (dueOrders.length && !@json(request()->boolean('receipt_queue')) && !@json(request()->boolean('receipt_done'))) window.addEventListener('load', () => {
         const key = 'workshop-arrival:' + @json($receiptReminders['today']);
         if (document.querySelector('dialog[open]')) return;
         try {

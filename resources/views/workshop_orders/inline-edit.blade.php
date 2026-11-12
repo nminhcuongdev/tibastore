@@ -2,6 +2,7 @@
 <script>
 (function () {
     @include('partials.save-feedback')
+    @include('workshop_orders.receipt-queue-save')
     const catalog = @json($productCodes);
     const format = value => Number(value || 0).toLocaleString('vi-VN');
     function editableLink(input, getUrl, editLabel) {
@@ -327,7 +328,7 @@
                 finally { submit.disabled = false; cancel.disabled = false; }
             });
         });
-        let saveTimer, saving = false, revision = 0;
+        let saveTimer, saving = false, revision = 0, savePromise = null;
         function scheduleSave() {
             revision++;
             clearTimeout(saveTimer);
@@ -439,21 +440,38 @@
             if (saving || row.classList.contains('has-changes')) { state.textContent = 'Vui lòng chờ tự lưu xong rồi ghi nhận nhập kho.'; return; }
             if (manual && !confirm('Bạn đã nhập đủ hàng của dòng này trực tiếp tại Kho? Thao tác này không cộng thêm kho và sẽ bỏ phần OD dự kiến để tránh tính trùng.')) return;
             receivingStock = true; updateStockButton();
+            if (@json($receiptQueue ?? false)) row.inert = true;
             try {
                 const body = new FormData(); body.append('_token', form.querySelector('[name=_token]').value);
                 const url = manual ? row.dataset.stockUrl.replace(/\/stock$/, '/manual-stock') : row.dataset.stockUrl;
-                const response = await fetch(url, {method:'POST',body,credentials:'same-origin',headers:{Accept:'application/json'}});
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.errors ? Object.values(data.errors).flat().join(' ') : data.message);
+                const data = await sendSaveRequest(url, {method:'POST',body,credentials:'same-origin',headers:{Accept:'application/json'}});
                 row.dataset.stocked = '1'; row.querySelector('[name=status]').value = 'da_ve'; colorRow(); state.textContent = data.message;
                 showBookingShortages(state.parentElement, data.booking_shortages);
                 refreshQuantityEditing();
                 addSize.hidden = true; sizeList.querySelectorAll('input,select,button').forEach(input => input.disabled = true);
+                if (@json($receiptQueue ?? false)) window.location.assign(@json($receiptQueueNextUrl ?? null));
             } catch (error) { state.textContent = error.message; state.style.color = '#b42318'; }
-            finally { receivingStock = false; updateStockButton(); }
+            finally { row.inert = false; receivingStock = false; updateStockButton(); }
         }
         stockButton.addEventListener('click', () => receiveStock(false));
         manualStockButton.addEventListener('click', () => receiveStock(true));
+        if (@json($receiptQueue ?? false) && String(row.dataset.orderId) === String(@json($focusedOrder?->id))) {
+            let queueBusy = false;
+            row.addEventListener('keydown', async event => {
+                if (event.key !== 'Enter' || event.isComposing || event.target.tagName !== 'INPUT' || event.target.type === 'file') return;
+                event.preventDefault(); event.stopPropagation();
+                if (queueBusy || receivingStock) return;
+                queueBusy = true; clearTimeout(saveTimer);
+                try {
+                    await saveReceiptQueueRow(saveRow, () => row.classList.contains('has-changes'), () => receiveStock(false));
+                } finally { queueBusy = false; }
+            });
+            requestAnimationFrame(() => {
+                row.scrollIntoView({block:'center'});
+                const input = sizeList.querySelector('input:not(:disabled)') || row.querySelector('[name=size_note]');
+                input?.focus({preventScroll:true}); input?.select();
+            });
+        }
         function changed(event) {
             if (!event.target.matches('input,textarea,select')) return;
             if (event.target === totalQuantity && row.dataset.stocked !== '1' && sizeList.children.length === 1) {
@@ -469,7 +487,12 @@
         }
         row.addEventListener('input', changed); row.addEventListener('change', changed);
         form.addEventListener('submit', event => { event.preventDefault(); clearTimeout(saveTimer); saveRow(); });
-        async function saveRow() {
+        function saveRow() {
+            if (savePromise) return savePromise;
+            savePromise = performSaveRow().finally(() => { savePromise = null; });
+            return savePromise;
+        }
+        async function performSaveRow() {
             if (saving || !row.isConnected || !row.classList.contains('has-changes')) return;
             const invalid = Array.from(new Set([...form.querySelectorAll('input,select,textarea'), ...sizeList.querySelectorAll('input,select')])).find(input => !input.disabled && !input.checkValidity());
             if (invalid) { state.textContent = 'Chưa lưu: ' + saveInputError(invalid); state.style.color = '#b42318'; return; }
