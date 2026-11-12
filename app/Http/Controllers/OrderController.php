@@ -481,6 +481,20 @@ class OrderController extends Controller
         // Don cu co the dang dung ma da ngung; van phai nap de giu nguyen dong hang
         // dang co, chi la khong chon them duoc ma ngung dung nao khac.
         $usedProductIds = $order->items->pluck('product_id')->filter()->unique()->all();
+        $repairHint = null;
+        $repairProductId = request()->integer('repair_product');
+        $repairLines = $order->items->where('product_id', $repairProductId)->where('size_pending', false);
+        if ($repairProductId && $repairLines->isNotEmpty() && ($repairProduct = $repairLines->first()->product)) {
+            $required = max(0, (int) $repairLines->sum('quantity') - (int) $repairLines->sum('stock_held'));
+            $available = (int) $repairProduct->stock_quantity;
+            $missing = max(0, $required - $available);
+            $repairHint = ['product_id' => $repairProductId,
+                'message' => 'Mã '.$repairProduct->code.' — size '.$repairProduct->size.': cần xuất thêm '.$required.', kho thực tế còn '.$available.'. '
+                    .($missing > 0 ? 'Thiếu '.$missing.'. Chọn size thực tế sẽ giao hoặc giảm số lượng nếu đơn khách đã thay đổi. Nếu hàng đã về, cập nhật Kho. '
+                        : 'Hiện kho đã đủ cho size này. ')
+                    .'Chờ đơn lưu xong rồi quay lại đổi trạng thái.',
+                'warehouse_url' => route('products.show', $repairProduct)];
+        }
 
         $products = Product::with('expectedReceipts')
             ->where(fn ($builder) => $builder->active()->orWhereIn('products.id', $usedProductIds))
@@ -496,6 +510,7 @@ class OrderController extends Controller
             'statuses' => Order::statuses(),
             'sources' => Order::sources(),
             'mode' => 'edit',
+            'repairHint' => $repairHint,
         ]);
     }
 

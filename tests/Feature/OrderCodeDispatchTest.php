@@ -36,7 +36,14 @@ class OrderCodeDispatchTest extends TestCase
         $this->assertSame(3, $large->fresh()->stock_quantity);
         $this->assertSame(0, $medium->fresh()->stock_quantity);
         $this->assertSame(0, (int) $order->items()->sum('stock_held'));
-        $this->get($editUrl)->assertOk()->assertSee('repair_product');
+        $this->get($editUrl)->assertOk()->assertSee('Cần sửa / kiểm tra tại dòng này')
+            ->assertViewHas('repairHint', fn ($hint) => $hint['product_id'] === $medium->id
+                && str_contains($hint['message'], 'cần xuất thêm 2, kho thực tế còn 0')
+                && str_contains($hint['message'], 'Thiếu 2')
+                && $hint['warehouse_url'] === route('products.show', $medium));
+        $medium->update(['stock_quantity' => 2]);
+        $this->get($editUrl)->assertOk()->assertViewHas('repairHint', fn ($hint) => str_contains($hint['message'], 'Hiện kho đã đủ'));
+        $this->get(route('orders.edit', $order))->assertOk()->assertViewHas('repairHint', null);
     }
 
     public function test_early_dispatch_updates_only_that_code_and_whole_order_dispatch_does_not_charge_it_twice(): void

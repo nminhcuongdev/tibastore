@@ -2391,10 +2391,20 @@
         }
 
         const repairProduct = new URLSearchParams(window.location.search).get('repair_product');
+        const repairHint = @json($repairHint ?? null);
         if (repairProduct) {
             const repairRow = Array.from(itemsContainer.querySelectorAll('.size-row')).find(row => row.querySelector('[data-product-id]').value === repairProduct);
             if (repairRow) {
                 repairRow.style.outline = '2px solid #b42318'; repairRow.style.outlineOffset = '4px';
+                if (repairHint && String(repairHint.product_id) === repairProduct) {
+                    const hint = document.createElement('div'); hint.setAttribute('role', 'note'); hint.dataset.repairHint = '';
+                    hint.style.cssText = 'grid-column:1/-1;padding:10px 12px;border:1px solid #e7b2b2;border-radius:8px;background:#fff1ed;color:#9b261b;font-size:14px;line-height:1.5';
+                    const title = document.createElement('strong'); title.textContent = 'Cần sửa / kiểm tra tại dòng này';
+                    const message = document.createElement('div'); message.textContent = repairHint.message;
+                    const link = document.createElement('a'); link.href = repairHint.warehouse_url; link.target = '_blank'; link.rel = 'noopener';
+                    link.textContent = 'Mở Kho để đối chiếu'; link.style.textDecoration = 'underline';
+                    hint.append(title, message, link); repairRow.appendChild(hint);
+                }
                 requestAnimationFrame(() => {
                     repairRow.scrollIntoView({block:'center'});
                     repairRow.querySelector('select, [data-quantity]').focus({preventScroll:true});
