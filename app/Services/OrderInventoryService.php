@@ -636,9 +636,7 @@ class OrderInventoryService
 
         if ($product->stock_quantity < $quantity) {
             // Ghi ro ma - size - con bao nhieu, de biet duong xu ly thay vi doan.
-            throw ValidationException::withMessages([
-                'items' => "Mã {$product->code} - size {$product->size}: cần {$quantity} nhưng tồn kho hiện chỉ còn {$product->stock_quantity}.",
-            ]);
+            throw new \App\Exceptions\OrderStockShortageException($product, $quantity);
         }
 
         $product->decrement('stock_quantity', $quantity);

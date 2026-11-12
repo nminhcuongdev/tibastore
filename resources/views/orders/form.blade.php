@@ -2390,6 +2390,17 @@
             addItemBlock();
         }
 
+        const repairProduct = new URLSearchParams(window.location.search).get('repair_product');
+        if (repairProduct) {
+            const repairRow = Array.from(itemsContainer.querySelectorAll('.size-row')).find(row => row.querySelector('[data-product-id]').value === repairProduct);
+            if (repairRow) {
+                repairRow.style.outline = '2px solid #b42318'; repairRow.style.outlineOffset = '4px';
+                requestAnimationFrame(() => {
+                    repairRow.scrollIntoView({block:'center'});
+                    repairRow.querySelector('select, [data-quantity]').focus({preventScroll:true});
+                });
+            }
+        }
         itemsContainer.addEventListener('input', event => {
             if (event.target.matches('[data-quantity]')) {
                 // Đổi số lượng một dòng làm thay đổi tồn còn lại của các dòng khác

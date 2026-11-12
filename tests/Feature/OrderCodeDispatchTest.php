@@ -13,6 +13,32 @@ class OrderCodeDispatchTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_failed_dispatch_explains_shortage_and_links_to_the_exact_size_without_changing_stock(): void
+    {
+        $this->actingAs(User::create(['code' => 'repair-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $code = 'REPAIR-'.bin2hex(random_bytes(4));
+        $large = Product::create(['code' => $code, 'name' => 'Test', 'size' => 'L', 'fabric' => '', 'stock_quantity' => 3]);
+        $medium = Product::create(['code' => $code, 'name' => 'Test', 'size' => 'M', 'fabric' => '', 'stock_quantity' => 0]);
+        $order = Order::create(['product_id' => $large->id, 'quantity' => 3, 'closer_name' => 'Test', 'order_name' => $code,
+            'pickup_date' => '2034-01-01', 'event_date' => '2034-01-02', 'return_date' => '2034-01-03', 'status' => Order::DEFAULT_STATUS]);
+        $order->items()->create(['product_id' => $large->id, 'quantity' => 1]);
+        $order->items()->create(['product_id' => $medium->id, 'quantity' => 2]);
+        $editUrl = route('orders.edit', ['order' => $order->id, 'repair_product' => $medium->id]).'#order_items';
+        $response = $this->patchJson(route('orders.status', $order), ['status' => 'da_gui'])
+            ->assertUnprocessable()->assertJsonValidationErrors('items')
+            ->assertJsonPath('repair_actions.0.url', $editUrl)
+            ->assertJsonPath('repair_actions.1.url', route('products.show', $medium));
+        $message = $response->json('errors.items.0');
+        $this->assertStringContainsString($code.' - size M', $message);
+        $this->assertStringContainsString('cần 2, kho thực tế còn 0, thiếu 2', $message);
+        $this->assertSame(Order::DEFAULT_STATUS, $order->fresh()->status);
+        $this->assertSame(3, $large->fresh()->stock_quantity);
+        $this->assertSame(0, $medium->fresh()->stock_quantity);
+        $this->assertSame(0, (int) $order->items()->sum('stock_held'));
+        $this->get($editUrl)->assertOk()->assertSee('repair_product');
+    }
+
     public function test_early_dispatch_updates_only_that_code_and_whole_order_dispatch_does_not_charge_it_twice(): void
     {
         $this->actingAs(User::create(['code' => 'dispatch-'.bin2hex(random_bytes(4)), 'name' => 'Test',

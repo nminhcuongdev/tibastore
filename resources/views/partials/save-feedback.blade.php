@@ -21,7 +21,11 @@ async function sendSaveRequest(url, options) {
         let data;
         try { data = await response.json(); }
         catch (_) { throw new Error('Máy chủ trả về phản hồi không hợp lệ. Chưa xác nhận được thay đổi đã lưu; giữ nguyên trang và thử lại.'); }
-        if (!response.ok) throw new Error(data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Không lưu được (mã ' + response.status + '). Hãy thử lại.'));
+        if (!response.ok) {
+            const error = new Error(data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Không lưu được (mã ' + response.status + '). Hãy thử lại.'));
+            error.repairActions = data.repair_actions || [];
+            throw error;
+        }
         return data;
     } catch (error) {
         if (error.name === 'AbortError') throw new Error('Quá 25 giây chưa nhận được xác nhận lưu. Kiểm tra kết nối và thử lại; đừng đóng trang.');

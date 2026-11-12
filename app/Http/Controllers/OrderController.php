@@ -624,6 +624,7 @@ class OrderController extends Controller
             'compensation_amount.min' => 'Tiền bồi thường không được nhỏ hơn 0.',
         ]);
 
+        try {
         DB::transaction(function () use ($data, $order, $isChecking) {
             $lockedOrder = Order::whereKey($order->id)
                 ->with('items')
@@ -662,6 +663,15 @@ class OrderController extends Controller
 
             $this->inventory->applyStatusAdjustment($lockedOrder);
         });
+
+        } catch (\App\Exceptions\OrderStockShortageException $exception) {
+            if (!$request->wantsJson()) throw $exception;
+            return response()->json(['message' => 'Chưa đổi trạng thái vì thiếu hàng thực tế.', 'errors' => $exception->errors(),
+                'repair_actions' => [
+                    ['label' => 'Sửa size trong đơn', 'url' => route('orders.edit', ['order' => $order->id, 'repair_product' => $exception->productId]).'#order_items'],
+                    ['label' => 'Kiểm tra Kho', 'url' => route('products.show', $exception->productId)],
+                ]], 422);
+        }
 
         // Danh sách đơn đổi trạng thái bằng AJAX nên cần lại đúng những ô đã
         // đổi để vẽ tại chỗ, khỏi tải lại cả trang.

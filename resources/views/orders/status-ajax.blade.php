@@ -3,9 +3,10 @@
      và còn lại. Trang nào không nhúng partial này thì form vẫn submit như cũ. --}}
 <script>
     (function () {
+        @include('partials.save-feedback')
         const flashArea = document.querySelector('[data-flash-area]');
 
-        function flash(message, isError) {
+        function flash(message, isError, actions = []) {
             if (!flashArea) return;
 
             flashArea.innerHTML = '';
@@ -13,6 +14,11 @@
             const box = document.createElement('div');
             box.className = 'status' + (isError ? ' is-error' : '');
             box.textContent = message;
+            actions.forEach(function (action) {
+                const link = document.createElement('a'); link.href = action.url; link.textContent = action.label;
+                link.style.cssText = 'display:inline-block;margin:8px 12px 0 0;text-decoration:underline;font-weight:700';
+                box.appendChild(document.createElement('br')); box.appendChild(link);
+            });
             flashArea.appendChild(box);
 
             // Thong bao loi giu lai de con doc; bao thanh cong thi tu tat.
@@ -112,7 +118,7 @@
                 selectInRow.value = body.get('status');
             }
 
-            return fetch(form.getAttribute('action'), {
+            return sendSaveRequest(form.getAttribute('action'), {
                 method: 'POST',
                 body: body,
                 credentials: 'same-origin',
@@ -120,16 +126,6 @@
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                 },
-            }).then(function (response) {
-                return response.json().catch(function () { return {}; }).then(function (payload) {
-                    if (!response.ok) {
-                        const error = new Error(messagesFrom(payload));
-                        error.handled = true;
-                        throw error;
-                    }
-
-                    return payload;
-                });
             }).then(function (payload) {
                 if (payload.order) applyOrder(payload.order);
                 flash(payload.message || 'Đã cập nhật trạng thái đơn hàng.', false);
@@ -138,7 +134,9 @@
                     selectInRow.value = selectInRow.dataset.current;
                 }
 
-                flash(error.handled ? error.message : 'Mất kết nối tới máy chủ, trạng thái chưa được đổi.', true);
+                const actions = error.repairActions || [];
+                if (!actions.length && orderId) actions.push({label:'Mở đơn để kiểm tra và sửa', url:@json(route('orders.edit', '__ORDER__')).replace('__ORDER__', orderId) + '#order_items'});
+                flash('Chưa đổi trạng thái: ' + error.message, true, actions);
             });
         };
     })();
