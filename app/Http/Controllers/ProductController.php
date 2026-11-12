@@ -340,13 +340,14 @@ class ProductController extends Controller
             'category' => ['nullable', 'string', 'max:255'], 'rental_price_text' => ['nullable', 'string', 'max:255'],
             'variants' => ['required', 'array', 'min:1', 'max:100'],
             'variants.*.id' => ['nullable', 'integer', 'distinct'],
-            'variants.*.size' => ['required', 'string', 'max:50'],
+            'variants.*.size' => ['nullable', 'string', 'max:50'],
             'variants.*.stock_quantity' => ['required', 'integer', 'min:0'],
             'variants.*.original_quantity' => ['nullable', 'integer', 'min:0'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,webp', 'max:5120'],
         ]);
-        $sizes = collect($data['variants'])->map(fn ($line) => mb_strtolower(trim($line['size'])));
-        if ($sizes->duplicates()->isNotEmpty() || $sizes->contains('')) throw \Illuminate\Validation\ValidationException::withMessages(['variants' => 'Size không được để trống hoặc trùng nhau.']);
+        $data['variants'] = array_map(fn ($line) => array_replace($line, ['size' => trim($line['size'] ?? '')]), $data['variants']);
+        $sizes = collect($data['variants'])->map(fn ($line) => mb_strtolower($line['size']));
+        if ($sizes->duplicates()->isNotEmpty()) throw \Illuminate\Validation\ValidationException::withMessages(['variants' => 'Size không được trùng nhau.']);
         $uploadedPath = null;
         try {
         $result = DB::transaction(function () use ($data, $product, $request, &$uploadedPath) {
@@ -361,6 +362,9 @@ class ProductController extends Controller
             }
             $shared = Product::withRentalPriceText(collect($data)->only(['code', 'name', 'category', 'rental_price_text'])->all());
             foreach ($data['variants'] as $line) {
+                if ($line['size'] === '' && (empty($line['id']) || filled($variants[$line['id']]->size))) {
+                    throw \Illuminate\Validation\ValidationException::withMessages(['variants' => 'Vui lòng nhập tên size cho dòng mới hoặc dòng vừa đổi tên.']);
+                }
                 if (empty($line['id'])) continue;
                 $variant = $variants[$line['id']];
                 if (!isset($line['original_quantity']) || (int) $line['original_quantity'] !== (int) $variant->stock_quantity) {

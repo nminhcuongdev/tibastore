@@ -23,7 +23,7 @@
         <div data-stock-lines class="stock-sizes">
         @foreach($variants as $variant)
             <div class="stock-size-line" data-stock-line data-id="{{ $variant->id }}" data-original="{{ $variant->stock_quantity }}" data-rented="{{ $rentedByProduct[$variant->id] ?? 0 }}">
-                <input data-size value="{{ $variant->size }}" required maxlength="50" aria-label="Size">
+                <input data-size value="{{ $variant->size }}" @if(filled($variant->size)) required @endif maxlength="50" aria-label="Size">
                 <input data-stock type="number" min="0" step="1" required value="{{ $variant->stock_quantity }}" aria-label="Tồn kho size {{ $variant->size }}">
                 <span>{{ number_format($rentedByProduct[$variant->id] ?? 0) }}</span>
                 <span data-size-total>{{ number_format($variant->stock_quantity + ($rentedByProduct[$variant->id] ?? 0)) }}</span>
@@ -81,7 +81,12 @@
         lines.appendChild(row); row.querySelector('input').focus(); changed();
     });
     async function save() {
-        if (saving || !dirty || !form.checkValidity()) return;
+        if (saving || !dirty) return;
+        if (!form.checkValidity()) {
+            const invalid = form.querySelector(':invalid');
+            state.textContent = 'Chưa lưu: kiểm tra ô ' + (invalid?.getAttribute('aria-label') || invalid?.closest('label')?.textContent.trim() || 'bắt buộc') + '. ' + (invalid?.validationMessage || '');
+            return;
+        }
         saving = true; const sent = revision, sentImage = pendingImage;
         const body = new FormData(form); body.append('_method', 'PATCH');
         if (sentImage) body.append('image', sentImage);

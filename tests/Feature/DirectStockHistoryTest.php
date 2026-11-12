@@ -12,6 +12,36 @@ class DirectStockHistoryTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_legacy_blank_size_does_not_block_stock_updates_to_other_sizes(): void
+    {
+        $this->actingAs(User::create(['code' => 'blank-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $code = 'BLANK-'.bin2hex(random_bytes(4));
+        $blank = Product::create(['code' => $code, 'name' => 'Test', 'size' => '', 'fabric' => '', 'stock_quantity' => 0]);
+        $large = Product::create(['code' => $code, 'name' => 'Test', 'size' => 'to', 'fabric' => '', 'stock_quantity' => 5]);
+        $data = ['code' => $code, 'name' => 'Test', 'variants' => [
+            ['id' => $blank->id, 'size' => '', 'stock_quantity' => 0, 'original_quantity' => 0],
+            ['id' => $large->id, 'size' => 'to', 'stock_quantity' => 8, 'original_quantity' => 5],
+        ]];
+        $this->get('/products/'.$blank->id)->assertOk()->assertSee('Chưa lưu: kiểm tra ô');
+        $this->patchJson(route('products.inline-stock', $blank), $data)->assertOk();
+        $this->assertSame(8, $large->fresh()->stock_quantity);
+        $this->assertSame('', $blank->fresh()->size);
+        $this->assertSame(0, $blank->fresh()->stock_quantity);
+        $this->assertSame(3, WorkshopStockTransfer::where('product_code', $code)->sole()->lines[0]['quantity']);
+        $data['variants'][1]['original_quantity'] = 8;
+        $this->patchJson(route('products.inline-stock', $blank), $data)->assertOk();
+        $this->assertSame(1, WorkshopStockTransfer::where('product_code', $code)->count());
+        $data['variants'][] = ['size' => '', 'stock_quantity' => 2];
+        $this->patchJson(route('products.inline-stock', $blank), $data)->assertUnprocessable();
+        array_pop($data['variants']);
+        $data['variants'][0]['size'] = 'nhỏ';
+        $data['variants'][1]['size'] = '';
+        $this->patchJson(route('products.inline-stock', $blank), $data)->assertUnprocessable();
+        $this->assertSame('', $blank->fresh()->size);
+        $this->assertSame('to', $large->fresh()->size);
+    }
+
     public function test_inline_edit_history_includes_old_and_deleted_sizes_but_not_similar_codes(): void
     {
         $this->actingAs(User::create(['code' => 'inline-history-'.bin2hex(random_bytes(4)), 'name' => 'Người sửa',
