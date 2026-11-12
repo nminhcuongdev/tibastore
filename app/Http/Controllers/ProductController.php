@@ -553,7 +553,7 @@ class ProductController extends Controller
             ->with('status', 'Đã cập nhật sản phẩm.');
     }
 
-    public function destroy(Request $request, Product $product): RedirectResponse
+    public function destroy(Request $request, Product $product): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         $deleteScope = $request->input('delete_scope') === 'code' ? 'code' : 'variant';
         $imagePaths = collect();
@@ -579,6 +579,14 @@ class ProductController extends Controller
                 }
 
                 $lockedProduct = Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
+                if ($lockedProduct->orderItems()->exists() || $lockedProduct->orders()->exists()) {
+                    throw ValidationException::withMessages(['size' => 'Không thể xóa size này vì đã có đơn hàng sử dụng. Hãy giữ lại để không làm mất dữ liệu đơn.']);
+                }
+                if ($lockedProduct->expectedReceipts()->whereNull('received_at')->exists()
+                    || \App\Models\WorkshopOrder::where('product_code', $lockedProduct->code)->whereNull('stocked_at')->get()
+                        ->contains(fn ($od) => collect($od->plannedSizeLines())->contains(fn ($line) => (int) $line['product_id'] === (int) $lockedProduct->id))) {
+                    throw ValidationException::withMessages(['size' => 'Không thể xóa size đang có hàng dự kiến về. Hãy kiểm tra dòng Đặt hàng hoặc dự kiến nhập trước.']);
+                }
                 $imagePaths = collect([$lockedProduct->image_path])->filter()->values();
                 $lockedProduct->delete();
             });
@@ -587,6 +595,7 @@ class ProductController extends Controller
                 $this->deleteProductImageIfUnused($imagePath);
             }
         } catch (QueryException $exception) {
+            if ($request->wantsJson()) return response()->json(['message' => 'Không thể xóa size vì đang được dùng trong dữ liệu liên quan. Hãy giữ lại để bảo toàn lịch sử.'], 422);
             // Xóa thất bại: sản phẩm vẫn còn nên ở lại trang hiện tại.
             return redirect()
                 ->back()
@@ -596,6 +605,12 @@ class ProductController extends Controller
         $status = $deleteScope === 'code'
             ? 'Đã xóa mã hàng và toàn bộ size khỏi kho.'
             : 'Đã xóa sản phẩm khỏi kho.';
+
+        if ($request->wantsJson()) {
+            $remaining = Product::where('code', $product->code)->orderBy('id')->first();
+            return response()->json(['message' => 'Đã xóa size.',
+                'redirect_url' => $remaining ? route('products.show', $remaining) : route('products.index')]);
+        }
 
         return $this->redirectAfterDestroy($product)->with('status', $status);
     }

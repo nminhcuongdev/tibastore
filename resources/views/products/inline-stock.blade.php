@@ -27,7 +27,10 @@
                 <input data-stock type="number" min="0" step="1" required value="{{ $variant->stock_quantity }}" aria-label="Tồn kho size {{ $variant->size }}">
                 <span>{{ number_format($rentedByProduct[$variant->id] ?? 0) }}</span>
                 <span data-size-total>{{ number_format($variant->stock_quantity + ($rentedByProduct[$variant->id] ?? 0)) }}</span>
-                <a href="{{ route('products.track', $variant) }}" class="link-action">Theo dõi</a>
+                <span style="display:flex;align-items:center;gap:10px">
+                    <a href="{{ route('products.track', $variant) }}" class="link-action">Theo dõi</a>
+                    <button type="button" data-delete-size data-delete-url="{{ route('products.destroy', $variant) }}" aria-label="Xóa size {{ $variant->size ?: 'chưa đặt tên' }}" title="Xóa size" style="border:0;background:transparent;color:#b42318;font-size:13px;padding:3px;cursor:pointer">X</button>
+                </span>
                 <div class="stock-size-notes">
                     @if(!empty($pendingInspection[$variant->id]))<span>{{ $pendingInspection[$variant->id] }} chờ kiểm. </span>@endif
                 </div>
@@ -56,6 +59,21 @@
     }
     retry.addEventListener('click', () => save());
     let timer, saving = false, revision = 0, dirty = false;
+    let deletingSize = false;
+    lines.addEventListener('click', async event => {
+        const button = event.target.closest('[data-delete-size]');
+        if (!button || deletingSize) return;
+        if (saving || dirty) { stockError('Vui lòng chờ thay đổi tự lưu xong trước khi xóa size.'); return; }
+        const row = button.closest('[data-stock-line]');
+        const size = row.querySelector('[data-size]').value || 'chưa đặt tên';
+        if (!confirm('Xóa size “' + size + '” của mã này? Số lượng còn trong kho: ' + row.querySelector('[data-stock]').value + '. Thao tác này không thể khôi phục bằng nút Hoàn tác.')) return;
+        deletingSize = true; button.disabled = true;
+        try {
+            const body = new FormData(); body.append('_token', form.querySelector('[name=_token]').value); body.append('_method', 'DELETE'); body.append('delete_scope', 'variant');
+            const data = await sendSaveRequest(button.dataset.deleteUrl, {method:'POST', body, credentials:'same-origin', headers:{Accept:'application/json'}});
+            window.location.assign(data.redirect_url);
+        } catch (error) { stockError(error.message); deletingSize = false; button.disabled = false; }
+    });
     let pendingImage = null, previewUrl = null;
     const imageFile = form.querySelector('[data-stock-image-file]'), imageBox = form.querySelector('[data-stock-image]');
     function acceptStockImage(file) {
@@ -86,11 +104,12 @@
     form.querySelector('[data-add-stock-size]').addEventListener('click', () => {
         const row = document.createElement('div'); row.className = 'stock-size-line'; row.dataset.stockLine = ''; row.dataset.original = '0'; row.dataset.rented = '0';
         row.innerHTML = '<input data-size required maxlength="50" placeholder="Size mới" aria-label="Size mới"><input data-stock type="number" required min="0" step="1" value="0" aria-label="Tồn kho size mới"><span>0</span><span data-size-total>0</span><button type="button">Bỏ</button>';
-        row.querySelector('button').addEventListener('click', () => { if (!row.dataset.id && !saving) { row.remove(); changed(); } });
+        row.querySelector('button').dataset.removeNewSize = '';
+        row.querySelector('button').addEventListener('click', () => { if (!row.dataset.id && !saving && confirm('Bỏ dòng size mới này?')) { row.remove(); changed(); } });
         lines.appendChild(row); row.querySelector('input').focus(); changed();
     });
     async function save() {
-        if (saving || !dirty) return;
+        if (saving || deletingSize || !dirty) return;
         if (!form.checkValidity()) {
             const invalid = form.querySelector(':invalid');
             stockError(saveInputError(invalid));
@@ -113,7 +132,14 @@
             data.variants.forEach((variant, index) => {
                 rows[index].dataset.id = variant.id; rows[index].dataset.original = variant.stock_quantity;
                 rows[index].querySelector('[data-size-total]').textContent = Number(rows[index].querySelector('[data-stock]').value) + Number(rows[index].dataset.rented);
-                rows[index].querySelector('button')?.remove();
+                const removeNew = rows[index].querySelector('[data-remove-new-size]');
+                if (removeNew) {
+                    const button = document.createElement('button'); button.type = 'button'; button.textContent = 'X';
+                    button.dataset.deleteSize = ''; button.dataset.deleteUrl = @json(route('products.destroy', '__SIZE__')).replace('__SIZE__', variant.id);
+                    button.setAttribute('aria-label', 'Xóa size ' + rows[index].querySelector('[data-size]').value);
+                    button.style.cssText = 'border:0;background:transparent;color:#b42318;font-size:13px;padding:3px;cursor:pointer';
+                    removeNew.replaceWith(button);
+                }
             });
             const total = data.variants.reduce((sum, variant) => sum + Number(variant.stock_quantity), 0);
             document.querySelector('[data-stock-metric-quantity]').textContent = total.toLocaleString('vi-VN');

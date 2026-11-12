@@ -12,6 +12,33 @@ class DirectStockHistoryTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_delete_size_only_removes_selected_variant_and_reports_dependencies(): void
+    {
+        $this->actingAs(User::create(['code' => 'delete-size-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $code = 'DELETE-'.bin2hex(random_bytes(4));
+        $small = Product::create(['code' => $code, 'name' => 'Test', 'size' => 'S', 'fabric' => '', 'stock_quantity' => 0]);
+        $large = Product::create(['code' => $code, 'name' => 'Test', 'size' => 'L', 'fabric' => '', 'stock_quantity' => 1]);
+        $this->get(route('products.show', $small))->assertOk()->assertSee('Xóa size S')->assertSee('Xóa size L')
+            ->assertSee('confirm(', false);
+        $this->deleteJson(route('products.destroy', $small), ['delete_scope' => 'variant'])->assertOk()
+            ->assertJsonPath('redirect_url', route('products.show', $large));
+        $this->assertNull($small->fresh());
+        $this->assertSame(1, $large->fresh()->stock_quantity);
+        $receipt = \App\Models\ProductExpectedReceipt::create(['product_id' => $large->id,
+            'expected_receive_date' => '2034-06-01', 'expected_receive_quantity' => 2]);
+        $this->deleteJson(route('products.destroy', $large))->assertUnprocessable()->assertJsonValidationErrors('size');
+        $this->assertNotNull($large->fresh());
+        $receipt->delete();
+        $order = \App\Models\Order::create(['product_id' => $large->id, 'quantity' => 1, 'order_name' => 'Test',
+            'closer_name' => 'Test', 'status' => \App\Models\Order::DEFAULT_STATUS,
+            'pickup_date' => '2034-06-02', 'event_date' => '2034-06-03', 'return_date' => '2034-06-04']);
+        $order->items()->create(['product_id' => $large->id, 'quantity' => 1]);
+        $this->deleteJson(route('products.destroy', $large))->assertUnprocessable()->assertJsonValidationErrors('size');
+        $this->assertNotNull($large->fresh());
+        $this->assertSame(1, $order->items()->count());
+    }
+
     public function test_legacy_blank_size_does_not_block_stock_updates_to_other_sizes(): void
     {
         $this->actingAs(User::create(['code' => 'blank-'.bin2hex(random_bytes(4)), 'name' => 'Test',
