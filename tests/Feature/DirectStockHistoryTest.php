@@ -23,7 +23,7 @@ class DirectStockHistoryTest extends TestCase
             ['id' => $blank->id, 'size' => '', 'stock_quantity' => 0, 'original_quantity' => 0],
             ['id' => $large->id, 'size' => 'to', 'stock_quantity' => 8, 'original_quantity' => 5],
         ]];
-        $this->get('/products/'.$blank->id)->assertOk()->assertSee('Chưa lưu: kiểm tra ô');
+        $this->get('/products/'.$blank->id)->assertOk()->assertSee('Thử lưu lại')->assertSee('Phiên đăng nhập đã hết hạn');
         $this->patchJson(route('products.inline-stock', $blank), $data)->assertOk();
         $this->assertSame(8, $large->fresh()->stock_quantity);
         $this->assertSame('', $blank->fresh()->size);

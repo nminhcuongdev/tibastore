@@ -37,7 +37,8 @@
         <button type="button" class="link-action" data-add-stock-size>+ Thêm size</button>
         @include('products.incoming-schedule')
     </div>
-    <span class="stock-save-state" role="status" data-stock-state>Sửa trực tiếp, thay đổi được tự động lưu. Số lượng nhập là hàng còn trong kho.</span>
+    <span class="stock-save-state" role="status" aria-live="polite" data-stock-state style="position:sticky;bottom:12px;z-index:100;padding:12px;background:#fff;border:1px solid #cbd9ec;border-radius:8px">Sửa trực tiếp, thay đổi được tự động lưu. Số lượng nhập là hàng còn trong kho.</span>
+    <button type="button" data-stock-retry hidden>Thử lưu lại</button>
     <div data-booking-shortages style="grid-column:1/-1">
         @include('partials.booking-shortages', ['shortages' => app(\App\Services\OrderInventoryService::class)->bookingShortages($product->code)])
     </div>
@@ -45,14 +46,22 @@
 @include('partials.booking-shortage-list')
 <script>
 (() => {
+    @include('partials.save-feedback')
     const form = document.querySelector('[data-stock-editor]'), lines = form.querySelector('[data-stock-lines]'), state = form.querySelector('[data-stock-state]');
+    const retry = form.querySelector('[data-stock-retry]');
+    function stockError(message) {
+        state.textContent = 'Chưa lưu: ' + message;
+        state.setAttribute('role', 'alert'); state.style.color = '#b42318'; state.style.borderColor = '#b42318';
+        retry.hidden = false;
+    }
+    retry.addEventListener('click', () => save());
     let timer, saving = false, revision = 0, dirty = false;
     let pendingImage = null, previewUrl = null;
     const imageFile = form.querySelector('[data-stock-image-file]'), imageBox = form.querySelector('[data-stock-image]');
     function acceptStockImage(file) {
         if (!file) return;
         if (!['image/jpeg','image/png','image/gif','image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
-            state.textContent = 'Chọn ảnh JPG, PNG, GIF hoặc WebP tối đa 5MB.'; imageFile.value = ''; return;
+            stockError('Chọn ảnh JPG, PNG, GIF hoặc WebP tối đa 5MB.'); imageFile.value = ''; return;
         }
         pendingImage = file;
         if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -84,7 +93,7 @@
         if (saving || !dirty) return;
         if (!form.checkValidity()) {
             const invalid = form.querySelector(':invalid');
-            state.textContent = 'Chưa lưu: kiểm tra ô ' + (invalid?.getAttribute('aria-label') || invalid?.closest('label')?.textContent.trim() || 'bắt buộc') + '. ' + (invalid?.validationMessage || '');
+            stockError(saveInputError(invalid));
             return;
         }
         saving = true; const sent = revision, sentImage = pendingImage;
@@ -97,11 +106,9 @@
             body.append(`variants[${index}][stock_quantity]`, row.querySelector('[data-stock]').value);
             body.append(`variants[${index}][original_quantity]`, row.dataset.original);
         });
-        state.textContent = 'Đang lưu…';
+        state.textContent = 'Đang lưu…'; retry.hidden = true; state.setAttribute('role', 'status'); state.style.color = ''; state.style.borderColor = '';
         try {
-            const response = await fetch(form.action, {method:'POST', body, credentials:'same-origin', headers:{Accept:'application/json'}});
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.errors ? Object.values(data.errors).flat().join(' ') : data.message);
+            const data = await sendSaveRequest(form.action, {method:'POST', body, credentials:'same-origin', headers:{Accept:'application/json'}});
             if (pendingImage === sentImage) { pendingImage = null; imageFile.value = ''; }
             data.variants.forEach((variant, index) => {
                 rows[index].dataset.id = variant.id; rows[index].dataset.original = variant.stock_quantity;
@@ -114,7 +121,7 @@
             totalMetric.textContent = (total + Number(totalMetric.dataset.rented)).toLocaleString('vi-VN');
             if (sent === revision) { dirty = false; state.textContent = 'Đã lưu kho'; }
             showBookingShortages(form, data.booking_shortages);
-        } catch(error) { state.textContent = 'Chưa lưu: ' + error.message; }
+        } catch(error) { stockError(error.message); }
         finally { saving = false; if (sent !== revision) { clearTimeout(timer); timer = setTimeout(save, 800); } }
     }
     window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });

@@ -1,6 +1,7 @@
 @include('partials.booking-shortage-list')
 <script>
 (function () {
+    @include('partials.save-feedback')
     const catalog = @json($productCodes);
     const format = value => Number(value || 0).toLocaleString('vi-VN');
     function editableLink(input, getUrl, editLabel) {
@@ -470,7 +471,8 @@
         form.addEventListener('submit', event => { event.preventDefault(); clearTimeout(saveTimer); saveRow(); });
         async function saveRow() {
             if (saving || !row.isConnected || !row.classList.contains('has-changes')) return;
-            if (!form.checkValidity() || !Array.from(sizeList.querySelectorAll('input,select')).every(input => input.checkValidity())) { state.textContent = 'Chưa lưu: vui lòng kiểm tra các ô bắt buộc.'; return; }
+            const invalid = Array.from(new Set([...form.querySelectorAll('input,select,textarea'), ...sizeList.querySelectorAll('input,select')])).find(input => !input.disabled && !input.checkValidity());
+            if (invalid) { state.textContent = 'Chưa lưu: ' + saveInputError(invalid); state.style.color = '#b42318'; return; }
             saving = true;
             const sentRevision = revision, sentImage = pendingImage;
             const body = new FormData(form);
@@ -479,9 +481,7 @@
             if (pendingImage) body.append('image', pendingImage);
             state.textContent = 'Đang lưu…';
             try {
-                const response = await fetch(form.action, {method:'POST',body,credentials:'same-origin',headers:{Accept:'application/json','X-Requested-With':'XMLHttpRequest'}});
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Chưa lưu được.'));
+                const data = await sendSaveRequest(form.action, {method:'POST',body,credentials:'same-origin',headers:{Accept:'application/json','X-Requested-With':'XMLHttpRequest'}});
                 const isNew = row.hasAttribute('data-new-row');
                 if (isNew) {
                     row.removeAttribute('data-new-row');

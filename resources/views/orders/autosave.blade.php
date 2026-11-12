@@ -1,3 +1,4 @@
+        @include('partials.save-feedback')
         const autosaveState = document.createElement('div');
         autosaveState.setAttribute('role', 'status'); autosaveState.setAttribute('aria-live', 'polite');
         autosaveState.style.cssText = 'grid-column:1/-1;position:sticky;bottom:12px;z-index:100;padding:10px 16px;border:1px solid #cbd9ec;border-radius:8px;background:#fff;color:#203b60;box-shadow:0 2px 12px #203b601a';
@@ -27,20 +28,18 @@
                 saveDraftNow(); autosaveFinish = false;
                 const invalid = Array.from(orderForm.querySelectorAll('input,select,textarea'))
                     .find(input => !input.disabled && !input.checkValidity());
-                const label = invalid?.labels?.[0]?.textContent.trim()
-                    || invalid?.getAttribute('aria-label') || invalid?.name || 'sản phẩm và size';
-                autosaveState.textContent = 'Chưa lưu được đơn. Kiểm tra ' + label + (invalid?.validationMessage ? ' — ' + invalid.validationMessage : '.');
+                autosaveState.textContent = 'Chưa lưu được đơn. ' + saveInputError(invalid);
+                autosaveState.style.color = '#b42318'; autosaveState.setAttribute('role', 'alert');
                 if (force && invalid) invalid.reportValidity();
                 return;
             }
             autosaveBusy = true; autosaveLastAttempt = snapshot; saveDraftNow();
             autosaveState.textContent = 'Đang tự động lưu…';
+            autosaveState.style.color = '#203b60'; autosaveState.setAttribute('role', 'status');
             try {
-                const response = await fetch(orderForm.action, {method:'POST', body:new FormData(orderForm), credentials:'same-origin',
+                const data = await sendSaveRequest(orderForm.action, {method:'POST', body:new FormData(orderForm), credentials:'same-origin',
                     headers:{Accept:'application/json', 'X-Requested-With':'XMLHttpRequest'}});
-                const data = await response.json();
                 if (orderDraftDiscarded) return;
-                if (!response.ok) throw new Error(data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Chưa lưu được.'));
                 const firstSave = !currentOrderId;
                 currentOrderId = data.id; orderForm.action = data.update_url;
                 if (!orderForm.querySelector('[name=_method]')) {
@@ -64,6 +63,7 @@
                 if (orderDraftDiscarded) return;
                 saveDraftNow(); autosaveFinish = false;
                 autosaveState.textContent = 'Chưa lưu vào hệ thống: ' + (error.message || 'Kiểm tra kết nối rồi thử lại.') + ' Nháp vẫn được giữ trên máy này.';
+                autosaveState.style.color = '#b42318'; autosaveState.setAttribute('role', 'alert');
             } finally {
                 autosaveBusy = false;
                 if (!orderDraftDiscarded && autosaveSnapshot() !== snapshot) scheduleAutosave();

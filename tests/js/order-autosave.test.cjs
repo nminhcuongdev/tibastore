@@ -15,10 +15,10 @@ const vm = require('node:vm');
             ? [{querySelector:() => ({value:'1'})}] : [{dispatchEvent(){}}]},
         saveDraftNow(){draftSaves++;}, clearDraft(){}, DRAFT_KEY:'create', EDIT_DRAFT_PREFIX:'edit_',
         history:{replaceState(){}}, window:{addEventListener(){}, location:{assign(){}}},
-        FormData:class {}, Event:class {}, setTimeout:() => 1, clearTimeout(){}, setInterval(){},
+        FormData:class {}, Event:class {}, AbortController, setTimeout:() => 1, clearTimeout(){}, setInterval(){},
         fetch:async () => { calls++; return await new Promise(resolve => {resolveRequest = resolve;}); },
     });
-    vm.runInContext(fs.readFileSync('resources/views/orders/autosave.blade.php','utf8'), context);
+    vm.runInContext(fs.readFileSync('resources/views/orders/autosave.blade.php','utf8').replace("@include('partials.save-feedback')", fs.readFileSync('resources/views/partials/save-feedback.blade.php','utf8')), context);
     const run = () => vm.runInContext('saveOrderAutomatically()', context);
     const response = {ok:true, json:async () => ({id:42, update_url:'/orders/42', edit_url:'/orders/42/edit', show_url:'/orders/42'})};
     const first = run();
