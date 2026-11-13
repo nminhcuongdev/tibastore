@@ -11,6 +11,35 @@ class OrderStockReviewService
     {
     }
 
+    public function warning(Order $order): string
+    {
+        if (in_array($order->status, ['huy_don', Order::RETURNED_STATUS, Order::CHECKED_STATUS], true)) {
+            return $order->hasShortage() ? 'Kiểm hàng: thiếu đồ nhận lại' : '';
+        }
+        $order->loadMissing('items.product');
+        $reasons = [];
+        if ($order->items->contains(fn ($item) => $item->size_pending)) {
+            $reasons[] = 'Chưa chốt size';
+        }
+        if ($order->requiresStockOut() && $order->items->contains(fn ($item) => !$item->size_pending && $item->stock_held < $item->quantity)) {
+            $reasons[] = 'Đã gửi nhưng chưa đối chiếu đủ tồn kho';
+        }
+        $items = $order->items->reject(fn ($item) => $item->size_pending)->groupBy('product_id');
+        $start = $order->dispatch_date ?? $order->pickup_date;
+        $end = $order->actual_return_date ?? $order->return_date;
+        if ($start && $end && $items->isNotEmpty()) {
+            $available = $this->inventory->projectedAvailableQuantities($items->keys()->all(),
+                $start->toDateString(), $end->toDateString(), $order->id, true, $order->return_period, false);
+            foreach ($items as $id => $group) {
+                if ($group->sum('quantity') > ($available[$id] ?? 0)) {
+                    $product = $group->first()->product;
+                    $reasons[] = 'Thiếu '.$product?->code.' / '.$product?->size;
+                }
+            }
+        }
+        return implode('; ', $reasons);
+    }
+
     public function shortages(): Collection
     {
         $result = collect();

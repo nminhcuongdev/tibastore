@@ -77,6 +77,15 @@
             });
 
             if (row) {
+                const closer = row.querySelector('[data-closer-cell]');
+                if (closer && order.stock_warning !== undefined) {
+                    closer.classList.toggle('stock-warning-cell', !!order.stock_warning);
+                    closer.title = order.stock_warning;
+                    const warning = closer.querySelector('[data-stock-warning]');
+                    if (warning) warning.textContent = order.stock_warning;
+                }
+                const quickSent = row.querySelector('[data-quick-sent]');
+                if (quickSent) quickSent.hidden = ['da_gui', 'huy_don', 'da_tra_ve', 'thanh_cong'].includes(order.status);
                 const total = row.querySelector('[data-cell="total"]');
                 const remaining = row.querySelector('[data-cell="remaining"]');
 
@@ -107,6 +116,15 @@
 
         // Tra ve Promise de noi mo goi biet luc nao xong; loi mang thi bao
         // that chu khong submit ngam de trang khoi nhay lung tung.
+        document.querySelectorAll('[data-quick-sent]').forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                event.preventDefault();
+                const button = form.querySelector('button');
+                if (button.disabled) return;
+                button.disabled = true;
+                window.submitOrderStatus(form, form.dataset.quickSent).finally(function () { button.disabled = false; });
+            });
+        });
         window.submitOrderStatus = function (form, orderId) {
             const body = new FormData(form);
             const selectInRow = orderId

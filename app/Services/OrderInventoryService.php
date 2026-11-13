@@ -48,7 +48,7 @@ class OrderInventoryService
      * lại bao nhiêu lần cũng không lệch, và không phải suy ngược xem trước đó đã
      * trừ bao nhiêu.
      */
-    public function applyStatusAdjustment(Order $order): void
+    public function applyStatusAdjustment(Order $order, bool $allowShortage = false): void
     {
         $order->loadMissing('items');
 
@@ -63,7 +63,7 @@ class OrderInventoryService
             if (!$isOut && !$order->allowsCodeDispatch() && $item->dispatched_at) {
                 $item->update(['dispatched_at' => null]);
             }
-            $this->setHeldQuantity($item, $this->targetHeldQuantity($item, $isOut || $item->dispatched_at !== null));
+            $this->setHeldQuantity($item, $this->targetHeldQuantity($item, $isOut || $item->dispatched_at !== null), $allowShortage && $isOut);
         }
 
         if ($isOut) {
@@ -119,7 +119,7 @@ class OrderInventoryService
         return max(0, (int) $item->quantity - (int) $item->returned_quantity);
     }
 
-    private function setHeldQuantity(OrderItem $item, int $target): void
+    private function setHeldQuantity(OrderItem $item, int $target, bool $allowShortage = false): void
     {
         $current = (int) $item->stock_held;
         $delta = $target - $current;
@@ -129,6 +129,14 @@ class OrderInventoryService
         }
 
         if ($delta > 0) {
+            if ($allowShortage) {
+                // Quick confirmation records real-world dispatch despite inventory
+                // discrepancies. Hold only recorded stock so returning the order
+                // cannot create stock; quantity - stock_held remains a review warning.
+                $product = Product::whereKey($item->product_id)->lockForUpdate()->firstOrFail();
+                $delta = min($delta, max(0, (int) $product->stock_quantity));
+                $target = $current + $delta;
+            }
             $this->decreaseStock((int) $item->product_id, $delta);
         } else {
             $this->increaseStock((int) $item->product_id, -$delta);

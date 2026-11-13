@@ -79,4 +79,37 @@ class OrderStockReviewTest extends TestCase
         $this->get(route('orders.stock-review'))->assertOk()->assertSee('Đơn thiếu tồn kho')
             ->assertSee($product->code)->assertSee(route('orders.edit', $sent), false);
     }
+
+    public function test_quick_sent_allows_short_stock_keeps_warning_and_only_returns_deducted_stock(): void
+    {
+        $this->actingAs(User::create(['code' => 'sent-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'password', 'role' => 'admin', 'delflag' => false]));
+        $product = $this->product(2);
+        $order = $this->order($product);
+        // Existing status control still enforces actual stock unless quick sent is explicit.
+        $this->patchJson(route('orders.status', $order), ['status' => 'da_gui'])->assertUnprocessable();
+        $this->assertSame(Order::DEFAULT_STATUS, $order->fresh()->status);
+        $this->patchJson(route('orders.status', $order), ['status' => 'da_gui', 'confirm_sent' => true])
+            ->assertOk()->assertJsonPath('order.status', 'da_gui')
+            ->assertJsonPath('order.stock_warning', fn ($warning) => str_contains($warning, 'chưa đối chiếu đủ tồn kho'));
+        $this->assertSame(0, $product->fresh()->stock_quantity);
+        $this->assertSame(2, $order->fresh()->items->first()->stock_held);
+        $this->patchJson(route('orders.status', $order), ['status' => 'da_gui', 'confirm_sent' => true])->assertOk();
+        $this->assertSame(0, $product->fresh()->stock_quantity);
+        $this->patchJson(route('orders.status', $order), ['status' => Order::RETURNED_STATUS])->assertOk();
+        $this->assertSame(2, $product->fresh()->stock_quantity);
+    }
+
+    public function test_pending_size_is_red_and_can_be_marked_sent_without_editing(): void
+    {
+        $this->actingAs(User::create(['code' => 'size-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'password', 'role' => 'admin', 'delflag' => false]));
+        $product = $this->product(0);
+        $order = $this->order($product, [], [['product_id' => $product->id, 'quantity' => 3, 'size_pending' => true]]);
+        $this->get(route('orders.index', ['q' => $product->code]))->assertOk()
+            ->assertSee('stock-warning-cell')->assertSee('Chưa chốt size')->assertSee('✓ Đã gửi');
+        $this->patchJson(route('orders.status', $order), ['status' => 'da_gui', 'confirm_sent' => true])
+            ->assertOk()->assertJsonPath('order.stock_warning', 'Chưa chốt size');
+        $this->assertSame(0, $product->fresh()->stock_quantity);
+    }
 }

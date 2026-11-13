@@ -239,6 +239,9 @@ class OrderController extends Controller
         }
 
         $orders = $ordersQuery->paginate(25)->withQueryString();
+        $stockWarnings = $orders->getCollection()->mapWithKeys(fn ($order) => [
+            $order->id => app(\App\Services\OrderStockReviewService::class)->warning($order),
+        ]);
 
         $closers = Order::query()
             ->whereNotNull('closer_name')
@@ -249,6 +252,7 @@ class OrderController extends Controller
 
         return view('orders.index', [
             'orders' => $orders,
+            'stockWarnings' => $stockWarnings,
             'returnReminders' => app(\App\Services\OrderTurnaroundService::class)->reminders(null, true),
             'arrivalReminders' => app(\App\Services\WorkshopArrivalReminderService::class)->reminders(),
             'remainingTotal' => (int) ($totals->remaining_total ?? 0),
@@ -628,6 +632,7 @@ class OrderController extends Controller
 
         $rules = [
             'status' => ['required', Rule::in(array_keys(Order::statuses()))],
+            'confirm_sent' => ['nullable', 'boolean'],
         ];
 
         if ($isChecking) {
@@ -683,7 +688,7 @@ class OrderController extends Controller
                 app(\App\Services\OrderPurchasePlanService::class)->sync($lockedOrder);
             }
 
-            $this->inventory->applyStatusAdjustment($lockedOrder);
+            $this->inventory->applyStatusAdjustment($lockedOrder, !empty($data['confirm_sent']) && $data['status'] === 'da_gui');
         });
 
         } catch (\App\Exceptions\OrderStockShortageException $exception) {
@@ -705,6 +710,7 @@ class OrderController extends Controller
                 'order' => [
                     'id' => $order->id,
                     'status' => $order->status,
+                    'stock_warning' => app(\App\Services\OrderStockReviewService::class)->warning($order),
                     'status_label' => $order->statusLabel(),
                     'color_key' => $order->statusColorKey(),
                     'currently_out' => $order->stock_decreased_at !== null && $order->stock_returned_at === null,

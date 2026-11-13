@@ -466,6 +466,10 @@
             padding: 7px 11px;
         }
         .status-form { margin: 0; }
+        .orders-scroll td.stock-warning-cell { background: #fee2e2 !important; color: #991b1b !important; box-shadow: inset 4px 0 #dc2626; }
+        [data-stock-warning] { display: block; font-size: 11px; font-weight: 600; white-space: normal; }
+        [data-quick-sent] { margin-top: 6px; }
+        [data-quick-sent] .button { padding: 6px 10px; }
         .status-select {
             border: 1px solid rgba(0, 0, 0, .14);
             border-radius: 999px;
@@ -929,7 +933,10 @@
                             $codeTotal = $codeSummary->sum('quantity');
                         @endphp
                         <tr class="row-{{ $order->statusColorKey() }}" data-order-row="{{ $order->id }}">
-                            <td class="name">{{ $order->closer_name }}</td>
+                            <td class="name {{ !empty($stockWarnings[$order->id]) ? 'stock-warning-cell' : '' }}" data-closer-cell title="{{ $stockWarnings[$order->id] ?? '' }}">
+                                {{ $order->closer_name }}
+                                <small data-stock-warning>{{ $stockWarnings[$order->id] ?? '' }}</small>
+                            </td>
                             <td>{{ $order->dispatch_date?->format('d/m/Y') }}</td>
                             <td>{{ $order->pickup_date?->format('d/m/Y') }}</td>
                             <td>{{ $order->event_date?->format('d/m/Y') }}</td>
@@ -975,6 +982,15 @@
                                     </select>
                                     </div>
                                 </form>
+                                @if (!in_array($order->status, ['da_gui', 'huy_don', \App\Models\Order::RETURNED_STATUS, \App\Models\Order::CHECKED_STATUS], true))
+                                    <form method="POST" action="{{ route('orders.status', $order) }}" data-quick-sent="{{ $order->id }}">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="hidden" name="status" value="da_gui">
+                                        <input type="hidden" name="confirm_sent" value="1">
+                                        <button type="submit" class="button secondary">✓ Đã gửi</button>
+                                    </form>
+                                @endif
                             </td>
                             <td>
                                 <textarea data-inline-order-note data-url="{{ route('orders.note', $order) }}" aria-label="Ghi chú đơn {{ $order->order_name }}" maxlength="2000" rows="2" placeholder="Nhập ghi chú…" style="width:100%;min-width:150px;box-sizing:border-box;border:1px solid #cbd9ec;border-radius:6px;padding:8px;font:inherit;background:transparent;resize:vertical">{{ $order->note }}</textarea>
