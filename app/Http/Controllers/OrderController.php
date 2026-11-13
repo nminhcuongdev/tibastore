@@ -18,6 +18,13 @@ class OrderController extends Controller
     {
     }
 
+    public function stockReview(): View
+    {
+        $reviews = app(\App\Services\OrderStockReviewService::class)->shortages();
+
+        return view('orders.stock-review', compact('reviews'));
+    }
+
     public function customerSuggestions(Request $request): JsonResponse
     {
         $data = $request->validate([

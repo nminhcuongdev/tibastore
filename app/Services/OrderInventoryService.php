@@ -223,7 +223,8 @@ class OrderInventoryService
         string $returnDate,
         ?int $excludeOrderId = null,
         bool $allowSameDayTurnaround = true,
-        ?string $returnPeriod = null
+        ?string $returnPeriod = null,
+        bool $includeExpectedReceipts = true
     ): array {
         $productIds = collect($productIds)
             ->filter()
@@ -246,7 +247,9 @@ class OrderInventoryService
         $products = Product::whereIn('id', $productIds->all())
             ->get(['id', 'stock_quantity'])
             ->keyBy('id');
-        $expectedReceipts = $this->incomingByProduct($productIds->all(), $endExclusive->copy()->subDay()->toDateString());
+        $expectedReceipts = $includeExpectedReceipts
+            ? $this->incomingByProduct($productIds->all(), $endExclusive->copy()->subDay()->toDateString())
+            : collect();
         $openQuantities = $this->openStockQuantities($productIds->all());
         $reservedQuantities = $this->maxReservedQuantities(
             $productIds->all(),

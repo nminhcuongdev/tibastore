@@ -167,6 +167,9 @@
         <a class="{{ $active === 'daily-stock' ? 'active' : '' }}" href="{{ route('products.daily-stock') }}" title="Tồn kho theo ngày">
             <span class="ico">&#128197;</span><span class="txt">Tồn kho theo ngày</span>
         </a>
+        <a class="{{ $active === 'stock-review' ? 'active' : '' }}" href="{{ route('orders.stock-review') }}" title="Đơn thiếu tồn kho">
+            <span class="ico">⚠</span><span class="txt">Đơn thiếu tồn kho</span>
+        </a>
         <a class="{{ $active === 'orders' ? 'active' : '' }}" href="{{ route('orders.index') }}" title="Đơn hàng">
             <span class="ico">&#129534;</span><span class="txt">Đơn hàng</span>
         </a>
