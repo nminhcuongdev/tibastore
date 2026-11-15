@@ -11,7 +11,7 @@
     .order-invoice-product-controls { display: flex; align-items: center; gap: 6px; }
     .order-invoice-table .code-thumb { display: block; flex: 0 0 42px; width: 42px; height: 48px; max-width: 100%; border-radius: 5px; border: 1px solid #e1e7ef; padding: 2px; background: white; }
     .order-invoice-dispatch { margin: 0; min-width: 0; }
-    .orders-scroll .order-invoice-table .order-invoice-dispatch select { width: 84px; max-width: 100%; min-height: 28px; height: 28px; margin: 0; padding: 3px 18px 3px 5px; font-size: 11px; border-radius: 5px; }
+    .orders-scroll .order-invoice-table .order-invoice-dispatch select { width: 116px; max-width: 100%; min-height: 28px; height: 28px; margin: 0; padding: 3px 18px 3px 5px; font-size: 11px; border-radius: 5px; }
     .order-invoice-table .code-thumb img { object-fit: contain; }
     .order-invoice-no-image { font-size: 10px; color: #8793a5; }
     .orders-scroll .order-invoice-table tfoot td { background: #fafbfd; padding: 11px; }

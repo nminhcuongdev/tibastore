@@ -7,6 +7,7 @@
         'amount' => round(($item->rental_price ?? 0) * $item->quantity * (float) ($item->rental_days ?? 1)),
         'note' => $item->note,
         'dispatched' => $item->dispatched_at !== null,
+        'prepared' => $item->prepared_at !== null,
     ]);
     if ($invoiceLines->isEmpty()) {
         $invoiceLines = $codeSummary->map(fn ($code) => array_merge($code, [
@@ -28,6 +29,7 @@
         $line['day_values'] = $lines->pluck('days')->unique()->values();
         $line['note'] = $lines->pluck('note')->filter()->unique()->implode('; ');
         $line['dispatched'] = $lines->every(fn ($item) => $item['dispatched'] ?? false);
+        $line['prepared'] = $lines->every(fn ($item) => ($item['prepared'] ?? false) || ($item['dispatched'] ?? false));
         return $line;
     })->values();
 @endphp
@@ -48,7 +50,8 @@
                         @method('PATCH')
                         <input type="hidden" name="code" value="{{ $line['code'] }}">
                         <select name="dispatched" aria-label="Trạng thái giao mã {{ $line['code'] }}" onchange="this.form.requestSubmit()">
-                            <option value="0" @selected(!$line['dispatched'])>Chưa giao</option>
+                            <option value="0" @selected(!$line['dispatched'] && !$line['prepared'])>Chưa giao</option>
+                            <option value="prepared" @selected(!$line['dispatched'] && $line['prepared'])>Đã soạn xong</option>
                             <option value="1" @selected($line['dispatched'])>Đã giao</option>
                         </select>
                     </form>

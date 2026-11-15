@@ -13,6 +13,33 @@ class OrderCodeDispatchTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_prepared_state_is_saved_per_code_without_deducting_stock(): void
+    {
+        $this->actingAs(User::create(['code' => 'prepared-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'test-password', 'role' => 'admin', 'delflag' => false]));
+        $code = 'READY-'.bin2hex(random_bytes(4));
+        $product = Product::create(['code' => $code, 'name' => 'Test', 'size' => 'M', 'fabric' => '', 'stock_quantity' => 5]);
+        $other = Product::create(['code' => $code.'-OTHER', 'name' => 'Test', 'size' => 'L', 'fabric' => '', 'stock_quantity' => 5]);
+        $order = Order::create(['product_id' => $product->id, 'quantity' => 2, 'closer_name' => 'Test', 'order_name' => $code,
+            'pickup_date' => '2032-01-01', 'event_date' => '2032-01-02', 'return_date' => '2032-01-03', 'status' => Order::DEFAULT_STATUS]);
+        $item = $order->items()->create(['product_id' => $product->id, 'quantity' => 2]);
+        $otherItem = $order->items()->create(['product_id' => $other->id, 'quantity' => 2]);
+        $url = route('orders.code-dispatch', $order);
+        $this->patch($url, ['code' => $code, 'dispatched' => 'prepared'])->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertNotNull($item->fresh()->prepared_at);
+        $this->assertNull($item->fresh()->dispatched_at);
+        $this->assertNull($otherItem->fresh()->prepared_at);
+        $this->assertSame(5, $product->fresh()->stock_quantity);
+        $this->get(route('orders.index', ['q' => $code]))->assertOk()->assertSee('value="prepared" selected', false);
+        $this->patch($url, ['code' => $code, 'dispatched' => 1])->assertSessionHasNoErrors();
+        $this->assertSame(3, $product->fresh()->stock_quantity);
+        $this->patch($url, ['code' => $code, 'dispatched' => 'prepared'])->assertSessionHasNoErrors();
+        $this->assertSame(5, $product->fresh()->stock_quantity);
+        $this->assertNull($item->fresh()->dispatched_at);
+        $this->patch($url, ['code' => $code, 'dispatched' => 0])->assertSessionHasNoErrors();
+        $this->assertNull($item->fresh()->prepared_at);
+    }
+
     public function test_failed_dispatch_explains_shortage_and_links_to_the_exact_size_without_changing_stock(): void
     {
         $this->actingAs(User::create(['code' => 'repair-'.bin2hex(random_bytes(4)), 'name' => 'Test',

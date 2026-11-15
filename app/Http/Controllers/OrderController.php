@@ -161,7 +161,7 @@ class OrderController extends Controller
             // Danh sach ma hang duoc so ngay tren bang nen can ca san pham cua
             // tung dong; hai truy van eager-load van re hon moi dong mot request.
             ->with([
-                'items:id,order_id,product_id,quantity,returned_quantity,size_pending,rental_price,rental_days,note,dispatched_at',
+                'items:id,order_id,product_id,quantity,returned_quantity,size_pending,rental_price,rental_days,note,dispatched_at,prepared_at',
                 'items.product:id,code,name,size,image_path',
             ])
             ->join('products', 'products.id', '=', 'orders.product_id')
@@ -542,12 +542,16 @@ class OrderController extends Controller
             $lockedOrder->load('items.product');
             $dispatchDates = $lockedOrder->items->filter(fn ($item) => $item->dispatched_at)
                 ->keyBy(fn ($item) => $item->displayCode())->map->dispatched_at;
+            $preparedDates = $lockedOrder->items->filter(fn ($item) => $item->prepared_at)
+                ->keyBy(fn ($item) => $item->displayCode())->map->prepared_at;
             if ($lockedOrder->requiresStockOut() && $orderData['status'] !== $lockedOrder->status) {
                 $dispatchDates = collect();
+                $preparedDates = collect();
             }
             $codes = Product::whereIn('id', array_column($items, 'product_id'))->pluck('code', 'id');
             foreach ($items as &$item) {
                 $item['dispatched_at'] = $dispatchDates->get($codes[$item['product_id']] ?? '');
+                $item['prepared_at'] = $preparedDates->get($codes[$item['product_id']] ?? '');
             }
             unset($item);
             $this->inventory->resetAdjustment($lockedOrder);
@@ -605,7 +609,7 @@ class OrderController extends Controller
 
     public function updateCodeDispatch(Request $request, Order $order): RedirectResponse
     {
-        $data = $request->validate(['code' => ['required', 'string', 'max:50'], 'dispatched' => ['required', 'boolean']]);
+        $data = $request->validate(['code' => ['required', 'string', 'max:50'], 'dispatched' => ['required', Rule::in(['0', '1', 'prepared'])]]);
 
         DB::transaction(function () use ($order, $data) {
             $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
@@ -614,16 +618,23 @@ class OrderController extends Controller
             if (!$locked->allowsCodeDispatch() || $items->isEmpty()) {
                 throw \Illuminate\Validation\ValidationException::withMessages(['dispatch' => 'Không thể đổi trạng thái giao của mã này.']);
             }
-            if ($data['dispatched'] && $items->contains('size_pending', true)) {
+            if ((string) $data['dispatched'] === '1' && $items->contains('size_pending', true)) {
                 throw \Illuminate\Validation\ValidationException::withMessages(['dispatch' => 'Hãy chốt đủ size trước khi đánh dấu mã đã giao.']);
             }
             foreach ($items as $item) {
-                $item->update(['dispatched_at' => $data['dispatched'] ? ($item->dispatched_at ?? now('Asia/Ho_Chi_Minh')) : null]);
+                $item->update([
+                    'dispatched_at' => (string) $data['dispatched'] === '1' ? ($item->dispatched_at ?? now('Asia/Ho_Chi_Minh')) : null,
+                    'prepared_at' => (string) $data['dispatched'] === '0' ? null : ($item->prepared_at ?? now('Asia/Ho_Chi_Minh')),
+                ]);
             }
             $this->inventory->applyStatusAdjustment($locked);
         });
 
-        return back()->with('status', $data['dispatched'] ? 'Đã đánh dấu mã đã giao và cập nhật kho.' : 'Đã đánh dấu mã chưa giao và trả số lượng về kho.');
+        return back()->with('status', match ((string) $data['dispatched']) {
+            'prepared' => 'Đã đánh dấu mã đã soạn xong, chưa giao.',
+            '1' => 'Đã đánh dấu mã đã giao và cập nhật kho.',
+            default => 'Đã đánh dấu mã chưa giao và trả số lượng về kho.',
+        });
     }
 
     public function updateStatus(Request $request, Order $order): RedirectResponse|JsonResponse
