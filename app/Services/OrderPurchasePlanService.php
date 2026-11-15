@@ -10,7 +10,7 @@ use Illuminate\Validation\ValidationException;
 
 class OrderPurchasePlanService
 {
-    public function sync(Order $order): void
+    public function sync(Order $order, bool $checkAvailability = true): void
     {
         $order->load('items.product');
         $active = [];
@@ -154,11 +154,13 @@ class OrderPurchasePlanService
         }
         // Kiểm lại sau khi đã đồng bộ dự kiến, để phần mua thêm thực sự đủ bù thiếu tồn.
         if ($order->status !== 'huy_don') {
-            app(OrderInventoryService::class)->assertItemsAvailable($order->items->where('fulfillment_source', 'stock')->values()->toArray(),
-                ($order->dispatch_date ?? $order->pickup_date)->toDateString(),
-                ($order->actual_return_date ?? $order->return_date)->toDateString(), $order->id,
-                $order->return_period,
-                $dedicatedQuantities);
+            if ($checkAvailability) {
+                app(OrderInventoryService::class)->assertItemsAvailable($order->items->where('fulfillment_source', 'stock')->values()->toArray(),
+                    ($order->dispatch_date ?? $order->pickup_date)->toDateString(),
+                    ($order->actual_return_date ?? $order->return_date)->toDateString(), $order->id,
+                    $order->return_period,
+                    $dedicatedQuantities);
+            }
             $warning = app(WorkshopDuplicateService::class)->warningForOrder($order->id);
             if ($warning) session()->flash('workshop_duplicate_warning', $warning);
         }

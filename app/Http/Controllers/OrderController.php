@@ -540,6 +540,9 @@ class OrderController extends Controller
                 ->firstOrFail();
 
             $lockedOrder->load('items.product');
+            $preserveOutgoingStock = $this->preservesOutgoingStock($lockedOrder, $items, $orderData['status']);
+            $heldBySize = $lockedOrder->items->groupBy(fn ($item) => $item->product_id.':'.(int) $item->size_pending)
+                ->map(fn ($lines) => (int) $lines->sum('stock_held'))->all();
             $dispatchDates = $lockedOrder->items->filter(fn ($item) => $item->dispatched_at)
                 ->keyBy(fn ($item) => $item->displayCode())->map->dispatched_at;
             $preparedDates = $lockedOrder->items->filter(fn ($item) => $item->prepared_at)
@@ -552,9 +555,16 @@ class OrderController extends Controller
             foreach ($items as &$item) {
                 $item['dispatched_at'] = $dispatchDates->get($codes[$item['product_id']] ?? '');
                 $item['prepared_at'] = $preparedDates->get($codes[$item['product_id']] ?? '');
+                if ($preserveOutgoingStock) {
+                    $key = $item['product_id'].':'.(int) ($item['size_pending'] ?? false);
+                    $item['stock_held'] = min((int) $item['quantity'], $heldBySize[$key] ?? 0);
+                    $heldBySize[$key] -= $item['stock_held'];
+                }
             }
             unset($item);
-            $this->inventory->resetAdjustment($lockedOrder);
+            if (!$preserveOutgoingStock) {
+                $this->inventory->resetAdjustment($lockedOrder);
+            }
 
             // Dòng hàng bị xóa rồi tạo lại nên sự kiện model không bắt được;
             // so ảnh chụp trước/sau để nhật ký vẫn thấy hàng nào đổi.
@@ -564,7 +574,7 @@ class OrderController extends Controller
             $lockedOrder->items()->delete();
             $lockedOrder->items()->createMany($items);
             $lockedOrder->load('items');
-            app(\App\Services\OrderPurchasePlanService::class)->sync($lockedOrder);
+            app(\App\Services\OrderPurchasePlanService::class)->sync($lockedOrder, !$preserveOutgoingStock);
 
             $itemsAfter = $this->itemsSnapshot($lockedOrder);
 
@@ -577,7 +587,9 @@ class OrderController extends Controller
                 ]]);
             }
 
-            $this->inventory->applyStatusAdjustment($lockedOrder);
+            if (!$preserveOutgoingStock) {
+                $this->inventory->applyStatusAdjustment($lockedOrder);
+            }
         });
 
         if ($request->wantsJson()) return $this->savedOrderResponse($order);
@@ -590,6 +602,21 @@ class OrderController extends Controller
         }
 
         return $response;
+    }
+
+    private function preservesOutgoingStock(Order $order, array $items, string $status): bool
+    {
+        if (!$order->requiresStockOut() || $status !== $order->status) {
+            return false;
+        }
+        $order->loadMissing('items');
+        $quantities = fn ($lines) => collect($lines)
+            ->groupBy(fn ($item) => $item['product_id'].':'.(int) ($item['size_pending'] ?? false))
+            ->map(fn ($group) => (int) $group->sum('quantity'))->sortKeys()->all();
+
+        // Already dispatched: editing dates/prices/notes must not receive and
+        // dispatch the same goods again, or force reconciliation of old shortages.
+        return $quantities($order->items) === $quantities($items);
     }
 
     private function savedOrderResponse(Order $order, int $status = 200): JsonResponse
@@ -907,13 +934,15 @@ class OrderController extends Controller
         // nên KHÔNG chặn trùng ở đây. Kiểm tồn sẽ cộng dồn số lượng theo từng sản phẩm.
         $dispatchDate = array_key_exists('dispatch_date', $data) ? $data['dispatch_date'] : $order?->dispatch_date?->toDateString();
         $actualReturnDate = array_key_exists('actual_return_date', $data) ? $data['actual_return_date'] : $order?->actual_return_date?->toDateString();
-        $this->inventory->assertItemsAvailable(
-            array_values(array_filter($data['items'], fn ($item) => $item['fulfillment_source'] === 'stock')),
-            $dispatchDate ?? $data['pickup_date'],
-            $actualReturnDate ?? $data['return_date'],
-            $order?->id,
-            $data['return_period'] ?? null
-        );
+        if (!$order || !$this->preservesOutgoingStock($order, $data['items'], $data['status'])) {
+            $this->inventory->assertItemsAvailable(
+                array_values(array_filter($data['items'], fn ($item) => $item['fulfillment_source'] === 'stock')),
+                $dispatchDate ?? $data['pickup_date'],
+                $actualReturnDate ?? $data['return_date'],
+                $order?->id,
+                $data['return_period'] ?? null
+            );
+        }
 
         $data['discount_percent'] = ($data['discount_type'] ?? 'vnd') === 'percent'
             ? (float) ($data['discount_amount'] ?? 0) : null;

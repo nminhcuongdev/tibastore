@@ -112,4 +112,36 @@ class OrderStockReviewTest extends TestCase
             ->assertOk()->assertJsonPath('order.stock_warning', 'Chưa chốt size');
         $this->assertSame(0, $product->fresh()->stock_quantity);
     }
+
+    public function test_extending_sent_order_preserves_actual_deductions_even_with_unreconciled_shortage(): void
+    {
+        $this->actingAs(User::create(['code' => 'extend-'.bin2hex(random_bytes(4)), 'name' => 'Test',
+            'password' => 'password', 'role' => 'admin', 'delflag' => false]));
+        foreach ([0, 2, 3] as $held) {
+            $product = $this->product(0);
+            $order = $this->order($product, ['status' => 'da_gui', 'pickup_date' => '2032-04-11',
+                'event_date' => '2032-04-13', 'return_date' => '2032-04-14', 'actual_return_date' => '2032-04-14',
+                'stock_decreased_at' => '2032-04-11 08:00:00'], [
+                ['product_id' => $product->id, 'quantity' => 3, 'stock_held' => $held],
+            ]);
+            $data = ['closer_name' => 'Test', 'order_name' => $product->code, 'status' => 'da_gui',
+                'source' => Order::DEFAULT_SOURCE, 'region' => 'tinh_mb',
+                'pickup_date' => '2032-04-11', 'event_date' => '2032-04-13',
+                'return_date' => '2032-04-20', 'actual_return_date' => '2032-04-20',
+                'items' => [['product_id' => $product->id, 'quantity' => 1], ['product_id' => $product->id, 'quantity' => 2]]];
+            $this->putJson(route('orders.update', $order), $data)->assertOk();
+            $this->putJson(route('orders.update', $order), $data)->assertOk();
+            $this->assertSame('2032-04-20', $order->fresh()->return_date->toDateString());
+            $this->assertSame('2032-04-20', $order->fresh()->actual_return_date->toDateString());
+            $this->assertSame('2032-04-11 08:00:00', $order->fresh()->stock_decreased_at->format('Y-m-d H:i:s'));
+            $this->assertSame($held, (int) $order->items()->sum('stock_held'));
+            $this->assertSame(0, $product->fresh()->stock_quantity);
+            // A real quantity increase still requires stock and must not be treated as a date-only edit.
+            $data['items'][0]['quantity'] = 2;
+            $this->putJson(route('orders.update', $order), $data)->assertUnprocessable();
+            $this->assertSame($held, (int) $order->items()->sum('stock_held'));
+            $this->patchJson(route('orders.status', $order), ['status' => Order::RETURNED_STATUS])->assertOk();
+            $this->assertSame($held, $product->fresh()->stock_quantity);
+        }
+    }
 }
