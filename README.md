@@ -6,7 +6,7 @@ Hệ thống theo dõi tồn kho theo từng **mã + size**, lên đơn thuê th
 
 ![Đăng nhập](screenshoots/login.png)
 
-> Ảnh chụp màn hình trong tài liệu dùng **dữ liệu mẫu**, không phải dữ liệu thật của cửa hàng.
+> Ảnh chụp màn hình trong tài liệu được chụp từ **bản production đang chạy**. Tên miền và **số điện thoại khách hàng** đã được che.
 
 ---
 
