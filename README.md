@@ -1,88 +1,143 @@
 # Tiba Boutique Store
 
-Ứng dụng web quản lí **kho hàng và cho thuê trang phục** cho cửa hàng thời trang/biểu diễn, xây dựng bằng **Laravel 9**. Hệ thống theo dõi tồn kho theo từng mã–size, lên đơn cho thuê theo lịch lấy/diễn/trả, tính doanh thu theo nguồn khách và ghi lại toàn bộ lịch sử thay đổi.
+Ứng dụng web quản lí **kho hàng, cho thuê trang phục biểu diễn và đặt hàng xưởng** cho cửa hàng Tiba Store, xây dựng bằng **Laravel 9**.
 
-Giao diện tông xanh dương sapphire, điều hướng bằng **sidebar bên trái**, tối ưu cho thao tác nhập liệu nhanh hằng ngày.
+Hệ thống theo dõi tồn kho theo từng **mã + size**, lên đơn thuê theo lịch đi đơn / lấy / diễn / trả / về kho, dự báo tồn khả dụng theo từng ngày (có tính hàng đang đặt xưởng), quản lí đặt hàng – nhập kho, in hoá đơn, báo cáo doanh thu và ghi lại toàn bộ lịch sử thay đổi.
+
+![Đăng nhập](screenshoots/login.png)
+
+> Ảnh chụp màn hình trong tài liệu dùng **dữ liệu mẫu**, không phải dữ liệu thật của cửa hàng.
+
+---
+
+## Mục lục
+
+- [Giao diện](#giao-diện)
+- [Chức năng chính](#chức-năng-chính)
+- [Mô hình tồn kho](#mô-hình-tồn-kho)
+- [Công nghệ](#công-nghệ)
+- [Cài đặt](#cài-đặt)
+- [Chạy ứng dụng](#chạy-ứng-dụng)
+- [Kiểm thử](#kiểm-thử)
+- [Triển khai (cPanel)](#triển-khai-shared-hosting--cpanel)
+- [Cấu trúc thư mục](#cấu-trúc-thư-mục)
 
 ---
 
 ## Giao diện
 
-**Kho hàng** — sản phẩm nhóm theo danh mục, mỗi mã gồm nhiều size, có hình ảnh, giá thuê, tồn hiện tại và hàng nhập dự kiến.
+### Kho hàng
+Sản phẩm nhóm theo **danh mục**, mỗi mã gồm nhiều size. Mỗi mã có ảnh, giá thuê, số lượng sẵn sàng / đang thuê, lịch hàng dự kiến về. Có hoàn tác / làm lại và nút nhắc nhập kho.
 
 ![Kho hàng](screenshoots/products.png)
 
-**Tồn kho theo ngày** — ma trận số lượng *khả dụng* của từng mã–size theo mỗi ngày; ô xanh còn nhiều, vàng còn ít, đỏ hết/vượt. Cột hôm nay viền xanh dương.
+### Chi tiết sản phẩm
+Sửa trực tiếp tên, danh mục, giá thuê, ảnh (dán bằng Ctrl+V) và số lượng từng size, thay đổi **tự lưu**. Hiển thị tổng số hàng, đang cho thuê, còn trong kho và lịch dự kiến hàng về từ đặt xưởng.
+
+![Chi tiết sản phẩm](screenshoots/product-detail.png)
+
+### Tồn kho theo ngày
+Ma trận số lượng **khả dụng** của từng mã–size theo mỗi ngày, lọc theo danh mục. Ô xanh còn nhiều, vàng còn ít, đỏ hết/vượt; cột hôm nay viền xanh dương.
 
 ![Tồn kho theo ngày](screenshoots/daily-stock.png)
 
-**Đơn hàng** — bảng đơn với người chốt, lịch lấy/diễn/trả, trạng thái (màu theo trạng thái), tổng đơn, tiền ship, thanh toán nhiều lần và số còn lại. Có bộ lọc & tìm kiếm.
+### Đơn hàng
+Danh sách đơn kèm người chốt, ngày đi đơn / lấy / diễn / trả / về kho thực tế, trạng thái tô màu, tổng đơn, tổng còn lại. Mở rộng từng đơn để xem **dạng hoá đơn** nhóm theo mã, có ảnh, trạng thái giao từng mã và bảng thanh toán. Đơn thiếu hàng được đánh dấu đỏ ở cột người chốt.
 
 ![Đơn hàng](screenshoots/orders.png)
 
-**Báo cáo doanh thu** — tổng doanh thu, tiền bồi thường và số đơn trong kỳ; tách theo nguồn hàng (KHM/KHC của page/sale) kèm tỷ trọng. Chọn mốc tính theo ngày tạo/lấy/diễn/trả.
+### Tạo / sửa đơn
+Form chia khối: thông tin khách (có **dán phiếu đặt thuê** để tự điền, gợi ý khách cũ), lịch thuê & xử lý, sản phẩm & thanh toán. Form **tự lưu nháp**, có hoàn tác / làm lại.
+
+![Tạo đơn hàng](screenshoots/order-form.png)
+
+### Chi tiết đơn
+Trang thông tin đơn mang thương hiệu Tiba Store, đổi trạng thái nhanh và in / chụp đơn.
+
+![Chi tiết đơn](screenshoots/order-detail.png)
+
+### Đơn thiếu tồn kho
+Rà soát các đơn đã lưu đang thiếu hàng thực tế theo mã, size và lịch thuê; liên kết thẳng tới đơn để xử lý.
+
+![Đơn thiếu tồn kho](screenshoots/stock-review.png)
+
+### Đặt hàng (xưởng / mua ngoài)
+Bảng sửa trực tiếp, tự lưu: mã (hoặc **tạo mã mới** ngay tại đây), ảnh, size – số lượng, đơn giá, đơn khách liên kết, nhà cung cấp, trạng thái `Chưa od` / `Đã od` / `Hàng đã về`. Lọc theo trạng thái, cách nhập kho, nhà cung cấp, người mua, khoảng ngày.
+
+![Đặt hàng](screenshoots/workshop-orders.png)
+
+### Hoá đơn nháp
+Phiếu bán hàng sửa trực tiếp, chọn sản phẩm bằng ảnh, chiết khấu theo số tiền hoặc %, số ngày thuê lẻ; in / lưu PDF khổ A4.
+
+![Hoá đơn nháp](screenshoots/draft-invoice.png)
+
+### Nhà xe & địa chỉ
+Danh bạ nhà xe và địa chỉ được gom tự động từ đơn hàng, nhóm theo tỉnh/thành, tìm kiếm không dấu.
+
+![Nhà xe & địa chỉ](screenshoots/carrier-directory.png)
+
+### Báo cáo doanh thu
+Tổng doanh thu, tiền bồi thường, số đơn; tách theo nguồn khách (KHM/KHC của page/sale) kèm tỷ trọng. Mặc định tháng hiện tại, chọn được nhiều mốc ngày.
 
 ![Báo cáo doanh thu](screenshoots/revenue.png)
 
-**Lịch sử thay đổi** — nhật ký mọi thay đổi của đơn hàng và sản phẩm: đổi từ giá trị nào sang giá trị nào, ai làm, lúc nào. Lọc theo loại, hành động, mã đơn/mã hàng, người thực hiện và khoảng thời gian.
+### Lịch sử thay đổi
+Nhật ký mọi thay đổi của đơn hàng và sản phẩm dạng *trước → sau*, ai làm, lúc nào; lọc theo loại, hành động, mã, người thực hiện, khoảng ngày.
 
 ![Lịch sử thay đổi](screenshoots/change-logs.png)
+
+### Giao diện điện thoại và nhắc việc
+Chọn chế độ **Laptop / Máy tính cây / Điện thoại** ở sidebar (màn hình nhỏ tự chuyển sang điện thoại). Khi mở trang, hệ thống hiện các nhắc việc như xác nhận hàng về để nhập kho lần lượt.
+
+![Giao diện điện thoại](screenshoots/mobile.png)
 
 ---
 
 ## Chức năng chính
 
-### Kho hàng
-- Mỗi dòng kho là một cặp **mã + size** (không trùng). Một mã có thể gồm nhiều size.
-- Thông tin theo mã: tên, hình ảnh, vải, **danh mục**, **giá thuê**.
-- Thông tin theo size: số lượng tồn, ngày dự kiến nhận và số lượng nhận dự kiến.
-- Nhóm hiển thị theo **danh mục**, có nút gom/xổ; nút **copy** để nhân bản nhanh một mã.
-- Sửa thông tin theo **toàn mã** hoặc **riêng từng size**.
-- Tìm kiếm theo mã/tên, sắp xếp, phân trang.
-
-### Chi tiết & theo dõi sản phẩm
-- Xem các đơn hàng liên quan tới một mã–size.
-- Biểu đồ biến động tồn kho dự kiến theo thời gian.
-
-### Tồn kho theo ngày
-- Ma trận sản phẩm × ngày cho toàn kho.
-- Số **khả dụng** mỗi ngày = tồn hiện có + hàng nhập dự kiến về − số đang cho thuê (đơn phủ ngày đó).
-- Lọc theo mã/tên và khoảng ngày (tối đa 60 ngày).
-
-### Lịch sử nhập kho
-- Tự ghi nhận khi tạo sản phẩm có tồn ban đầu hoặc khi tăng tồn: số lượng nhập, tồn trước, tồn sau, người nhập.
+### Kho hàng & sản phẩm
+- Mỗi dòng kho là một cặp **mã + size** (không trùng); thông tin chung theo mã: tên, ảnh, danh mục, giá thuê (cho phép giá dạng chữ).
+- Sửa size, số lượng ngay trên trang, xoá từng size có xác nhận; thêm/sửa ảnh bằng tải lên hoặc dán.
+- Ngừng dùng / xoá mã; tìm theo mã, tên, danh mục (kể cả mã đã hết hàng).
+- **Lịch sử nhập kho**: ghi nhận nhập trực tiếp, tăng/giảm tồn và nhập từ đặt xưởng; có hoàn tác lần nhập.
+- Theo dõi một mã–size: các đơn liên quan và biến động tồn dự kiến.
 
 ### Đơn hàng
-- Thông tin chung: người chốt, **số điện thoại**, **địa chỉ**, **miền**, **nhà xe**, tên đơn, lịch **lấy / diễn / trả**, **nguồn hàng**.
-- Nhiều dòng hàng; cho phép **cùng một mã với nhiều giá thuê khác nhau** (thuê bộ / thuê lẻ), **ghi chú theo từng size**, và size **"Chưa chốt"** cập nhật sau.
-- **Giá thuê sửa được ngay trên đơn** mà không ảnh hưởng giá thuê gốc trong kho.
-- Tiền: tổng tiền hàng (giá thuê × số lượng), **tiền ship**, **thanh toán lần 1 / lần 2**, **tiền bồi thường**, số **còn lại**.
-- Cảnh báo **vượt tồn** khi chọn ngày lấy, báo rõ mã nào, size gì, vượt bao nhiêu trong khoảng ngày nào.
-- **Tự lưu nháp** khi đang tạo đơn mới (khôi phục lại nếu lỡ tải lại trang).
-- Bộ lọc đầy đủ và tìm theo tên người đặt/tên đơn.
+- Thông tin khách: người chốt, tên đơn, SĐT, địa chỉ, **miền** (bắt buộc), nhà xe, **nguồn khách** (bắt buộc), ghi chú.
+- Lịch: **ngày đi đơn**, ngày lấy, ngày diễn, ngày trả (kèm buổi sáng/chiều/tối, mặc định sáng), **ngày về kho thực tế**.
+- Nhiều dòng hàng; cùng một mã có thể có nhiều giá thuê, số ngày thuê lẻ, ghi chú từng size, size "Chưa chốt".
+- **Nguồn hàng từng mã**: lấy từ kho hoặc từ đặt hàng; liên kết với đơn đặt xưởng phù hợp, đặt thêm lô bổ sung, dùng một phần lô mua dự trữ.
+- Tiền: tổng tiền hàng, chiết khấu (tiền hoặc %), tiền ship, thanh toán lần 1 / lần 2, tiền bồi thường, còn lại. Định dạng tiền kiểu Việt Nam.
+- **Tự lưu** form (chống tạo đơn trùng), **hoàn tác / làm lại** cá nhân, dán phiếu đặt thuê để điền nhanh, gợi ý khách cũ.
+- Sửa ghi chú ngay trên danh sách; bấm để sao chép tên đơn, mã hàng.
+- Theo dõi từng mã trong đơn: **đã chuẩn bị**, **đã giao** (cho phép giao sớm theo mã).
+- Lọc theo trạng thái, nguồn, người chốt, mã hàng, khoảng ngày đi đơn / về kho; lọc theo mã chỉ hiện các dòng khớp.
 
-### Trạng thái đơn & thanh toán
-- Trạng thái đơn: `Chưa in đơn` → `Đã in đơn lên file` → `Đã in đơn ra giấy` → `Đang soạn đơn` → `Đã soạn xong` → `Đã gửi` → `Đã trả về` → `Đã kiểm`.
+### Trạng thái đơn
+`Chưa in đơn` → `Đã in đơn lên file` → `Đã in đơn ra giấy` → `Đang soạn đơn` → `Đã soạn xong` → `Đã gửi` → `Đã trả về` → `Đã kiểm` (hoặc `Hủy đơn`).
+
+- Khi chuyển sang `Đã gửi`, hệ thống kiểm tồn thực tế; nếu thiếu sẽ báo rõ mã, size và liên kết tới đúng dòng kho.
+- Khi `Đã kiểm`, nếu số lượng trả về không khớp thì bôi đỏ và cho nhập tiền bồi thường + ghi chú kiểm đơn.
 - Trạng thái thanh toán: `Cọc`, `Thanh toán lần 1`, `Thanh toán lần 2`, `Còn lại`.
-- Khi chuyển sang `Đã kiểm`, nếu số lượng trả về không khớp thì bôi đỏ và cho nhập **tiền bồi thường** + ghi chú kiểm đơn.
 
-### Báo cáo doanh thu
-- Tổng doanh thu, tiền bồi thường, số đơn trong kỳ.
-- Tách theo **nguồn hàng** (KHM/KHC của page, KHM/KHC của sale) kèm tỷ trọng.
-- Chọn mốc tính theo ngày tạo/lấy/diễn/trả.
+### Đặt hàng & nhập kho
+- Hai nguồn: **Xưởng** và **Mua ngoài**, lưu nguồn mặc định.
+- Bảng sửa trực tiếp, tự lưu, **hoàn tác / làm lại 5 bước** cho từng người; cảnh báo đặt trùng.
+- Tạo mã sản phẩm mới ngay từ dòng đặt hàng (gợi ý mã chưa dùng, chọn danh mục, giá thuê, ảnh).
+- Kế hoạch mua thêm theo đơn khách được áp **một lần rồi khoá**, không cộng dồn khi sửa.
+- Nhập kho theo size từ dòng đặt hàng (**đẩy lên kho**) hoặc **xác nhận nhập tay**; nhập kho lần lượt bằng Enter; sửa số lượng thực nhận và cập nhật sang đơn khách.
 
-### Lịch sử thay đổi (nhật ký)
-- Ghi lại mọi thay đổi của đơn hàng và sản phẩm ở dạng *trước → sau*, kèm người thực hiện và thời điểm.
-- Lọc theo loại (đơn/sản phẩm), hành động (tạo mới/cập nhật), mã, người thực hiện và khoảng ngày.
+### Nhắc việc
+- **Nhắc nhập kho** khi hàng đặt đã về; **nhắc hàng chưa về** theo ngày dự kiến.
+- **Nhắc đòi đồ** khi đơn mới lấy trùng ngày trả của đơn trước.
+- Nhắc theo ngày lấy / ngày trả; đánh dấu các đơn bị ảnh hưởng khi tồn kho thay đổi.
+- Mỗi nhắc việc có thể xác nhận, **Không nhắc lại** hoặc **Để sau**.
 
-### Nhắc đơn đến ngày
-- Cho phép lên đơn có ngày lấy trùng ngày trả của đơn trước nếu số hàng trả về đủ bù phần thiếu. Biểu mẫu cảnh báo rõ mã–size, số lượng cần đòi về sớm và đơn trả liên quan.
-- Khi mở website trước ngày lấy **1 ngày** và trong ngày lấy, hiện lời nhắc đòi đồ về sớm, kèm liên kết đơn trả và số điện thoại nếu có. Nhắc tự hết khi hàng đã được cập nhật **Đã trả về** hoặc đơn mới đã gửi/hủy.
-- Khi gửi đơn mới vẫn kiểm tra tồn kho thực tế: phải nhận hàng và cập nhật đơn trước sang **Đã trả về** trước khi gửi. Bảng tồn theo ngày vẫn tính cả ngày trả để thể hiện rủi ro giao nhận trong ngày.
-- Khi đăng nhập, hệ thống nhắc:
-  - Đơn đến **ngày lấy** → gợi ý chuyển trạng thái xử lý tiếp.
-  - Đơn đến **ngày trả** → gợi ý tất toán.
-- Mỗi nhắc việc có thể xác nhận, chọn **Không nhắc lại**, hoặc **Để sau**.
+### Hoá đơn nháp, danh bạ, báo cáo, nhật ký
+- **Hoá đơn nháp**: lưu, sửa, in A4 với logo Tiba Store.
+- **Nhà xe & địa chỉ**: danh bạ nhóm theo tỉnh/thành.
+- **Báo cáo doanh thu** theo nguồn khách và mốc ngày.
+- **Lịch sử thay đổi** chi tiết cho đơn hàng và sản phẩm.
 
 ### Người dùng
 - Đăng nhập bằng mã đăng nhập + mật khẩu.
@@ -90,65 +145,40 @@ Giao diện tông xanh dương sapphire, điều hướng bằng **sidebar bên 
 
 ---
 
-## Công nghệ
+## Mô hình tồn kho
 
-- **Laravel 9** (PHP `^8.0.2`), Blade, Eloquent.
-- **MySQL / MariaDB**.
-- Giao diện thuần Blade + CSS (không cần build front-end).
-- Khuyến nghị **XAMPP** khi chạy trên Windows.
+- Tồn được tính theo **ngày đi đơn** và **ngày về kho thực tế** (đơn cũ thiếu hai ngày này được điền từ ngày lấy / ngày trả), vẫn giữ quy tắc gối đơn: được nhận đơn lấy trong ngày nếu hàng trả về buổi sáng.
+- Đơn chưa gửi: **chưa trừ kho**. Khi `Đã gửi`: **trừ tồn** theo số lượng đơn (thiếu thì báo lỗi, không cho chuyển). Khi `Đã kiểm`: **hoàn** về kho. Gia hạn đơn đã gửi vẫn giữ phần hàng đang ở ngoài.
+- Sửa mã/số lượng của đơn đang trừ kho sẽ tự đồng bộ theo phần chênh lệch.
+- Tồn **khả dụng** (dùng cho cảnh báo và trang Tồn kho theo ngày) = tồn hiện có + hàng sắp về từ đặt hàng − số đang cho thuê trong các khoảng thuê chồng nhau.
+- Trang **Đơn thiếu tồn kho** chỉ tính tồn thực tế đã nhập, không tính hàng đang đặt.
 
 ---
 
-## Yêu cầu môi trường
+## Công nghệ
 
-- PHP `^8.0.2`
-- Composer
-- MySQL hoặc MariaDB
-- Git
-- XAMPP (khuyến nghị trên Windows)
+- **Laravel 9** (PHP `^8.0.2`), Blade, Eloquent.
+- **MySQL / MariaDB** (một số migration dùng cú pháp riêng của MySQL).
+- Giao diện Blade + CSS + JavaScript thuần, **không cần build front-end**.
+- Test: PHPUnit (PHP) và Node.js (`tests/js/*.cjs`).
 
 ---
 
 ## Cài đặt
 
-Clone mã nguồn:
+Yêu cầu: PHP `^8.0.2` (có `pdo_mysql`, `gd`, `mbstring`), Composer, MySQL hoặc MariaDB, Git. Trên Windows khuyến nghị **XAMPP**.
 
 ```bash
 git clone https://github.com/nminhcuongdev/tibastore.git
 cd tibastore
-```
-
-Cài dependency PHP:
-
-```bash
 composer install
-```
-
-Tạo file môi trường:
-
-```bash
-cp .env.example .env
-```
-
-Trên Windows/PowerShell:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-Tạo app key:
-
-```bash
+cp .env.example .env          # Windows PowerShell: Copy-Item .env.example .env
 php artisan key:generate
 ```
 
 > Nếu `php` chưa có trong PATH khi dùng XAMPP, thay `php` bằng đường dẫn PHP của XAMPP, ví dụ `C:\xampp\php\php.exe`.
 
----
-
-## Cấu hình database
-
-Tạo database:
+### Database
 
 ```sql
 CREATE DATABASE tibastore CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -165,7 +195,7 @@ DB_USERNAME=root
 DB_PASSWORD=
 ```
 
-Chạy migration (và seed dữ liệu mẫu nếu cần), tạo symlink cho ảnh:
+Chạy migration, seed dữ liệu mẫu (tuỳ chọn) và tạo symlink cho ảnh sản phẩm:
 
 ```bash
 php artisan migrate
@@ -173,14 +203,16 @@ php artisan db:seed
 php artisan storage:link
 ```
 
-Tài khoản đăng nhập mẫu (nếu chạy seeder):
+Tài khoản mẫu khi chạy seeder:
 
 ```text
 Mã đăng nhập: admin
 Mật khẩu: password
 ```
 
-> Nếu bạn có sẵn file SQL dump, có thể import trực tiếp vào database `tibastore` thay cho `migrate`/`db:seed`.
+> Có sẵn file SQL dump thì có thể import trực tiếp vào database `tibastore` thay cho `migrate` / `db:seed`.
+>
+> ⚠️ Một số migration có **cập nhật dữ liệu cũ** (điền ngày đi đơn / về kho, đánh dấu cách nhập kho của đơn đặt hàng). Hãy **sao lưu database** trước khi chạy `migrate` trên dữ liệu thật.
 
 ---
 
@@ -190,42 +222,67 @@ Mật khẩu: password
 php artisan serve
 ```
 
-Trên Windows với XAMPP:
+Windows với XAMPP:
 
 ```powershell
 C:\xampp\php\php.exe artisan serve --host=127.0.0.1 --port=8000
 ```
 
-Mở trình duyệt:
+Mở trình duyệt tại `http://127.0.0.1:8000/login`.
 
-```text
-http://127.0.0.1:8000/login
+---
+
+## Kiểm thử
+
+Test PHP chạy trên database MySQL đã migrate (test **không** tự tạo bảng). Nên dùng một database riêng:
+
+```sql
+CREATE DATABASE tibastore_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+```bash
+DB_DATABASE=tibastore_test php artisan migrate
+DB_DATABASE=tibastore_test php artisan test
+```
+
+Test JavaScript (Node.js 18+):
+
+```bash
+for f in tests/js/*.cjs; do node "$f"; done
 ```
 
 ---
 
-## Mô hình tồn kho theo đơn hàng
+## Triển khai (shared hosting / cPanel)
 
-- Đơn ở các trạng thái đầu (chưa gửi): **chưa trừ kho**.
-- Khi đơn ở trạng thái **`Đã gửi`** hoặc **`Đã trả về`**: hệ thống **trừ tồn** theo số lượng của đơn. Nếu không đủ, báo lỗi và không cho chuyển.
-- Khi đơn về **`Đã kiểm`**: **hoàn** số lượng về kho.
-- Nếu đơn đang trừ kho mà sửa mã hàng/số lượng: hệ thống tự đồng bộ lại tồn theo phần chênh lệch.
-- Tồn *khả dụng* dùng cho cảnh báo và cho màn hình "Tồn kho theo ngày" còn tính thêm **hàng nhập dự kiến** và **các đơn gối ngày**.
-
----
-
-## Triển khai tự động (shared hosting / cPanel)
-
-Repo có sẵn `deploy.sh` để tự kéo code và cập nhật ứng dụng, chạy định kỳ bằng **cron**:
+`deploy.sh` tự kéo code và cập nhật ứng dụng, chạy định kỳ bằng **cron**:
 
 - Chỉ chạy khi có **commit mới** (dùng file đánh dấu), tránh phình log và xoá cache không cần thiết.
 - Kéo code → xoá cache config/route → `migrate --force` → `route/config/view/cache:clear`.
 - Tự dò PHP CLI `>= 8.0.2` phù hợp trên hosting (ea-php / alt-php / `/usr/local/bin/php`).
 
-Ví dụ dòng cron (mỗi 5 phút):
+Ví dụ cron mỗi 5 phút:
 
 ```bash
 */5 * * * * /home/<user>/tibastore/deploy.sh >> /home/<user>/deploy.log 2>&1
+```
+
+---
+
+## Cấu trúc thư mục
+
+```text
+app/Http/Controllers   Controller: đơn hàng, sản phẩm, đặt hàng, hoá đơn nháp, báo cáo, nhật ký...
+app/Models             Model Eloquent (Order, OrderItem, Product, WorkshopOrder, DraftInvoice...)
+app/Services           Nghiệp vụ: tính tồn, kế hoạch mua, nhập kho, nhắc việc, hoàn tác...
+database/migrations    Cấu trúc database
+resources/views        Giao diện Blade
+resources/images       Logo dùng cho hoá đơn / đơn in
+public/js              Script dùng chung (định dạng tiền...)
+routes/web.php         Khai báo route
+tests/                 Test PHPUnit (Feature, Unit) và test JS (tests/js)
+screenshoots/          Ảnh chụp màn hình dùng trong README
+deploy.sh              Script tự triển khai trên cPanel
 ```
 
 ---
@@ -237,21 +294,4 @@ php artisan migrate       # chạy migration mới
 php artisan db:seed       # chạy lại seed
 php artisan view:clear    # xoá cache view
 php artisan route:list    # xem danh sách route
-```
-
----
-
-## Đẩy code lên GitHub
-
-```bash
-git status
-git add .
-git commit -m "Cập nhật tài liệu dự án"
-git push origin main
-```
-
-Remote hiện tại:
-
-```text
-https://github.com/nminhcuongdev/tibastore.git
 ```
